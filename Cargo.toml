@@ -4,3 +4,6 @@ version = "0.1.0"
 authors = ["Gibson Fahnestock <gibfahn@gmail.com>"]
 
 [dependencies]
+walkdir = "2.1.4"
+quicli = "0.3.0"
+shellexpand = "1.0.0"
