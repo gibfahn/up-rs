@@ -11,16 +11,23 @@ use std::os::unix;
 
 use self::walkdir::WalkDir;
 
-#[cfg(test)]
-pub fn dot_cmd() -> Command {
-    let dot_path = env::current_exe().unwrap()
-        .parent().expect("executable's directory")
-        .parent().expect("build directory").join("dot");
-    Command::new(&dot_path) }
+fn dot_debug_dir() -> PathBuf {
+    let mut dot_path = env::current_exe().unwrap()
+        .parent().expect("test's directory").to_path_buf();
+    if ! &dot_path.join("dot").is_file() {
+        // Sometimes it is ./target/debug/deps/dot not ./target/debug/dot.
+        assert!(dot_path.pop());
+    }
+    dot_path.canonicalize().unwrap();
+    dot_path
+}
 
-/// Returns the test module name.
-#[cfg(test)]
-fn test_module() -> String {
+pub fn dot_cmd() -> Command {
+    Command::new(dot_debug_dir().join("dot"))
+}
+
+/// Returns the test module name (usually the test file name).
+pub fn test_module() -> String {
     env::current_exe().unwrap()
         .file_name().unwrap()
         .to_str().unwrap()
@@ -29,24 +36,21 @@ fn test_module() -> String {
 }
 
 /// Returns the path to the tests/fixtures directory (relative to the crate root).
-#[cfg(test)]
 pub fn fixtures_dir() -> PathBuf {
-    env::current_exe().unwrap()
-        .parent().expect("executable's directory")
-        .parent().expect("build directory")
+    dot_debug_dir()
         .parent().expect("debug/release directory")
         .parent().expect("target directory")
-        .join("tests").join("fixtures")
+        .join("tests/fixtures")
 }
 
 /// Returns the path to a temporary directory for your test (OS tempdir + test file name + test function name).
 /// Cleans the directory if it already exists.
-#[cfg(test)]
 pub fn temp_dir(test_fn: &str) -> Result<PathBuf, Box<error::Error>> {
-    let mut temp_dir = env::temp_dir();
+    let os_temp_dir = env::temp_dir().canonicalize()?;
+    let mut temp_dir = os_temp_dir.clone();
     temp_dir.push(test_module());
     temp_dir.push(test_fn);
-    assert!(temp_dir.starts_with(env::temp_dir()));
+    assert!(temp_dir.starts_with(os_temp_dir));
     if temp_dir.exists() {
         temp_dir.canonicalize()?;
         fs::remove_dir_all(&temp_dir)?;
@@ -56,7 +60,6 @@ pub fn temp_dir(test_fn: &str) -> Result<PathBuf, Box<error::Error>> {
     Ok(temp_dir)
 }
 
-#[cfg(test)]
 pub fn copy_all(from_dir: &Path, to_dir: &Path) -> Result<(), Box<error::Error>> {
     println!("Copying everything in '{:?}' to '{:?}'", from_dir, to_dir);
     for from_path in WalkDir::new(&from_dir)
@@ -84,28 +87,41 @@ pub fn copy_all(from_dir: &Path, to_dir: &Path) -> Result<(), Box<error::Error>>
     Ok(())
 }
 
-#[cfg(test)]
 /// Panic if there is a file, directory, or link at the path.
-pub fn assert_no_file(path: &Path) {
+pub fn assert_nothing_at(path: &Path) {
     assert!(! path.exists());
 }
 
-#[cfg(test)]
 /// Panic if there is not a file at the path, or if the contents don't match.
 pub fn assert_file(path: &Path, contents: &str) {
-    assert!(path.is_file());
-    assert_eq!(fs::read_to_string(path).unwrap(), contents);
+    if ! path.is_file() { println!("Path: {:?}", path)};
+    assert!(path.exists(), "Expected path to be a file, but it doesn't exist.\n  \
+            Path: {:?}", path);
+    assert!(path.is_file(), "Expected path to be a file, but it has the wrong type.\n  \
+        Path: {:?}\n  \
+        Is directory: {}\n  \
+        Is symlink: {}", path, path.is_dir(), path.symlink_metadata().unwrap().file_type().is_symlink());
+    assert_eq!(fs::read_to_string(path).unwrap(), contents, "Expected file contents don't match actual file contents.");
 }
 
-#[cfg(test)]
 /// Panic if there is not a directory at the path.
 pub fn assert_dir(path: &Path) {
-    assert!(path.is_dir());
+    assert!(path.exists(), "Expected path to be a directory, but it doesn't exist.\n  \
+        Path: {:?}", path);
+    assert!(path.is_dir(), "Expected path to be a directory, but it isn't.\n  \
+        Path: {:?}\n  \
+        Is file: {}\n  \
+        Is symlink: {}", path, path.is_file(), path.symlink_metadata().unwrap().file_type().is_symlink());
 }
 
-#[cfg(test)]
-/// Panic if there is not a link at the path, or if the destination isn't the one provided.
+/// Panic if there is not a link at the path, or if the destination isn't the one provided
+/// (destination path must be an exact match).
 pub fn assert_link(path: &Path, destination: &Path) {
-    assert!(path.exists());
+    assert!(path.exists(), "Expected path to be a directory, but it doesn't exist.\n  \
+        Path: {:?}", path);
+    assert!(path.symlink_metadata().unwrap().file_type().is_symlink(), "Expected path to be a symlink, but it has the wrong type.\n  \
+        Path: {:?}\n  \
+        Is file: {}\n  \
+        Is directory: {}", path, path.is_file(), path.is_dir());
     assert_eq!(fs::read_link(path).unwrap(), destination);
 }

@@ -88,7 +88,7 @@ fn link(from_dir: &str, to_dir: &str, backup_dir: &str) -> Result<()> {
 
     println!("To dir: {:?}", to_dir);
     assert!(to_dir.exists());
-    debug!("to_dir contents: {:?}", fs::read_dir(&to_dir).unwrap().collect::<Vec<_>>());
+    debug!("to_dir contents: {:#?}", fs::read_dir(&to_dir).unwrap().filter_map(|d| d.ok()).map(|x| x.path()).collect::<Vec<_>>());
 
     for from_path in WalkDir::new(&from_dir)
         .min_depth(1)
@@ -103,7 +103,7 @@ fn link(from_dir: &str, to_dir: &str, backup_dir: &str) -> Result<()> {
         fs::create_dir_all(to_path.parent().unwrap())?;
 
         if to_path.exists() {
-            let to_path_file_type = to_path.metadata()?.file_type();
+            let to_path_file_type = to_path.symlink_metadata()?.file_type();
             if to_path_file_type.is_symlink() {
                 match to_path.read_link() {
                     Ok(existing_link) => {
@@ -112,6 +112,7 @@ fn link(from_dir: &str, to_dir: &str, backup_dir: &str) -> Result<()> {
                             continue;
                         } else {
                             warn!("Link at {:?} points to {:?}, changing to {:?}.", to_path, existing_link, from_path.path());
+                            fs::remove_file(&to_path)?;
                         }
                     },
                     Err(e) => {
