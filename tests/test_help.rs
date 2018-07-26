@@ -7,4 +7,3 @@ fn help_test() {
     let cmd_output = cmd.output().unwrap();
     assert!(cmd_output.status.success());
 }
-

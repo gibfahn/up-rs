@@ -1,5 +1,6 @@
 mod common;
 
+use std::os::unix;
 use std::path::{Path, PathBuf};
 
 /// Set up a basic home_dir, run the link function against it, and make sure we get the
@@ -33,32 +34,129 @@ fn backup_files() {
     // Files in backup should be overwritten with the new backups.
     common::assert_file(&home_dir.join("backup/already_in_backup"), "new backup\n");
     // Symlinks in home should be overwritten.
-    common::assert_link(&home_dir.join("existing_symlink"), &dot_dir.join("existing_symlink"));
+    common::assert_link(
+        &home_dir.join("existing_symlink"),
+        &dot_dir.join("existing_symlink"),
+    );
     // Files in home should become symlinks.
-    common::assert_link(&home_dir.join("already_in_backup"), &dot_dir.join("already_in_backup"));
+    common::assert_link(
+        &home_dir.join("already_in_backup"),
+        &dot_dir.join("already_in_backup"),
+    );
     // Symlinks in home should not be moved to backup.
     common::assert_nothing_at(&home_dir.join("backup/existing_symlink"));
 
     // Existing subdir backup files should not be overwritten.
-    common::assert_file(&home_dir.join("backup/subdir/prev_backup_subdir_file"), "previous backup subdir file\n");
+    common::assert_file(
+        &home_dir.join("backup/subdir/prev_backup_subdir_file"),
+        "previous backup subdir file\n",
+    );
     // Existing subdir files should not be overwritten.
-    common::assert_file(&home_dir.join("subdir/existing_subdir_file"), "existing subdir file\n");
+    common::assert_file(
+        &home_dir.join("subdir/existing_subdir_file"),
+        "existing subdir file\n",
+    );
     // Subdirectory files should be moved to backup.
-    common::assert_file(&home_dir.join("backup/subdir/new_subdir_file"), "previous subdir file\n");
+    common::assert_file(
+        &home_dir.join("backup/subdir/new_subdir_file"),
+        "previous subdir file\n",
+    );
     // Subdirectory files should be added into existing directories.
-    common::assert_link(&home_dir.join("subdir/new_subdir_file"), &dot_dir.join("subdir/new_subdir_file"));
+    common::assert_link(
+        &home_dir.join("subdir/new_subdir_file"),
+        &dot_dir.join("subdir/new_subdir_file"),
+    );
 
     // Nested subdirectory files should be moved to backup.
-    common::assert_file(&home_dir.join("backup/subdir/subdir2/subdir2_file"), "old subdir2 file\n");
+    common::assert_file(
+        &home_dir.join("backup/subdir/subdir2/subdir2_file"),
+        "old subdir2 file\n",
+    );
     // Nested subdirectory files should be added into existing directories.
-    common::assert_link(&home_dir.join("subdir/subdir2/subdir2_file"), &dot_dir.join("subdir/subdir2/subdir2_file"));
-
-    // - link file to non-existing path (inc file inside directory)
-    // - link file to existing directory (check dir moved to backup with contents)
-    // - link dir to subdirectory of file with dir's name a/b overwriting a (file)
-    // - link file to existing bad link (updated)
-    // - link file to existing correct link (nothing happens)
+    common::assert_link(
+        &home_dir.join("subdir/subdir2/subdir2_file"),
+        &dot_dir.join("subdir/subdir2/subdir2_file"),
+    );
 }
+
+#[test]
+fn hidden_and_nested() {
+    let (home_dir, dot_dir) = get_home_dot_dirs("hidden_and_nested");
+    // If this symlink is correct, it shouldn't make a difference.
+    unix::fs::symlink(
+        &dot_dir.join("existing_link"),
+        &home_dir.join("existing_link"),
+    ).unwrap();
+    run_link_cmd(&home_dir, &dot_dir);
+
+    // Backup dir should stay.
+    common::assert_dir(&home_dir.join("backup"));
+    // Hidden files/dirs should still be moved to backup.
+    common::assert_file(&home_dir.join("backup/.config/.file"), "old file\n");
+    // Hidden files/dirs should still be linked to.
+    common::assert_link(
+        &home_dir.join(".config/.file"),
+        &dot_dir.join(".config/.file"),
+    );
+
+    // Bad links should be updated (even to other bad links).
+    common::assert_bad_link(&home_dir.join("bad_link"), &dot_dir.join("bad_link"));
+    // Arbitrarily nested directories should still be linked.
+    common::assert_link(
+        &home_dir.join(".config/a/b/c/d/e/f/g/.other_file"),
+        &dot_dir.join(".config/a/b/c/d/e/f/g/.other_file"),
+    );
+    // Existing links shouldn't be changed.
+    common::assert_link(
+        &home_dir.join("existing_link"),
+        &dot_dir.join("existing_link"),
+    );
+
+    // Directories should be overwritten with file links.
+    common::assert_link(&home_dir.join("dir_to_file"), &dot_dir.join("dir_to_file"));
+    // Files inside directories that are converted to file links should be moved to backup.
+    common::assert_file(
+        &home_dir.join("backup/dir_to_file/file"),
+        "dir_to_file dir file\n",
+    );
+    // Files should be overwritten with directories containing file links.
+    common::assert_dir(&home_dir.join("file_to_dir"));
+    // Links should be inserted inside directories that overwrite files.
+    common::assert_link(
+        &home_dir.join("file_to_dir/file2"),
+        &dot_dir.join("file_to_dir/file2"),
+    );
+    // Files that are converted to directories should be moved to backup.
+    common::assert_file(
+        &home_dir.join("backup/file_to_dir"),
+        "file_to_dir original file\n",
+    );
+
+    // Directories should overwrite links.
+    common::assert_dir(&home_dir.join("link_to_dir"));
+    // Links should be inserted inside directories that override links.
+    common::assert_link(
+        &home_dir.join("link_to_dir/file3"),
+        &dot_dir.join("link_to_dir/file3"),
+    );
+    // Links that are converted to directories should not be moved to backup.
+    common::assert_nothing_at(&home_dir.join("backup/link_to_dir"));
+
+    // Directories should overwrite bad links.
+    common::assert_dir(&home_dir.join("badlink_to_dir"));
+    // Links should be inserted inside directories that override links.
+    common::assert_link(
+        &home_dir.join("badlink_to_dir/file4"),
+        &dot_dir.join("badlink_to_dir/file4"),
+    );
+    // Links that are converted to directories should not be moved to backup.
+    common::assert_nothing_at(&home_dir.join("backup/badlink_to_dir"));
+    // TODO(gib): Re-add this once on Rust 2018.
+    // assert!(false);
+}
+
+// TODO(gib): Add other cases.
+// - link dir to subdirectory of file with dir's name a/b overwriting a (file)
 
 // TODO(gib): Good rust coverage checker?
 
@@ -70,23 +168,32 @@ fn backup_files() {
 fn get_home_dot_dirs(test_fn: &str) -> (PathBuf, PathBuf) {
     let temp_dir = common::temp_dir(test_fn).unwrap();
 
-    common::copy_all(&common::fixtures_dir().join(common::test_module()).join(test_fn), &temp_dir).unwrap();
+    common::copy_all(
+        &common::fixtures_dir()
+            .join(common::test_module())
+            .join(test_fn),
+        &temp_dir,
+    ).unwrap();
 
-    (temp_dir.join("home_dir").canonicalize().unwrap(),
-        temp_dir.join("dot_dir").canonicalize().unwrap(),)
+    (
+        temp_dir.join("home_dir").canonicalize().unwrap(),
+        temp_dir.join("dot_dir").canonicalize().unwrap(),
+    )
 }
 
 /// Helper function to run ./dot link <home_dir> <dot_dir> <home_dir>/backup.
 #[cfg(test)]
 fn run_link_cmd(home_dir: &Path, dot_dir: &Path) {
     let mut cmd = common::dot_cmd();
-    cmd.args([
-             "-vvvv",
-             "link",
-             dot_dir.to_str().unwrap(),
-             home_dir.to_str().unwrap(),
-             home_dir.join("backup").to_str().unwrap(),
-    ].into_iter());
+    cmd.args(
+        [
+            "-vvvv",
+            "link",
+            dot_dir.to_str().unwrap(),
+            home_dir.to_str().unwrap(),
+            home_dir.join("backup").to_str().unwrap(),
+        ].into_iter(),
+    );
 
     println!("cmd: {:?}\n", cmd);
     let cmd_output = cmd.output().unwrap();
@@ -95,4 +202,3 @@ fn run_link_cmd(home_dir: &Path, dot_dir: &Path) {
     println!("STDERR:\n\n{}", String::from_utf8_lossy(&cmd_output.stderr));
     assert!(cmd_output.status.success());
 }
-
