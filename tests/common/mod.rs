@@ -1,5 +1,4 @@
 /// Common functions that are used by other tests.
-
 use std::env;
 use std::error;
 use std::fs;
@@ -190,4 +189,15 @@ pub fn assert_bad_link(path: &Path, destination: &Path) {
         path.is_dir()
     );
     assert_eq!(path.read_link().unwrap(), destination);
+}
+
+/// Panic if the text does not contain the expected pattern.
+#[cfg(test)]
+pub fn assert_contains(text: &str, pattern: &str) {
+    assert!(
+        text.contains(pattern),
+        "\n  Expected text to contain pattern.\n  Pattern: {:?}\n  Text: <<<{}>>>",
+        pattern,
+        text
+    );
 }

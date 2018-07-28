@@ -8,9 +8,9 @@ use std::fs;
 use std::os::unix;
 use std::path::{Path, PathBuf};
 
-use quicli::prelude::{trace, debug, info, warn, error};
-use quicli::prelude::{StructOpt, structopt};
-use quicli::prelude::{log, Verbosity};
+use quicli::prelude::{bail, ensure, log, Verbosity};
+use quicli::prelude::{debug, error, info, trace, warn};
+use quicli::prelude::{structopt, StructOpt};
 // use quicli::prelude::{};
 // use quicli::prelude::*;
 use quicli::main;
@@ -62,7 +62,7 @@ main!(|args: Cli, log_level: verbosity| {
             link(&from_dir, &to_dir, &backup_dir)?;
         }
         None => {
-            error!("Use -h or --help for the usage args.");
+            bail!("dot requires a subcommand, use -h or --help for the usage args.");
         }
     }
     trace!("Finished dot.");
@@ -93,28 +93,33 @@ fn link(from_dir: &str, to_dir: &str, backup_dir: &str) -> Result<(), failure::E
     let to_dir = PathBuf::from(shellexpand::tilde(&to_dir).to_string());
     let backup_dir = PathBuf::from(shellexpand::tilde(&backup_dir).to_string());
 
-    // TODO(gib): Test this works.
-    let from_dir = from_dir.canonicalize()?;
-    assert!(
+    ensure!(
         &from_dir.is_dir(),
-        "From directory (dotfile directory) {:?} should exist.",
+        "From directory (dotfile directory) should exist.\n  from_dir: {:?}",
         &from_dir
     );
-    let to_dir = to_dir.canonicalize()?;
-    // TODO(gib): Test this works.
-    assert!(
+    let from_dir = from_dir.canonicalize()?;
+    ensure!(
         &to_dir.is_dir(),
-        "To directory (home directory) {:?} should exist.",
+        "To directory (home directory) should exist.\n  to_dir: {:?}",
         &to_dir
     );
+    let to_dir = to_dir.canonicalize()?;
 
     // Create the backup dir if it doesn't exist.
+    assert!(
+        ! backup_dir.exists() || backup_dir.is_dir(),
+        "The backup_dir should either not exist or already be a directory.\n  backup_dir: {:?}\n  backup_dir exists: {}\n  backup_dir is a directory: {}",
+        backup_dir, backup_dir.exists(), backup_dir.is_dir(),
+
+    );
+    error!("Backup dir exists: {}", backup_dir.exists());
     fs::create_dir_all(&backup_dir)?;
     let backup_dir = backup_dir.canonicalize()?;
     // TODO(gib): Test this works.
-    assert!(
+    ensure!(
         &backup_dir.is_dir(),
-        "Backup directory {:?} should exist.",
+        "Backup directory should have been created.\n  backup_dir: {:?}",
         &backup_dir
     );
 
@@ -146,6 +151,7 @@ fn link(from_dir: &str, to_dir: &str, backup_dir: &str) -> Result<(), failure::E
                 debug!("Checking path {:?}", path);
                 let abs_path = to_dir.join(path);
                 if abs_path.exists() || abs_path.symlink_metadata().is_ok() {
+                    // TODO(gib): Convert to ensure! (bug in quicli?).
                     assert!(!abs_path.is_dir());
                     warn!(
                         "File will be overwritten by parent directory of link.\n  \

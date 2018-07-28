@@ -1,14 +1,17 @@
 mod common;
 
+use std::fs;
+use std::fs::File;
 use std::os::unix;
 use std::path::{Path, PathBuf};
+use std::process::Output;
 
 /// Set up a basic home_dir, run the link function against it, and make sure we get the
 /// expected changes.
 #[test]
 fn new_link() {
     let (home_dir, dot_dir) = get_home_dot_dirs("new_link");
-    run_link_cmd(&home_dir, &dot_dir);
+    run_link_cmd(&dot_dir, &home_dir, LinkResult::Success);
 
     // Existing files shouldn't be touched.
     common::assert_file(&home_dir.join("existing_file"), "existing file 1\n");
@@ -27,7 +30,7 @@ fn new_link() {
 #[test]
 fn backup_files() {
     let (home_dir, dot_dir) = get_home_dot_dirs("backup_files");
-    run_link_cmd(&home_dir, &dot_dir);
+    run_link_cmd(&dot_dir, &home_dir, LinkResult::Success);
 
     // Backup dir should stay.
     common::assert_dir(&home_dir.join("backup"));
@@ -87,7 +90,7 @@ fn hidden_and_nested() {
         &dot_dir.join("existing_link"),
         &home_dir.join("existing_link"),
     ).unwrap();
-    run_link_cmd(&home_dir, &dot_dir);
+    run_link_cmd(&dot_dir, &home_dir, LinkResult::Success);
 
     // Backup dir should stay.
     common::assert_dir(&home_dir.join("backup"));
@@ -155,6 +158,55 @@ fn hidden_and_nested() {
     // assert!(false);
 }
 
+/// Pass a from_dir that doesn't exist and make sure we fail.
+#[test]
+fn test_missing_from_dir() {
+    let temp_dir = common::temp_dir("test_missing_from_dir").unwrap();
+    let output = run_link_cmd(
+        &temp_dir.join("dot_dir"),
+        &temp_dir.join("home_dir"),
+        LinkResult::Failure,
+    );
+    common::assert_contains(
+        &String::from_utf8_lossy(&output.stderr),
+        "From directory (dotfile directory) should exist.",
+    );
+}
+
+/// Pass a to_dir that doesn't exist and make sure we fail.
+#[test]
+fn test_missing_to_dir() {
+    let temp_dir = common::temp_dir("test_missing_to_dir").unwrap();
+    fs::create_dir(&temp_dir.join("dot_dir")).unwrap();
+    let output = run_link_cmd(
+        &temp_dir.join("dot_dir"),
+        &temp_dir.join("home_dir"),
+        LinkResult::Failure,
+    );
+    common::assert_contains(
+        &String::from_utf8_lossy(&output.stderr),
+        "To directory (home directory) should exist.",
+    );
+}
+
+/// Make sure we fail if the backup dir can't be created.
+#[test]
+fn test_uncreateable_backup_dir() {
+    let temp_dir = common::temp_dir("test_uncreateable_backup_dir").unwrap();
+    fs::create_dir(&temp_dir.join("dot_dir")).unwrap();
+    fs::create_dir(&temp_dir.join("home_dir")).unwrap();
+    File::create(&temp_dir.join("home_dir/backup")).unwrap();
+    let output = run_link_cmd(
+        &temp_dir.join("dot_dir"),
+        &temp_dir.join("home_dir"),
+        LinkResult::Failure,
+    );
+    common::assert_contains(
+        &String::from_utf8_lossy(&output.stderr),
+        "The backup_dir should either not exist or already be a directory.",
+    );
+}
+
 // TODO(gib): Add other cases.
 // - link dir to subdirectory of file with dir's name a/b overwriting a (file)
 
@@ -181,9 +233,27 @@ fn get_home_dot_dirs(test_fn: &str) -> (PathBuf, PathBuf) {
     )
 }
 
+/// Enum to capture whether we expected the link command to return success or failure?
+#[derive(Debug, PartialEq)]
+enum LinkResult {
+    Success,
+    Failure,
+}
+
+impl LinkResult {
+    /// Convert LinkResult to a bool (LinkResult::Success -> true, LinkResult::Failure
+    /// -> false).
+    fn to_bool(&self) -> bool {
+        match &self {
+            LinkResult::Success => true,
+            LinkResult::Failure => false,
+        }
+    }
+}
+
 /// Helper function to run ./dot link <home_dir> <dot_dir> <home_dir>/backup.
 #[cfg(test)]
-fn run_link_cmd(home_dir: &Path, dot_dir: &Path) {
+fn run_link_cmd(dot_dir: &Path, home_dir: &Path, result: LinkResult) -> Output {
     let mut cmd = common::dot_cmd();
     cmd.args(
         [
@@ -200,5 +270,12 @@ fn run_link_cmd(home_dir: &Path, dot_dir: &Path) {
     println!("status: {}", cmd_output.status);
     println!("stdout: {}", String::from_utf8_lossy(&cmd_output.stdout));
     println!("STDERR:\n\n{}", String::from_utf8_lossy(&cmd_output.stderr));
-    assert!(cmd_output.status.success());
+    assert_eq!(
+        cmd_output.status.success(),
+        result.to_bool(),
+        "\n Expected result: {:?}, but status was: {:?}",
+        result,
+        cmd_output.status
+    );
+    cmd_output
 }
