@@ -1,13 +1,19 @@
 //! Docs for dot crate.
-extern crate walkdir;
-#[macro_use] extern crate quicli;
-extern crate shellexpand;
+
+#![feature(rust_2018_preview)]
+#![feature(proc_macro_path_invoc)]
+#![warn(rust_2018_idioms)]
 
 use std::fs;
 use std::os::unix;
 use std::path::{Path, PathBuf};
 
-use quicli::prelude::*;
+use quicli::prelude::{trace, debug, info, warn, error};
+use quicli::prelude::{StructOpt, structopt};
+use quicli::prelude::{log, Verbosity};
+// use quicli::prelude::{};
+// use quicli::prelude::*;
+use quicli::main;
 use walkdir::WalkDir;
 
 #[derive(Debug, StructOpt)]
@@ -56,7 +62,7 @@ main!(|args: Cli, log_level: verbosity| {
             link(&from_dir, &to_dir, &backup_dir)?;
         }
         None => {
-            println!("Use -h or --help for the usage args.");
+            error!("Use -h or --help for the usage args.");
         }
     }
     trace!("Finished dot.");
@@ -80,7 +86,7 @@ fn update() {
 /// were in relative to ~. Then if you want to edit your .bashrc (for
 /// example) you just edit ~/.bashrc, and as it's a symlink it'll actually edit
 /// ~/dotfiles/.bashrc. Then you can add and commit that change in ~/dotfiles.
-fn link(from_dir: &str, to_dir: &str, backup_dir: &str) -> Result<()> {
+fn link(from_dir: &str, to_dir: &str, backup_dir: &str) -> Result<(), failure::Error> {
     // Expand ~, this is only used for the default options, if the user passes them as
     // explicit args then they will be expanded by the shell.
     let from_dir = PathBuf::from(shellexpand::tilde(&from_dir).to_string());
@@ -89,16 +95,28 @@ fn link(from_dir: &str, to_dir: &str, backup_dir: &str) -> Result<()> {
 
     // TODO(gib): Test this works.
     let from_dir = from_dir.canonicalize()?;
-    assert!(&from_dir.is_dir(), "From directory (dotfile directory) {:?} should exist.", &from_dir);
+    assert!(
+        &from_dir.is_dir(),
+        "From directory (dotfile directory) {:?} should exist.",
+        &from_dir
+    );
     let to_dir = to_dir.canonicalize()?;
     // TODO(gib): Test this works.
-    assert!(&to_dir.is_dir(), "To directory (home directory) {:?} should exist.", &to_dir);
+    assert!(
+        &to_dir.is_dir(),
+        "To directory (home directory) {:?} should exist.",
+        &to_dir
+    );
 
     // Create the backup dir if it doesn't exist.
     fs::create_dir_all(&backup_dir)?;
     let backup_dir = backup_dir.canonicalize()?;
     // TODO(gib): Test this works.
-    assert!(&backup_dir.is_dir(), "Backup directory {:?} should exist.", &backup_dir);
+    assert!(
+        &backup_dir.is_dir(),
+        "Backup directory {:?} should exist.",
+        &backup_dir
+    );
 
     info!("Linking from {:?} to {:?}.", from_dir, to_dir);
     debug!(

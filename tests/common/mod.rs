@@ -1,5 +1,4 @@
 /// Common functions that are used by other tests.
-extern crate walkdir;
 
 use std::env;
 use std::error;
@@ -8,7 +7,7 @@ use std::os::unix;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use self::walkdir::WalkDir;
+use walkdir::WalkDir;
 
 fn dot_debug_dir() -> PathBuf {
     let mut dot_path = env::current_exe()
@@ -53,7 +52,7 @@ pub fn fixtures_dir() -> PathBuf {
 
 /// Returns the path to a temporary directory for your test (OS tempdir + test file name + test function name).
 /// Cleans the directory if it already exists.
-pub fn temp_dir(test_fn: &str) -> Result<PathBuf, Box<error::Error>> {
+pub fn temp_dir(test_fn: &str) -> Result<PathBuf, failure::Error> {
     let os_temp_dir = env::temp_dir().canonicalize()?;
     let mut temp_dir = os_temp_dir.clone();
     temp_dir.push(test_module());
