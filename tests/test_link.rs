@@ -154,8 +154,6 @@ fn hidden_and_nested() {
     );
     // Links that are converted to directories should not be moved to backup.
     common::assert_nothing_at(&home_dir.join("backup/badlink_to_dir"));
-    // TODO(gib): Re-add this once on Rust 2018.
-    // assert!(false);
 }
 
 /// Pass a from_dir that doesn't exist and make sure we fail.
@@ -207,12 +205,7 @@ fn test_uncreateable_backup_dir() {
     );
 }
 
-// TODO(gib): Add other cases.
-// - link dir to subdirectory of file with dir's name a/b overwriting a (file)
-
 // TODO(gib): Good rust coverage checker?
-
-// TODO(gib): Install clippy, run on test.
 
 /// Helper function to copy the test fixtures for a given test into the OS tempdir (and
 /// return the created home_dir and dot_dir paths.

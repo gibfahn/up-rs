@@ -27,6 +27,7 @@ pub fn dot_cmd() -> Command {
 }
 
 /// Returns the test module name (usually the test file name).
+#[allow(dead_code)]
 pub fn test_module() -> String {
     env::current_exe()
         .unwrap()
@@ -40,6 +41,7 @@ pub fn test_module() -> String {
 }
 
 /// Returns the path to the tests/fixtures directory (relative to the crate root).
+#[allow(dead_code)]
 pub fn fixtures_dir() -> PathBuf {
     dot_debug_dir()
         .parent()
@@ -51,6 +53,7 @@ pub fn fixtures_dir() -> PathBuf {
 
 /// Returns the path to a temporary directory for your test (OS tempdir + test file name + test function name).
 /// Cleans the directory if it already exists.
+#[allow(dead_code)]
 pub fn temp_dir(test_fn: &str) -> Result<PathBuf, failure::Error> {
     let os_temp_dir = env::temp_dir().canonicalize()?;
     let mut temp_dir = os_temp_dir.clone();
@@ -66,6 +69,8 @@ pub fn temp_dir(test_fn: &str) -> Result<PathBuf, failure::Error> {
     Ok(temp_dir)
 }
 
+/// Copy everything in from_dir into to_dir (including broken links).
+#[allow(dead_code)]
 pub fn copy_all(from_dir: &Path, to_dir: &Path) -> Result<(), Box<error::Error>> {
     println!("Copying everything in '{:?}' to '{:?}'", from_dir, to_dir);
     for from_path in WalkDir::new(&from_dir)
@@ -75,9 +80,9 @@ pub fn copy_all(from_dir: &Path, to_dir: &Path) -> Result<(), Box<error::Error>>
     {
         let from_path_metadata = from_path.metadata()?;
         let from_path = from_path.path();
-        println!("Path: {:?}", &from_path);
 
         let rel_path = from_path.strip_prefix(&from_dir)?;
+        println!("Copying: {:?}", &rel_path);
         let to_path = to_dir.join(rel_path);
 
         let file_type = from_path_metadata.file_type();
@@ -94,12 +99,14 @@ pub fn copy_all(from_dir: &Path, to_dir: &Path) -> Result<(), Box<error::Error>>
 }
 
 /// Panic if there is a file, directory, or link at the path.
+#[allow(dead_code)]
 pub fn assert_nothing_at(path: &Path) {
     assert!(!path.exists());
     assert!(path.symlink_metadata().is_err());
 }
 
 /// Panic if there is not a file at the path, or if the contents don't match.
+#[allow(dead_code)]
 pub fn assert_file(path: &Path, contents: &str) {
     if !path.is_file() {
         println!("Path: {:?}", path)
@@ -128,6 +135,7 @@ pub fn assert_file(path: &Path, contents: &str) {
 }
 
 /// Panic if there is not a directory at the path.
+#[allow(dead_code)]
 pub fn assert_dir(path: &Path) {
     assert!(
         path.exists(),
@@ -149,6 +157,7 @@ pub fn assert_dir(path: &Path) {
 
 /// Panic if there is not a link at the path, or if the destination isn't the one provided
 /// (destination path must be an exact match).
+#[allow(dead_code)]
 pub fn assert_link(path: &Path, destination: &Path) {
     assert!(
         path.exists(),
@@ -171,6 +180,7 @@ pub fn assert_link(path: &Path, destination: &Path) {
 
 /// Panic if there is not a bad link at the path, or if the destination isn't the one provided
 /// (destination path must be an exact match).
+#[allow(dead_code)]
 pub fn assert_bad_link(path: &Path, destination: &Path) {
     assert!(
         !path.exists(),
@@ -193,6 +203,7 @@ pub fn assert_bad_link(path: &Path, destination: &Path) {
 
 /// Panic if the text does not contain the expected pattern.
 #[cfg(test)]
+#[allow(dead_code)]
 pub fn assert_contains(text: &str, pattern: &str) {
     assert!(
         text.contains(pattern),
