@@ -1,4 +1,4 @@
-/// Common functions that are used by other tests.
+//! Common functions that are used by other tests.
 use std::env;
 use std::error;
 use std::fs;
@@ -8,22 +8,34 @@ use std::process::Command;
 
 use walkdir::WalkDir;
 
-fn dot_debug_dir() -> PathBuf {
+/// Returns the path to target/debug or target/release.
+fn dot_binary_dir() -> PathBuf {
     let mut dot_path = env::current_exe()
         .unwrap()
         .parent()
-        .expect("test's directory")
+        .expect("test binary directory")
         .to_path_buf();
     if !&dot_path.join("dot").is_file() {
-        // Sometimes it is ./target/debug/deps/dot not ./target/debug/dot.
+        // Sometimes it is ./target/debug/deps/test_* not just ./target/debug/test_*.
         assert!(dot_path.pop());
     }
     dot_path.canonicalize().unwrap();
     dot_path
 }
 
+/// Returns the path to the root of the project (the dot-rs/ folder).
+fn dot_project_dir() -> PathBuf {
+    let mut project_dir = dot_binary_dir();
+    // Pop up to target/ (from target/debug/ or target/release/).
+    assert!(project_dir.pop());
+    // Pop up to dot-rs/ (from dot-rs/target/).
+    assert!(project_dir.pop());
+    project_dir
+}
+
+/// Returns a new command starting with /path/to/dot (add args as needed).
 pub fn dot_cmd() -> Command {
-    Command::new(dot_debug_dir().join("dot"))
+    Command::new(dot_binary_dir().join("dot"))
 }
 
 /// Returns the test module name (usually the test file name).
@@ -43,12 +55,7 @@ pub fn test_module() -> String {
 /// Returns the path to the tests/fixtures directory (relative to the crate root).
 #[allow(dead_code)]
 pub fn fixtures_dir() -> PathBuf {
-    dot_debug_dir()
-        .parent()
-        .expect("debug/release directory")
-        .parent()
-        .expect("target directory")
-        .join("tests/fixtures")
+    dot_project_dir().join("tests/fixtures")
 }
 
 /// Returns the path to a temporary directory for your test (OS tempdir + test file name + test function name).

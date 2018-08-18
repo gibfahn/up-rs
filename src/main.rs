@@ -1,47 +1,64 @@
+// TODO(gib): Good rust coverage checker?
+// TODO(gib): Set up Travis (including tests, building binaries, and coverage).
+
 #![feature(external_doc)]
 #![doc(include = "../README.md")]
 #![feature(rust_2018_preview)]
 #![feature(proc_macro_path_invoc)]
 #![warn(rust_2018_idioms)]
 
+mod config;
+mod link;
+mod update;
+
 use std::env;
 
+use crate::config::Config;
 use quicli::main;
 use quicli::prelude::trace;
 use quicli::prelude::{bail, log, Verbosity};
 use quicli::prelude::{structopt, StructOpt};
 
-mod link;
-mod update;
-
+/// dot is a tool to help you manage your developer machine. When run by itself (`dot`) it
+/// does two things. It links configuration files into the right locations, and it runs scripts to
+/// make sure the tools you need are installed and up to date.
+///
+/// The `link` command symlinks your dotfiles into your home directory.
+///
+/// The `update` command provides an easy way to specify what you want on your system, and how
+/// to keep it up to date. It is designed to work with and complement existing package
+/// managers rather than replace them.
 #[derive(Debug, StructOpt)]
 #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
 struct Cli {
     #[structopt(flatten)]
     verbosity: Verbosity,
+    /// Path to the dot config directory.
+    #[structopt(short = "c", default_value = "$XDG_CONFIG_HOME/dot")]
+    config: String,
     #[structopt(subcommand)]
     cmd: Option<SubCommand>,
 }
 
+// Optional subcommand (e.g. the "update" in "dot update").
 #[derive(Debug, StructOpt)]
 enum SubCommand {
-    /// Install or update everything on your computer.
+    // TODO(gib): Work out how to do clap's help and long_help in structopt.
+    /// Install and update things on your computer.
     #[structopt(name = "update")]
     Update {},
 
-    /// Symlink your dotfiles into your config directory.
+    /// Symlink your dotfiles from a git repo to your home directory.
     #[structopt(name = "link")]
     Link {
         /// Path where your dotfiles are kept (hopefully in source control).
         #[structopt(default_value = "~/code/dotfiles")]
         from_dir: String,
         /// Path to link them to.
-        // TODO(gib): Change to ~.
-        #[structopt(default_value = "~/tmp/dot")]
+        #[structopt(default_value = "~")]
         to_dir: String,
-        // TODO(gib): Change to ~/backup.
         /// Path at which to store backups of overwritten files.
-        #[structopt(default_value = "~/tmp/dot/backup")]
+        #[structopt(default_value = "~/backup")]
         backup_dir: String,
     },
 }
@@ -50,6 +67,9 @@ main!(|args: Cli, log_level: verbosity| {
     trace!("Starting dot.");
     trace!("Received args: {:#?}", args.cmd);
     trace!("Current env: {:?}", env::vars().collect::<Vec<_>>());
+
+    let config = Config::from(&args)?;
+
     match args.cmd {
         Some(SubCommand::Update {}) => {
             update::update();

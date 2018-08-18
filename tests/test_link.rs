@@ -10,17 +10,17 @@ use std::process::Output;
 /// expected changes.
 #[test]
 fn new_link() {
-    let (home_dir, dot_dir) = get_home_dot_dirs("new_link");
-    run_link_cmd(&dot_dir, &home_dir, LinkResult::Success);
+    let (home_dir, dotfile_dir) = get_home_dotfile_dirs("new_link");
+    run_link_cmd(&dotfile_dir, &home_dir, LinkResult::Success);
 
     // Existing files shouldn't be touched.
     common::assert_file(&home_dir.join("existing_file"), "existing file 1\n");
     // Existing dirs shouldn't be touched.
     common::assert_dir(&home_dir.join("existing_dir"));
     // Files should be linked.
-    common::assert_link(&home_dir.join("file"), &dot_dir.join("file"));
+    common::assert_link(&home_dir.join("file"), &dotfile_dir.join("file"));
     // Links should be linked.
-    common::assert_link(&home_dir.join("good_link"), &dot_dir.join("good_link"));
+    common::assert_link(&home_dir.join("good_link"), &dotfile_dir.join("good_link"));
     // Empty backup dir should be removed.
     common::assert_nothing_at(&home_dir.join("backup"));
 }
@@ -29,8 +29,8 @@ fn new_link() {
 /// expected changes.
 #[test]
 fn backup_files() {
-    let (home_dir, dot_dir) = get_home_dot_dirs("backup_files");
-    run_link_cmd(&dot_dir, &home_dir, LinkResult::Success);
+    let (home_dir, dotfile_dir) = get_home_dotfile_dirs("backup_files");
+    run_link_cmd(&dotfile_dir, &home_dir, LinkResult::Success);
 
     // Backup dir should stay.
     common::assert_dir(&home_dir.join("backup"));
@@ -39,12 +39,12 @@ fn backup_files() {
     // Symlinks in home should be overwritten.
     common::assert_link(
         &home_dir.join("existing_symlink"),
-        &dot_dir.join("existing_symlink"),
+        &dotfile_dir.join("existing_symlink"),
     );
     // Files in home should become symlinks.
     common::assert_link(
         &home_dir.join("already_in_backup"),
-        &dot_dir.join("already_in_backup"),
+        &dotfile_dir.join("already_in_backup"),
     );
     // Symlinks in home should not be moved to backup.
     common::assert_nothing_at(&home_dir.join("backup/existing_symlink"));
@@ -67,7 +67,7 @@ fn backup_files() {
     // Subdirectory files should be added into existing directories.
     common::assert_link(
         &home_dir.join("subdir/new_subdir_file"),
-        &dot_dir.join("subdir/new_subdir_file"),
+        &dotfile_dir.join("subdir/new_subdir_file"),
     );
 
     // Nested subdirectory files should be moved to backup.
@@ -78,19 +78,19 @@ fn backup_files() {
     // Nested subdirectory files should be added into existing directories.
     common::assert_link(
         &home_dir.join("subdir/subdir2/subdir2_file"),
-        &dot_dir.join("subdir/subdir2/subdir2_file"),
+        &dotfile_dir.join("subdir/subdir2/subdir2_file"),
     );
 }
 
 #[test]
 fn hidden_and_nested() {
-    let (home_dir, dot_dir) = get_home_dot_dirs("hidden_and_nested");
+    let (home_dir, dotfile_dir) = get_home_dotfile_dirs("hidden_and_nested");
     // If this symlink is correct, it shouldn't make a difference.
     unix::fs::symlink(
-        &dot_dir.join("existing_link"),
+        &dotfile_dir.join("existing_link"),
         &home_dir.join("existing_link"),
     ).unwrap();
-    run_link_cmd(&dot_dir, &home_dir, LinkResult::Success);
+    run_link_cmd(&dotfile_dir, &home_dir, LinkResult::Success);
 
     // Backup dir should stay.
     common::assert_dir(&home_dir.join("backup"));
@@ -99,24 +99,27 @@ fn hidden_and_nested() {
     // Hidden files/dirs should still be linked to.
     common::assert_link(
         &home_dir.join(".config/.file"),
-        &dot_dir.join(".config/.file"),
+        &dotfile_dir.join(".config/.file"),
     );
 
     // Bad links should be updated (even to other bad links).
-    common::assert_bad_link(&home_dir.join("bad_link"), &dot_dir.join("bad_link"));
+    common::assert_bad_link(&home_dir.join("bad_link"), &dotfile_dir.join("bad_link"));
     // Arbitrarily nested directories should still be linked.
     common::assert_link(
         &home_dir.join(".config/a/b/c/d/e/f/g/.other_file"),
-        &dot_dir.join(".config/a/b/c/d/e/f/g/.other_file"),
+        &dotfile_dir.join(".config/a/b/c/d/e/f/g/.other_file"),
     );
     // Existing links shouldn't be changed.
     common::assert_link(
         &home_dir.join("existing_link"),
-        &dot_dir.join("existing_link"),
+        &dotfile_dir.join("existing_link"),
     );
 
     // Directories should be overwritten with file links.
-    common::assert_link(&home_dir.join("dir_to_file"), &dot_dir.join("dir_to_file"));
+    common::assert_link(
+        &home_dir.join("dir_to_file"),
+        &dotfile_dir.join("dir_to_file"),
+    );
     // Files inside directories that are converted to file links should be moved to backup.
     common::assert_file(
         &home_dir.join("backup/dir_to_file/file"),
@@ -127,7 +130,7 @@ fn hidden_and_nested() {
     // Links should be inserted inside directories that overwrite files.
     common::assert_link(
         &home_dir.join("file_to_dir/file2"),
-        &dot_dir.join("file_to_dir/file2"),
+        &dotfile_dir.join("file_to_dir/file2"),
     );
     // Files that are converted to directories should be moved to backup.
     common::assert_file(
@@ -140,7 +143,7 @@ fn hidden_and_nested() {
     // Links should be inserted inside directories that override links.
     common::assert_link(
         &home_dir.join("link_to_dir/file3"),
-        &dot_dir.join("link_to_dir/file3"),
+        &dotfile_dir.join("link_to_dir/file3"),
     );
     // Links that are converted to directories should not be moved to backup.
     common::assert_nothing_at(&home_dir.join("backup/link_to_dir"));
@@ -150,7 +153,7 @@ fn hidden_and_nested() {
     // Links should be inserted inside directories that override links.
     common::assert_link(
         &home_dir.join("badlink_to_dir/file4"),
-        &dot_dir.join("badlink_to_dir/file4"),
+        &dotfile_dir.join("badlink_to_dir/file4"),
     );
     // Links that are converted to directories should not be moved to backup.
     common::assert_nothing_at(&home_dir.join("backup/badlink_to_dir"));
@@ -158,10 +161,10 @@ fn hidden_and_nested() {
 
 /// Pass a from_dir that doesn't exist and make sure we fail.
 #[test]
-fn test_missing_from_dir() {
-    let temp_dir = common::temp_dir("test_missing_from_dir").unwrap();
+fn missing_from_dir() {
+    let temp_dir = common::temp_dir("missing_from_dir").unwrap();
     let output = run_link_cmd(
-        &temp_dir.join("dot_dir"),
+        &temp_dir.join("dotfile_dir"),
         &temp_dir.join("home_dir"),
         LinkResult::Failure,
     );
@@ -173,11 +176,11 @@ fn test_missing_from_dir() {
 
 /// Pass a to_dir that doesn't exist and make sure we fail.
 #[test]
-fn test_missing_to_dir() {
-    let temp_dir = common::temp_dir("test_missing_to_dir").unwrap();
-    fs::create_dir(&temp_dir.join("dot_dir")).unwrap();
+fn missing_to_dir() {
+    let temp_dir = common::temp_dir("missing_to_dir").unwrap();
+    fs::create_dir(&temp_dir.join("dotfile_dir")).unwrap();
     let output = run_link_cmd(
-        &temp_dir.join("dot_dir"),
+        &temp_dir.join("dotfile_dir"),
         &temp_dir.join("home_dir"),
         LinkResult::Failure,
     );
@@ -189,13 +192,13 @@ fn test_missing_to_dir() {
 
 /// Make sure we fail if the backup dir can't be created.
 #[test]
-fn test_uncreateable_backup_dir() {
-    let temp_dir = common::temp_dir("test_uncreateable_backup_dir").unwrap();
-    fs::create_dir(&temp_dir.join("dot_dir")).unwrap();
+fn uncreateable_backup_dir() {
+    let temp_dir = common::temp_dir("uncreateable_backup_dir").unwrap();
+    fs::create_dir(&temp_dir.join("dotfile_dir")).unwrap();
     fs::create_dir(&temp_dir.join("home_dir")).unwrap();
     File::create(&temp_dir.join("home_dir/backup")).unwrap();
     let output = run_link_cmd(
-        &temp_dir.join("dot_dir"),
+        &temp_dir.join("dotfile_dir"),
         &temp_dir.join("home_dir"),
         LinkResult::Failure,
     );
@@ -205,12 +208,10 @@ fn test_uncreateable_backup_dir() {
     );
 }
 
-// TODO(gib): Good rust coverage checker?
-
 /// Helper function to copy the test fixtures for a given test into the OS tempdir (and
-/// return the created home_dir and dot_dir paths.
+/// return the created home_dir and dotfile_dir paths.
 #[cfg(test)]
-fn get_home_dot_dirs(test_fn: &str) -> (PathBuf, PathBuf) {
+fn get_home_dotfile_dirs(test_fn: &str) -> (PathBuf, PathBuf) {
     let temp_dir = common::temp_dir(test_fn).unwrap();
 
     common::copy_all(
@@ -222,7 +223,7 @@ fn get_home_dot_dirs(test_fn: &str) -> (PathBuf, PathBuf) {
 
     (
         temp_dir.join("home_dir").canonicalize().unwrap(),
-        temp_dir.join("dot_dir").canonicalize().unwrap(),
+        temp_dir.join("dotfile_dir").canonicalize().unwrap(),
     )
 }
 
@@ -244,15 +245,15 @@ impl LinkResult {
     }
 }
 
-/// Helper function to run ./dot link <home_dir> <dot_dir> <home_dir>/backup.
+/// Helper function to run ./dot link <home_dir> <dotfile_dir> <home_dir>/backup.
 #[cfg(test)]
-fn run_link_cmd(dot_dir: &Path, home_dir: &Path, result: LinkResult) -> Output {
+fn run_link_cmd(dotfile_dir: &Path, home_dir: &Path, result: LinkResult) -> Output {
     let mut cmd = common::dot_cmd();
     cmd.args(
         [
             "-vvvv",
             "link",
-            dot_dir.to_str().unwrap(),
+            dotfile_dir.to_str().unwrap(),
             home_dir.to_str().unwrap(),
             home_dir.join("backup").to_str().unwrap(),
         ].into_iter(),

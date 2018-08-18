@@ -1,8 +1,11 @@
+//! This module is called "zstyle" rather than "style" so that it runs last (for people who
+//! aren't aware of the `--no-fail-fast` flag for `cargo test` or would rather not type it).
+
 use std::process::Command;
 
 /// Fail if rustfmt (cargo fmt) hasn't been run.
 #[test]
-pub fn test_fmt() {
+fn fmt() {
     let mut cmd = Command::new("cargo");
     cmd.args(["fmt", "--", "--check"].into_iter());
     println!("cmd: {:?}\n", cmd);
@@ -18,7 +21,7 @@ pub fn test_fmt() {
 
 /// Fail if cargo clippy hasn't been run.
 #[test]
-pub fn test_clippy() {
+fn clippy() {
     let mut cmd = Command::new("cargo");
     cmd.arg("clippy");
     println!("cmd: {:?}\n", cmd);
@@ -33,8 +36,9 @@ pub fn test_clippy() {
 }
 
 /// Fail if there are outstanding TODO($USER): comments.
+// #[ignore]
 #[test]
-pub fn test_todo_gibs() {
+fn todo_gib() {
     let username = whoami::username();
     let mut cmd = Command::new("rg");
     cmd.args(

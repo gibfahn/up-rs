@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 
 use failure::{ensure, Error};
 use quicli::prelude::{bail, log};
-use quicli::prelude::{debug, error, info, warn};
+use quicli::prelude::{debug, info, warn};
 use walkdir::WalkDir;
 
 /// Symlink everything from to_dir (default: ~/code/dotfiles/) into
@@ -36,13 +36,12 @@ crate fn link(from_dir: &str, to_dir: &str, backup_dir: &str) -> Result<(), Erro
     let to_dir = to_dir.canonicalize()?;
 
     // Create the backup dir if it doesn't exist.
-    assert!(
+    ensure!(
         ! backup_dir.exists() || backup_dir.is_dir(),
         "The backup_dir should either not exist or already be a directory.\n  backup_dir: {:?}\n  backup_dir exists: {}\n  backup_dir is a directory: {}",
         backup_dir, backup_dir.exists(), backup_dir.is_dir(),
 
     );
-    error!("Backup dir exists: {}", backup_dir.exists());
     fs::create_dir_all(&backup_dir)?;
     let backup_dir = backup_dir.canonicalize()?;
     ensure!(

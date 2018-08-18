@@ -1,0 +1,4 @@
+# Invalid toml shouldn't work.
+
+[update]
+update.invalid_key = 'foo'
