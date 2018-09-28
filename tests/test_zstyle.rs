@@ -23,7 +23,8 @@ fn fmt() {
 #[test]
 fn clippy() {
     let mut cmd = Command::new("cargo");
-    cmd.arg("clippy");
+    // If pedantic nits get too annoying we can use clippy::all instead.
+    cmd.args(&["clippy", "--", "--deny", "clippy::pedantic"]);
     println!("cmd: {:?}\n", cmd);
     let cmd_output = cmd.output().unwrap();
     println!("status: {}", cmd_output.status);
@@ -36,7 +37,7 @@ fn clippy() {
 }
 
 /// Fail if there are outstanding TODO($USER): comments.
-// #[ignore]
+#[ignore]
 #[test]
 fn todo_gib() {
     let username = whoami::username();
@@ -47,7 +48,8 @@ fn todo_gib() {
             "--color=always",
             "--hidden",
             &format!("TODO\\({}\\):", username),
-        ].into_iter(),
+        ]
+            .into_iter(),
     );
     println!("cmd: {:?}\n", cmd);
     let cmd_output = cmd.output().unwrap();

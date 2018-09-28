@@ -7,9 +7,9 @@ use quicli::prelude::{bail, log};
 use quicli::prelude::{debug, info, warn};
 use walkdir::WalkDir;
 
-/// Symlink everything from to_dir (default: ~/code/dotfiles/) into
-/// from_dir (default: ~). Anything that would be overwritten is copied into
-/// backup_dir (default: ~/backup/).
+/// Symlink everything from `to_dir` (default: ~/code/dotfiles/) into
+/// `from_dir` (default: ~). Anything that would be overwritten is copied into
+/// `backup_dir` (default: ~/backup/).
 ///
 /// Basically you put your dotfiles in ~/code/dotfiles/, in the same structure they
 /// were in relative to ~. Then if you want to edit your .bashrc (for
@@ -55,8 +55,9 @@ crate fn link(from_dir: &str, to_dir: &str, backup_dir: &str) -> Result<(), Erro
         "to_dir contents: {:?}",
         fs::read_dir(&to_dir)
             .unwrap()
-            .filter_map(|d| d.ok())
-            .map(|x| x.path().strip_prefix(&to_dir).unwrap().to_path_buf())
+            .filter_map(|d| d
+                .ok()
+                .map(|x| x.path().strip_prefix(&to_dir).unwrap().to_path_buf()))
             .collect::<Vec<_>>()
     );
 
@@ -170,8 +171,8 @@ crate fn link(from_dir: &str, to_dir: &str, backup_dir: &str) -> Result<(), Erro
         "to_dir final contents: {:#?}",
         fs::read_dir(&to_dir)
             .unwrap()
-            .filter_map(|e| e.ok())
-            .map(|d| d.path())
+            .filter_map(|e| e.ok().map(|d| d.path()))
+            // .map(|d| d.path())
             .collect::<Vec<_>>()
     );
 

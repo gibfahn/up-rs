@@ -89,7 +89,8 @@ fn hidden_and_nested() {
     unix::fs::symlink(
         &dotfile_dir.join("existing_link"),
         &home_dir.join("existing_link"),
-    ).unwrap();
+    )
+    .unwrap();
     run_link_cmd(&dotfile_dir, &home_dir, LinkResult::Success);
 
     // Backup dir should stay.
@@ -219,7 +220,8 @@ fn get_home_dotfile_dirs(test_fn: &str) -> (PathBuf, PathBuf) {
             .join(common::test_module())
             .join(test_fn),
         &temp_dir,
-    ).unwrap();
+    )
+    .unwrap();
 
     (
         temp_dir.join("home_dir").canonicalize().unwrap(),
@@ -249,6 +251,7 @@ impl LinkResult {
 #[cfg(test)]
 fn run_link_cmd(dotfile_dir: &Path, home_dir: &Path, result: LinkResult) -> Output {
     let mut cmd = common::dot_cmd();
+    cmd.env("RUST_BACKTRACE", "full");
     cmd.args(
         [
             "-vvvv",
@@ -256,7 +259,8 @@ fn run_link_cmd(dotfile_dir: &Path, home_dir: &Path, result: LinkResult) -> Outp
             dotfile_dir.to_str().unwrap(),
             home_dir.to_str().unwrap(),
             home_dir.join("backup").to_str().unwrap(),
-        ].into_iter(),
+        ]
+            .into_iter(),
     );
 
     println!("cmd: {:?}\n", cmd);

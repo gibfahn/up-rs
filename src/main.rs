@@ -1,11 +1,13 @@
-// TODO(gib): Good rust coverage checker?
+// TODO(gib): Good rust coverage checker (tarpaulin?)
 // TODO(gib): Set up Travis (including tests, building binaries, and coverage).
+// Run: `cargo test -- --ignored`
+// https://github.com/japaric/trust
 
+#![feature(crate_visibility_modifier)]
 #![feature(external_doc)]
 #![doc(include = "../README.md")]
-#![feature(rust_2018_preview)]
-#![feature(proc_macro_path_invoc)]
 #![warn(rust_2018_idioms)]
+#![feature(result_map_or_else)]
 
 mod config;
 mod link;
@@ -33,8 +35,11 @@ use quicli::prelude::{structopt, StructOpt};
 struct Cli {
     #[structopt(flatten)]
     verbosity: Verbosity,
-    /// Path to the dot config directory.
-    #[structopt(short = "c", default_value = "$XDG_CONFIG_HOME/dot")]
+    /// Path to the config.toml file for dot.
+    #[structopt(
+        short = "c",
+        default_value = "$XDG_CONFIG_HOME/dot/config.toml"
+    )]
     config: String,
     #[structopt(subcommand)]
     cmd: Option<SubCommand>,
@@ -68,10 +73,12 @@ main!(|args: Cli, log_level: verbosity| {
     trace!("Received args: {:#?}", args.cmd);
     trace!("Current env: {:?}", env::vars().collect::<Vec<_>>());
 
+    // TODO(gib): Store and fetch config in config module.
     let config = Config::from(&args)?;
 
     match args.cmd {
         Some(SubCommand::Update {}) => {
+            // TODO(gib): Handle updates.
             update::update();
         }
         Some(SubCommand::Link {

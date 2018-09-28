@@ -1,6 +1,6 @@
 use crate::config;
 
-/// Run a update checks specified in the dot_dir config files.
+/// Run a update checks specified in the `dot_dir` config files.
 crate fn update() {
     let config = config::Config::default();
     // TODO(gib): Implement update function:
