@@ -35,11 +35,8 @@ use quicli::prelude::{structopt, StructOpt};
 struct Cli {
     #[structopt(flatten)]
     verbosity: Verbosity,
-    /// Path to the config.toml file for dot.
-    #[structopt(
-        short = "c",
-        default_value = "$XDG_CONFIG_HOME/dot/config.toml"
-    )]
+    /// Path to the dot.toml file for dot.
+    #[structopt(short = "c", default_value = "$XDG_CONFIG_HOME/dot/dot.toml")]
     config: String,
     #[structopt(subcommand)]
     cmd: Option<SubCommand>,

@@ -26,7 +26,7 @@ impl Config {
         let args_config_path = &args.config;
 
         info!("args_config_file: {}", args_config_path);
-        if args_config_path == "$XDG_CONFIG_HOME/dot/config.toml" {
+        if args_config_path == "$XDG_CONFIG_HOME/dot/dot.toml" {
             let dot_config_env = env::var("DOT_CONFIG");
 
             if dot_config_env.is_ok() {
@@ -47,7 +47,7 @@ impl Config {
                 config_path.push(".dot");
             }
 
-            config_path.push("config.toml");
+            config_path.push("dot.toml");
         } else {
             config_path = PathBuf::from(args_config_path);
             ensure!(
