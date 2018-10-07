@@ -16,7 +16,7 @@ serde_derive = "1.0.70"
 envy = "0.3.2"
 toml = "0.4.6"
 serde_json = "1.0.24"
-serde_yaml = "0.7.5"
+serde_yaml = "0.8.5"
 
 [dev-dependencies]
 whoami = "0.2.2"
