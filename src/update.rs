@@ -1,8 +1,7 @@
 use crate::config;
 
 /// Run a update checks specified in the `dot_dir` config files.
-crate fn update() {
-    let config = config::Config::default();
+crate fn update(config: config::Config) {
     // TODO(gib): Implement update function:
     // TODO(gib): Need a graph of toml files, each one representing a component.
     // TODO(gib): Need a root file that can set variables (e.g. boolean flags).

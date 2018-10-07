@@ -15,11 +15,12 @@ mod update;
 
 use std::env;
 
-use crate::config::Config;
 use quicli::main;
 use quicli::prelude::trace;
 use quicli::prelude::{bail, log, Verbosity};
 use quicli::prelude::{structopt, StructOpt};
+
+use crate::config::Config;
 
 /// dot is a tool to help you manage your developer machine. When run by itself (`dot`) it
 /// does two things. It links configuration files into the right locations, and it runs scripts to
@@ -76,7 +77,7 @@ main!(|args: Cli, log_level: verbosity| {
     match args.cmd {
         Some(SubCommand::Update {}) => {
             // TODO(gib): Handle updates.
-            update::update();
+            update::update(config);
         }
         Some(SubCommand::Link {
             from_dir,

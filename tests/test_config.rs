@@ -43,9 +43,10 @@ fn basic_toml() {
     println!("status: {}", cmd_output.status);
     println!("stdout: {}", String::from_utf8_lossy(&cmd_output.stdout));
     println!("STDERR:\n\n{}", String::from_utf8_lossy(&cmd_output.stderr));
+    // TODO(gib): Why is this test passing with unknown keys in the dot.toml?
     assert_eq!(
         cmd_output.status.success(),
         true,
-        "\n Update command should pass with empty toml as there are no required options.",
+        "\n Update command should pass with basic toml.",
     );
 }
