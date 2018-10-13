@@ -2,12 +2,19 @@
 use std::env;
 use std::fs;
 
-use super::Cli;
 use failure::{ensure, Error};
 use quicli::prelude::{bail, log};
 use quicli::prelude::{debug, error, info, trace, warn};
 use serde_derive::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
+
+use crate::Cli;
+
+#[derive(Default, Debug)]
+crate struct Config {
+    crate dot_toml_path: Option<PathBuf>,
+    crate config_toml: ConfigToml,
+}
 
 // TODO(gib): Work out the data structure for the toml files.
 // TODO(gib): Work out how to make that structure easily accessible for users.
@@ -15,16 +22,16 @@ use std::path::{Path, PathBuf};
 /// Basic config, doesn't parse the full set of update scripts.
 #[derive(Default, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-crate struct Config {
+crate struct ConfigToml {
     /// Link options.
-    link: Option<LinkConfig>,
+    link: Option<LinkConfigToml>,
     /// Path to tasks directory (default dot_dir/tasks).
     tasks_path: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-crate struct LinkConfig {
+crate struct LinkConfigToml {
     from_dir: Option<String>,
     to_dir: Option<String>,
     backup_dir: Option<String>,
@@ -33,20 +40,27 @@ crate struct LinkConfig {
 impl Config {
     /// Build the `Config` struct by parsing the config toml files.
     crate fn from(args: &Cli) -> Result<Self, Error> {
-        let mut config = Self::default();
+        let mut config_toml = ConfigToml::default();
 
-        let dot_toml_path = Self::get_dot_toml_path(&args.config)?;
-        if dot_toml_path.exists() {
-            let read_result = fs::read(&dot_toml_path);
+        let maybe_dot_toml_path = Self::get_dot_toml_path(&args.config)?;
+        let dot_toml_path = if maybe_dot_toml_path.exists() {
+            let read_result = fs::read(&maybe_dot_toml_path);
             if read_result.is_ok() {
                 let file_contents = read_result.unwrap();
                 let config_str = String::from_utf8_lossy(&file_contents);
                 info!("config_str: {:?}", config_str);
-                config = toml::from_str::<Self>(&config_str)?;
-                info!("Config: {:?}", config);
+                config_toml = toml::from_str::<ConfigToml>(&config_str)?;
+                info!("Config_toml: {:?}", config_toml);
             }
-        }
-        Ok(config)
+            Some(maybe_dot_toml_path)
+        } else {
+            None
+        };
+
+        Ok(Self {
+            dot_toml_path,
+            config_toml,
+        })
     }
 
     /// Get the path to the dot.toml file, given the args passed to the cli.
