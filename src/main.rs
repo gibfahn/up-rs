@@ -16,8 +16,9 @@ mod update;
 use std::env;
 
 use quicli::main;
-use quicli::prelude::trace;
-use quicli::prelude::{bail, log, Verbosity};
+#[allow(unused_imports)]
+use quicli::prelude::{error, warn, info, debug, trace};
+use quicli::prelude::{bail, Verbosity};
 use quicli::prelude::{structopt, StructOpt};
 
 use crate::config::Config;
@@ -77,7 +78,7 @@ main!(|args: Cli, log_level: verbosity| {
     match args.cmd {
         Some(SubCommand::Update {}) => {
             // TODO(gib): Handle updates.
-            update::update(config);
+            update::update(config)?;
         }
         Some(SubCommand::Link {
             from_dir,

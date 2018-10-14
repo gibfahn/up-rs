@@ -3,8 +3,9 @@ use std::os::unix;
 use std::path::{Path, PathBuf};
 
 use failure::{ensure, Error};
-use quicli::prelude::{bail, log};
-use quicli::prelude::{debug, info, warn};
+use quicli::prelude::bail;
+#[allow(unused_imports)]
+use quicli::prelude::{error, warn, info, debug, trace};
 use walkdir::WalkDir;
 
 /// Symlink everything from `to_dir` (default: ~/code/dotfiles/) into

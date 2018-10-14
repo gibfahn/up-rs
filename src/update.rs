@@ -1,12 +1,13 @@
 use std::process::Command;
 
-use failure::{ensure, Error};
-use quicli::prelude::{bail, log};
-use quicli::prelude::{debug, error, info, trace, warn};
-use std::path::{Path, PathBuf};
+use failure::Error;
+#[allow(unused_imports)]
+use quicli::prelude::{error, warn, info, debug, trace};
+use std::path::{PathBuf};
 
 use crate::config;
 
+#[derive(Debug, Default)]
 struct Task {
     name: String,
     path: PathBuf,
@@ -22,7 +23,8 @@ impl Task {
 
     // TODO(gib): Test for this (using basic config).
     crate fn run(&self) -> Result<(), Error> {
-        let check_file = &self.path.parent().unwrap().join("check");
+        info!("Running task {:?}", &self);
+        let check_file = &self.path.join("check");
 
         let check_output = Command::new(check_file).current_dir(&self.path).output()?;
 
@@ -36,11 +38,11 @@ impl Task {
         info!(
             "Task {} check stderr: {}",
             &self.name,
-            String::from_utf8_lossy(&check_output.stdout)
+            String::from_utf8_lossy(&check_output.stderr)
         );
 
         // TODO(gib): Only run if check failed.
-        let update_file = &self.path.parent().unwrap().join("update");
+        let update_file = &self.path.join("update");
 
         let update_output = Command::new(update_file).current_dir(&self.path).output()?;
 
@@ -53,7 +55,7 @@ impl Task {
         info!(
             "Task {} update stderr: {}",
             &self.name,
-            String::from_utf8_lossy(&update_output.stdout)
+            String::from_utf8_lossy(&update_output.stderr)
         );
 
         Ok(())
@@ -74,6 +76,8 @@ crate fn update(config: config::Config) -> Result<(), Error> {
         .map(|d| Task::from(d.path()))
         .collect();
 
+    debug!("Task count: {:?}", tasks.len());
+    info!("Task list: {:?}", tasks);
     for task in tasks {
         task.run()?;
     }

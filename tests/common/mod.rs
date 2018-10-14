@@ -34,6 +34,7 @@ fn dot_project_dir() -> PathBuf {
 }
 
 /// Returns a new command starting with /path/to/dot (add args as needed).
+#[allow(dead_code)]
 pub fn dot_cmd() -> Command {
     Command::new(dot_binary_dir().join("dot"))
 }
@@ -78,7 +79,8 @@ pub fn temp_dir(test_fn: &str) -> Result<PathBuf, failure::Error> {
 
 /// Copy everything in from_dir into to_dir (including broken links).
 #[allow(dead_code)]
-pub fn copy_all(from_dir: &Path, to_dir: &Path) -> Result<(), Box<error::Error>> {
+pub fn copy_all(from_dir: &Path, to_dir: &Path) -> Result<(), Box<dyn error::Error>> {
+// pub fn copy_all(from_dir: &Path, to_dir: &Path) -> Result<(), Box<error::Error>> {
     println!("Copying everything in '{:?}' to '{:?}'", from_dir, to_dir);
     for from_path in WalkDir::new(&from_dir)
         .min_depth(1)

@@ -3,8 +3,9 @@ use std::env;
 use std::fs;
 
 use failure::{ensure, Error};
-use quicli::prelude::{bail, log};
-use quicli::prelude::{debug, error, info, trace, warn};
+use quicli::prelude::bail;
+#[allow(unused_imports)]
+use quicli::prelude::{error, warn, info, debug, trace};
 use serde_derive::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
@@ -48,9 +49,9 @@ impl Config {
             if read_result.is_ok() {
                 let file_contents = read_result.unwrap();
                 let config_str = String::from_utf8_lossy(&file_contents);
-                info!("config_str: {:?}", config_str);
+                debug!("config_str: {:?}", config_str);
                 config_toml = toml::from_str::<ConfigToml>(&config_str)?;
-                info!("Config_toml: {:?}", config_toml);
+                debug!("Config_toml: {:?}", config_toml);
             }
             Some(maybe_dot_toml_path)
         } else {
@@ -72,7 +73,7 @@ impl Config {
     /// 4. `~/.config/dot/toml`
     /// 4. `~/.dot/dot.toml`
     fn get_dot_toml_path(args_config_path: &str) -> Result<PathBuf, Error> {
-        info!("args_config_file: {}", args_config_path);
+        debug!("args_config_file: {}", args_config_path);
         let mut config_path: PathBuf;
         if args_config_path == "$XDG_CONFIG_HOME/dot/dot.toml" {
             let dot_config_env = env::var("DOT_CONFIG");
@@ -122,9 +123,7 @@ mod toml_paths_tests {
     #[path = "common/mod.rs"]
     mod common;
 
-    use failure::{ensure, Error};
     use std::env;
-    use std::path::{Path, PathBuf};
 
     /// Test possible options for the dot.toml. All run in one file as they modify the
     /// shared test environment.

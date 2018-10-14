@@ -31,7 +31,7 @@ fn basic_toml() {
     let mut cmd = common::dot_cmd();
     cmd.args(
         [
-            "-vvvv",
+            "-vvv",
             "-c",
             fixtures_dir.join("dot.toml").to_str().unwrap(),
             "update",
