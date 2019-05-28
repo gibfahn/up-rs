@@ -15,11 +15,9 @@ mod update;
 
 use std::env;
 
-use quicli::main;
 #[allow(unused_imports)]
-use quicli::prelude::{error, warn, info, debug, trace};
-use quicli::prelude::{bail, Verbosity};
-use quicli::prelude::{structopt, StructOpt};
+use quicli::prelude::*;
+use structopt::StructOpt;
 
 use crate::config::Config;
 
@@ -34,7 +32,7 @@ use crate::config::Config;
 /// managers rather than replace them.
 #[derive(Debug, StructOpt)]
 #[structopt(raw(setting = "structopt::clap::AppSettings::ColoredHelp"))]
-struct Cli {
+pub struct Cli {
     #[structopt(flatten)]
     verbosity: Verbosity,
     /// Path to the dot.toml file for dot.
@@ -67,7 +65,9 @@ enum SubCommand {
     },
 }
 
-main!(|args: Cli, log_level: verbosity| {
+fn main() -> CliResult {
+    let args = Cli::from_args();
+    args.verbosity.setup_env_logger("dot")?;
     trace!("Starting dot.");
     trace!("Received args: {:#?}", args.cmd);
     trace!("Current env: {:?}", env::vars().collect::<Vec<_>>());
@@ -80,6 +80,9 @@ main!(|args: Cli, log_level: verbosity| {
             // TODO(gib): Handle updates.
             update::update(config)?;
         }
+        // TODO(gib): Handle multiple link directories both as args and in config.
+        // TODO(gib): Add option to warn instead of failing if there are conflicts.
+        // TODO(gib): Check for conflicts before doing any linking.
         Some(SubCommand::Link {
             from_dir,
             to_dir,
@@ -88,8 +91,9 @@ main!(|args: Cli, log_level: verbosity| {
             link::link(&from_dir, &to_dir, &backup_dir)?;
         }
         None => {
-            bail!("dot requires a subcommand, use -h or --help for the usage args.");
+            Err(format_err!("dot requires a subcommand, use -h or --help for the usage args."))?;
         }
     }
     trace!("Finished dot.");
-});
+    Ok(())
+}

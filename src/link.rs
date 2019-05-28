@@ -16,7 +16,7 @@ use walkdir::WalkDir;
 /// were in relative to ~. Then if you want to edit your .bashrc (for
 /// example) you just edit ~/.bashrc, and as it's a symlink it'll actually edit
 /// ~/dotfiles/.bashrc. Then you can add and commit that change in ~/dotfiles.
-crate fn link(from_dir: &str, to_dir: &str, backup_dir: &str) -> Result<(), Error> {
+pub fn link(from_dir: &str, to_dir: &str, backup_dir: &str) -> Result<(), Error> {
     // Expand ~, this is only used for the default options, if the user passes them as
     // explicit args then they will be expanded by the shell.
     let from_dir = PathBuf::from(shellexpand::tilde(from_dir).to_string());

@@ -14,7 +14,7 @@ struct Task {
 }
 
 impl Task {
-    crate fn from(path: PathBuf) -> Self {
+    pub fn from(path: PathBuf) -> Self {
         Self {
             name: path.file_name().unwrap().to_str().unwrap().to_owned(),
             path,
@@ -22,7 +22,7 @@ impl Task {
     }
 
     // TODO(gib): Test for this (using basic config).
-    crate fn run(&self) -> Result<(), Error> {
+    pub fn run(&self) -> Result<(), Error> {
         info!("Running task {:?}", &self);
         let check_file = &self.path.join("check");
 
@@ -63,7 +63,7 @@ impl Task {
 }
 
 /// Run a update checks specified in the `dot_dir` config files.
-crate fn update(config: config::Config) -> Result<(), Error> {
+pub fn update(config: config::Config) -> Result<(), Error> {
     // TODO(gib): Handle missing dir & move into config.
     let mut tasks_dir = config.dot_toml_path.unwrap();
     tasks_dir.pop();

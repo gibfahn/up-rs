@@ -3,18 +3,17 @@ use std::env;
 use std::fs;
 
 use failure::{ensure, Error};
-use quicli::prelude::bail;
 #[allow(unused_imports)]
-use quicli::prelude::{error, warn, info, debug, trace};
+use quicli::prelude::*;
 use serde_derive::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
 use crate::Cli;
 
 #[derive(Default, Debug)]
-crate struct Config {
-    crate dot_toml_path: Option<PathBuf>,
-    crate config_toml: ConfigToml,
+pub struct Config {
+    pub dot_toml_path: Option<PathBuf>,
+    pub config_toml: ConfigToml,
 }
 
 // TODO(gib): Work out the data structure for the toml files.
@@ -23,7 +22,7 @@ crate struct Config {
 /// Basic config, doesn't parse the full set of update scripts.
 #[derive(Default, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-crate struct ConfigToml {
+pub struct ConfigToml {
     /// Link options.
     link: Option<LinkConfigToml>,
     /// Path to tasks directory (default dot_dir/tasks).
@@ -32,7 +31,7 @@ crate struct ConfigToml {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-crate struct LinkConfigToml {
+pub struct LinkConfigToml {
     from_dir: Option<String>,
     to_dir: Option<String>,
     backup_dir: Option<String>,
@@ -40,7 +39,7 @@ crate struct LinkConfigToml {
 
 impl Config {
     /// Build the `Config` struct by parsing the config toml files.
-    crate fn from(args: &Cli) -> Result<Self, Error> {
+    pub fn from(args: &Cli) -> Result<Self, Error> {
         let mut config_toml = ConfigToml::default();
 
         let maybe_dot_toml_path = Self::get_dot_toml_path(&args.config)?;

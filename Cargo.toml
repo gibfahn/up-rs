@@ -1,23 +1,23 @@
 [package]
-name = "dot"
+name = "dot-rs"
 version = "0.1.0"
 authors = ["Gibson Fahnestock <gibfahn@gmail.com>"]
 edition = '2018'
 
 [dependencies]
-walkdir = "2.1.4"
-quicli = "0.3.0"
+walkdir = "2.2.7"
+quicli = "0.4.0"
 shellexpand = "1.0.0"
-failure = "0.1.1"
+failure = "0.1.5"
 # Not a direct dependency, needed by Rust 2018 edition for some reason.
-structopt = "0.2.10"
-serde = "1.0.70"
-serde_derive = "1.0.70"
-envy = "0.3.2"
-toml = "0.4.6"
-serde_json = "1.0.24"
-serde_yaml = "0.8.5"
+structopt = "0.2.14"
+serde = "1.0.84"
+serde_derive = "1.0.84"
+envy = "0.3.3"
+toml = "0.4.10"
+serde_json = "1.0.35"
+serde_yaml = "0.8.8"
 
 [dev-dependencies]
-whoami = "0.2.2"
+whoami = "0.4.1"
 
