@@ -113,7 +113,7 @@ impl Config {
 mod toml_paths_tests {
     use super::Config;
 
-    #[path = "common/mod.rs"]
+    #[path = "common.rs"]
     mod common;
 
     use std::env;
@@ -154,7 +154,10 @@ mod toml_paths_tests {
         // Set XDG_CONFIG_HOME to a non-existent path.
         env::set_var("XDG_CONFIG_HOME", fake_home_1.join(".badconfig"));
         let config_path = Config::get_up_toml_path(default_path);
-        assert_eq!(config_path.unwrap(), fake_home_1.join(".badconfig/up/up.toml"));
+        assert_eq!(
+            config_path.unwrap(),
+            fake_home_1.join(".badconfig/up/up.toml")
+        );
 
         // If XDG_CONFIG_HOME is missing we should use ~/.config/up/up.toml.
         env::remove_var("XDG_CONFIG_HOME");

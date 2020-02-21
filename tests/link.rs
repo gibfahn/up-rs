@@ -1,5 +1,3 @@
-mod common;
-
 use std::{
     fs,
     fs::File,
@@ -7,6 +5,8 @@ use std::{
     path::{Path, PathBuf},
     process::Output,
 };
+
+use crate::common;
 
 /// Set up a basic home_dir, run the link function against it, and make sure we get the
 /// expected changes.

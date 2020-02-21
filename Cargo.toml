@@ -3,10 +3,15 @@ name = "up-rs"
 version = "0.1.0"
 authors = ["Gibson Fahnestock <gibfahn@gmail.com>"]
 edition = '2018'
+autotests = false
 
 [[bin]]
 name = "up"
 path = "src/main.rs"
+
+[[test]]
+name = "integration"
+path = "tests/tests.rs"
 
 [dependencies]
 walkdir = "2.3.1"

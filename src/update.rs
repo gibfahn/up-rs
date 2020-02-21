@@ -1,4 +1,4 @@
-use std::{path::PathBuf, process::Command, io};
+use std::{io, path::PathBuf, process::Command};
 
 use anyhow::Result;
 use log::{debug, info};
@@ -69,7 +69,11 @@ pub fn update(config: config::Config) -> Result<()> {
     tasks_dir.push("tasks");
 
     let tasks: Vec<Task> = tasks_dir
-        .read_dir().map_err(|e| UpdateError::ReadDirError{path: tasks_dir, source: e})?
+        .read_dir()
+        .map_err(|e| UpdateError::ReadDirError {
+            path: tasks_dir,
+            source: e,
+        })?
         .filter_map(|d| d.ok())
         .map(|d| Task::from(d.path()))
         .collect();
@@ -94,5 +98,5 @@ pub fn update(config: config::Config) -> Result<()> {
 #[derive(Error, Debug)]
 pub enum UpdateError {
     #[error("Error walking directory '{}':", path.to_string_lossy())]
-    ReadDirError{path: PathBuf, source: io::Error},
+    ReadDirError { path: PathBuf, source: io::Error },
 }

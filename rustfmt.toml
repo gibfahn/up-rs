@@ -1,1 +1,3 @@
+# See https://github.com/rust-lang/rustfmt/issues/2979#issuecomment-446227495
+# Order: std::, external crates, crate::, mod.
 merge_imports = true

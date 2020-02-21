@@ -6,8 +6,8 @@ use std::{
     process::Command,
 };
 
-use walkdir::WalkDir;
 use anyhow::Result;
+use walkdir::WalkDir;
 
 /// Returns the path to target/debug or target/release.
 fn up_binary_dir() -> PathBuf {
