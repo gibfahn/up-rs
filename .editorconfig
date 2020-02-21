@@ -1,0 +1,21 @@
+# EditorConfig is awesome: http://EditorConfig.org
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+max_line_length = 100
+indent_style = space
+
+[*.rs]
+indent_size = 4
+
+[*.{md,sh}]
+indent_size = 2
+
+[COMMIT_EDITMSG]
+max_line_length = 72
+
+[COMMIT_EDITMSG]
+max_line_length = unset
