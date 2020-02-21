@@ -1,15 +1,15 @@
-# dot: a tool for managing dotfiles
+# up-rs: a tool for keeping your system up to date
 
 I use this to keep my machine up to date. It does a couple of different things.
 
-See `dot --help` for more details.
+See `up --help` for more details.
 
 ## Subcommands
 
 ### Link
 
 ```console
-$ dot link ~/code/dotfiles ~
+$ up link ~/code/dotfiles ~
 ```
 
 symlinks the files in `dotfiles` into the matching directory in `~` (so `~/.config/git/config` becomes a link to

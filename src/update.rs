@@ -1,9 +1,7 @@
-use std::process::Command;
+use std::{path::PathBuf, process::Command};
 
-use failure::Error;
-#[allow(unused_imports)]
-use quicli::prelude::{error, warn, info, debug, trace};
-use std::path::{PathBuf};
+use anyhow::Result;
+use log::{debug, info};
 
 use crate::config;
 
@@ -22,7 +20,7 @@ impl Task {
     }
 
     // TODO(gib): Test for this (using basic config).
-    pub fn run(&self) -> Result<(), Error> {
+    pub fn run(&self) -> Result<()> {
         info!("Running task {:?}", &self);
         let check_file = &self.path.join("check");
 
@@ -62,10 +60,10 @@ impl Task {
     }
 }
 
-/// Run a update checks specified in the `dot_dir` config files.
-pub fn update(config: config::Config) -> Result<(), Error> {
+/// Run a update checks specified in the `up_dir` config files.
+pub fn update(config: config::Config) -> Result<()> {
     // TODO(gib): Handle missing dir & move into config.
-    let mut tasks_dir = config.dot_toml_path.unwrap();
+    let mut tasks_dir = config.up_toml_path.unwrap();
     tasks_dir.pop();
     tasks_dir.push("tasks");
 
@@ -90,5 +88,5 @@ pub fn update(config: config::Config) -> Result<(), Error> {
     // TODO(gib): Everything has one (or more?) parents (root is the root).
     // TODO(gib): Need a command to show the tree and dependencies.
     // TODO(gib): If fixtures are needed can link to files or scripts.
-    // TODO(gib): Should files be stored in ~/.config/dot ?
+    // TODO(gib): Should files be stored in ~/.config/up ?
 }

@@ -1,10 +1,12 @@
 mod common;
 
-use std::fs;
-use std::fs::File;
-use std::os::unix;
-use std::path::{Path, PathBuf};
-use std::process::Output;
+use std::{
+    fs,
+    fs::File,
+    os::unix,
+    path::{Path, PathBuf},
+    process::Output,
+};
 
 /// Set up a basic home_dir, run the link function against it, and make sure we get the
 /// expected changes.
@@ -247,10 +249,10 @@ impl LinkResult {
     }
 }
 
-/// Helper function to run ./dot link <home_dir> <dotfile_dir> <home_dir>/backup.
+/// Helper function to run ./up link <home_dir> <dotfile_dir> <home_dir>/backup.
 #[cfg(test)]
 fn run_link_cmd(dotfile_dir: &Path, home_dir: &Path, result: LinkResult) -> Output {
-    let mut cmd = common::dot_cmd();
+    let mut cmd = common::up_cmd();
     cmd.env("RUST_BACKTRACE", "full");
     cmd.args(
         [
@@ -260,7 +262,7 @@ fn run_link_cmd(dotfile_dir: &Path, home_dir: &Path, result: LinkResult) -> Outp
             home_dir.to_str().unwrap(),
             home_dir.join("backup").to_str().unwrap(),
         ]
-            .into_iter(),
+        .into_iter(),
     );
 
     println!("cmd: {:?}\n", cmd);

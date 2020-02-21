@@ -1,18 +1,19 @@
-//! Manages the config files (default location ~/.config/dot/).
-use std::env;
-use std::fs;
+//! Manages the config files (default location ~/.config/up/).
 
-use failure::{ensure, Error};
-#[allow(unused_imports)]
-use quicli::prelude::*;
+use std::{
+    env, fs,
+    path::{Path, PathBuf},
+};
+
+use anyhow::{ensure, Result};
+use log::{debug, trace};
 use serde_derive::{Deserialize, Serialize};
-use std::path::{Path, PathBuf};
 
-use crate::Cli;
+use crate::args::Args;
 
 #[derive(Default, Debug)]
 pub struct Config {
-    pub dot_toml_path: Option<PathBuf>,
+    pub up_toml_path: Option<PathBuf>,
     pub config_toml: ConfigToml,
 }
 
@@ -25,7 +26,7 @@ pub struct Config {
 pub struct ConfigToml {
     /// Link options.
     link: Option<LinkConfigToml>,
-    /// Path to tasks directory (default dot_dir/tasks).
+    /// Path to tasks directory (default up_dir/tasks).
     tasks_path: Option<String>,
 }
 
@@ -39,49 +40,48 @@ pub struct LinkConfigToml {
 
 impl Config {
     /// Build the `Config` struct by parsing the config toml files.
-    pub fn from(args: &Cli) -> Result<Self, Error> {
+    pub fn from(args: &Args) -> Result<Self> {
         let mut config_toml = ConfigToml::default();
 
-        let maybe_dot_toml_path = Self::get_dot_toml_path(&args.config)?;
-        let dot_toml_path = if maybe_dot_toml_path.exists() {
-            let read_result = fs::read(&maybe_dot_toml_path);
-            if read_result.is_ok() {
-                let file_contents = read_result.unwrap();
+        let maybe_up_toml_path = Self::get_up_toml_path(&args.config)?;
+        let up_toml_path = if maybe_up_toml_path.exists() {
+            let read_result = fs::read(&maybe_up_toml_path);
+            if let Ok(file_contents) = read_result {
                 let config_str = String::from_utf8_lossy(&file_contents);
                 debug!("config_str: {:?}", config_str);
                 config_toml = toml::from_str::<ConfigToml>(&config_str)?;
                 debug!("Config_toml: {:?}", config_toml);
             }
-            Some(maybe_dot_toml_path)
+            Some(maybe_up_toml_path)
         } else {
             None
         };
 
         Ok(Self {
-            dot_toml_path,
+            up_toml_path,
             config_toml,
         })
     }
 
-    /// Get the path to the dot.toml file, given the args passed to the cli.
-    /// If the `args_config_path` is `$XDG_CONFIG_HOME/dot/dot.toml` (the default) then
+    /// Get the path to the up.toml file, given the args passed to the cli.
+    /// If the `args_config_path` is `$XDG_CONFIG_HOME/up/up.toml` (the default) then
     /// we assume it is unset and check the other options. Order is:
     /// 1. `--config`
-    /// 2. `$DOT_CONFIG`
-    /// 3. `$XDG_CONFIG_HOME/dot/dot.toml`
-    /// 4. `~/.config/dot/toml`
-    /// 4. `~/.dot/dot.toml`
-    fn get_dot_toml_path(args_config_path: &str) -> Result<PathBuf, Error> {
+    /// 2. `$UP_CONFIG`
+    /// 3. `$XDG_CONFIG_HOME/up/up.toml`
+    /// 4. `~/.config/up/toml`
+    /// 4. `~/.up/up.toml`
+    fn get_up_toml_path(args_config_path: &str) -> Result<PathBuf> {
         debug!("args_config_file: {}", args_config_path);
         let mut config_path: PathBuf;
-        if args_config_path == "$XDG_CONFIG_HOME/dot/dot.toml" {
-            let dot_config_env = env::var("DOT_CONFIG");
+        if args_config_path == "$XDG_CONFIG_HOME/up/up.toml" {
+            let up_config_env = env::var("UP_CONFIG");
 
-            if dot_config_env.is_ok() {
-                config_path = PathBuf::from(dot_config_env.unwrap());
+            if let Ok(config_path) = up_config_env {
+                let config_path = PathBuf::from(config_path);
                 ensure!(
                     config_path.exists(),
-                    "Config path specified in DOT_CONFIG env var doesn't exist.\n  config_path: {:?}",
+                    "Config path specified in UP_CONFIG env var doesn't exist.\n  config_path: {:?}",
                     &config_path,
                 );
                 return Ok(config_path);
@@ -94,14 +94,14 @@ impl Config {
             config_path = env::var("XDG_CONFIG_HOME")
                 .map_or_else(|_err| Path::new(&home_dir).join(".config"), PathBuf::from);
 
-            config_path.push("dot");
+            config_path.push("up");
 
             if !config_path.exists() {
                 config_path = PathBuf::from(home_dir);
-                config_path.push(".dot");
+                config_path.push(".up");
             }
 
-            config_path.push("dot.toml");
+            config_path.push("up.toml");
         } else {
             config_path = PathBuf::from(args_config_path);
             ensure!(
@@ -124,60 +124,60 @@ mod toml_paths_tests {
 
     use std::env;
 
-    /// Test possible options for the dot.toml. All run in one file as they modify the
+    /// Test possible options for the up.toml. All run in one file as they modify the
     /// shared test environment.
     #[test]
     fn get_toml_paths() {
         // Set up paths.
-        let default_path = "$XDG_CONFIG_HOME/dot/dot.toml";
-        let fake_home_1 = common::fixtures_dir().join("fake_home_dir_with_dotconfig");
-        let config_toml_1 = fake_home_1.join(".config/dot/dot.toml");
-        let fake_home_2 = common::fixtures_dir().join("fake_home_dir_without_dotconfig");
+        let default_path = "$XDG_CONFIG_HOME/up/up.toml";
+        let fake_home_1 = common::fixtures_dir().join("fake_home_dir_with_upconfig");
+        let config_toml_1 = fake_home_1.join(".config/up/up.toml");
+        let fake_home_2 = common::fixtures_dir().join("fake_home_dir_without_upconfig");
 
         // With all options set, we should pick the one passed as command-line arg.
         let args_config_path = env::current_exe().unwrap();
         env::set_var("HOME", fake_home_1.clone());
         env::set_var("XDG_CONFIG_HOME", fake_home_1.join(".config"));
-        let config_path = Config::get_dot_toml_path(args_config_path.to_str().unwrap());
+        let config_path = Config::get_up_toml_path(args_config_path.to_str().unwrap());
         assert_eq!(config_path.unwrap(), args_config_path);
 
-        // If nothing is passed as an arg but DOT_CONFIG exists, we should use the it.
-        env::set_var("DOT_CONFIG", args_config_path.clone());
+        // If nothing is passed as an arg but UP_CONFIG exists, we should use it.
+        env::set_var("UP_CONFIG", args_config_path.clone());
         env::set_var("HOME", fake_home_1.clone());
         env::set_var("XDG_CONFIG_HOME", fake_home_1.join(".config"));
-        let config_path = Config::get_dot_toml_path(default_path);
+        let config_path = Config::get_up_toml_path(default_path);
         assert_eq!(config_path.unwrap(), args_config_path);
-        env::remove_var("DOT_CONFIG");
+        env::remove_var("UP_CONFIG");
 
-        // If nothing is passed as an arg, we should use the XDG_CONFIG_HOME/dot/dot.toml.
+        // If nothing is passed as an arg, we should use the XDG_CONFIG_HOME/up/up.toml.
         env::set_var("HOME", fake_home_1.clone());
         env::set_var("XDG_CONFIG_HOME", fake_home_1.join(".config"));
-        let config_path = Config::get_dot_toml_path(default_path);
+        let config_path = Config::get_up_toml_path(default_path);
         assert_eq!(config_path.unwrap(), config_toml_1);
 
-        // If XDG_CONFIG_HOME is invalid we should use ~/.dot/dot.toml.
+        // If XDG_CONFIG_HOME is invalid we should use ~/.up/up.toml.
         env::set_var("HOME", fake_home_1.clone());
         // Set XDG_CONFIG_HOME to a non-existent path.
         env::set_var("XDG_CONFIG_HOME", fake_home_1.join(".badconfig"));
-        let config_path = Config::get_dot_toml_path(default_path);
+        let config_path = Config::get_up_toml_path(default_path);
 
-        // If XDG_CONFIG_HOME is missing we should use ~/.config/dot/dot.toml.
-        assert_eq!(config_path.unwrap(), fake_home_1.join(".dot/dot.toml"));
+        // If XDG_CONFIG_HOME is missing we should use ~/.config/up/up.toml.
+        assert_eq!(config_path.unwrap(), fake_home_1.join(".up/up.toml"));
         env::remove_var("XDG_CONFIG_HOME");
-        let config_path = Config::get_dot_toml_path(default_path);
+        let config_path = Config::get_up_toml_path(default_path);
         assert_eq!(config_path.unwrap(), config_toml_1);
 
-        // If XDG_CONFIG_HOME is missing and ~/.config doesn't exist we should use ~/.dot/dot.toml.
+        // If XDG_CONFIG_HOME is missing and ~/.config doesn't exist we should use ~/.up/up.toml.
         env::set_var("HOME", fake_home_2.clone());
         env::remove_var("XDG_CONFIG_HOME");
-        let config_path = Config::get_dot_toml_path(default_path);
-        assert_eq!(config_path.unwrap(), fake_home_2.join(".dot/dot.toml"),);
+        let config_path = Config::get_up_toml_path(default_path);
+        assert_eq!(config_path.unwrap(), fake_home_2.join(".up/up.toml"),);
 
         // If none of the options are present we should error.
         env::remove_var("HOME");
         env::remove_var("XDG_CONFIG_HOME");
         // Default arg, i.e. not passed.
-        let config_path = Config::get_dot_toml_path(default_path);
+        let config_path = Config::get_up_toml_path(default_path);
         assert!(config_path.is_err(), "Config path: {:?}", config_path);
     }
 }

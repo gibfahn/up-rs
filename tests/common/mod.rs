@@ -1,42 +1,42 @@
 //! Common functions that are used by other tests.
-use std::env;
-use std::error;
-use std::fs;
-use std::os::unix;
-use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::{
+    env, error, fs,
+    os::unix,
+    path::{Path, PathBuf},
+    process::Command,
+};
 
 use walkdir::WalkDir;
 
 /// Returns the path to target/debug or target/release.
-fn dot_binary_dir() -> PathBuf {
-    let mut dot_path = env::current_exe()
+fn up_binary_dir() -> PathBuf {
+    let mut up_path = env::current_exe()
         .unwrap()
         .parent()
         .expect("test binary directory")
         .to_path_buf();
-    if !&dot_path.join("dot").is_file() {
+    if !&up_path.join("up").is_file() {
         // Sometimes it is ./target/debug/deps/test_* not just ./target/debug/test_*.
-        assert!(dot_path.pop());
+        assert!(up_path.pop());
     }
-    dot_path.canonicalize().unwrap();
-    dot_path
+    up_path.canonicalize().unwrap();
+    up_path
 }
 
-/// Returns the path to the root of the project (the dot-rs/ folder).
-fn dot_project_dir() -> PathBuf {
-    let mut project_dir = dot_binary_dir();
+/// Returns the path to the root of the project (the up-rs/ folder).
+fn up_project_dir() -> PathBuf {
+    let mut project_dir = up_binary_dir();
     // Pop up to target/ (from target/debug/ or target/release/).
     assert!(project_dir.pop());
-    // Pop up to dot-rs/ (from dot-rs/target/).
+    // Pop up to up-rs/ (from up-rs/target/).
     assert!(project_dir.pop());
     project_dir
 }
 
-/// Returns a new command starting with /path/to/dot (add args as needed).
+/// Returns a new command starting with /path/to/up (add args as needed).
 #[allow(dead_code)]
-pub fn dot_cmd() -> Command {
-    Command::new(dot_binary_dir().join("dot"))
+pub fn up_cmd() -> Command {
+    Command::new(up_binary_dir().join("up"))
 }
 
 /// Returns the test module name (usually the test file name).
@@ -56,7 +56,7 @@ pub fn test_module() -> String {
 /// Returns the path to the tests/fixtures directory (relative to the crate root).
 #[allow(dead_code)]
 pub fn fixtures_dir() -> PathBuf {
-    dot_project_dir().join("tests/fixtures")
+    up_project_dir().join("tests/fixtures")
 }
 
 /// Returns the path to a temporary directory for your test (OS tempdir + test file name + test function name).
@@ -80,7 +80,7 @@ pub fn temp_dir(test_fn: &str) -> Result<PathBuf, failure::Error> {
 /// Copy everything in from_dir into to_dir (including broken links).
 #[allow(dead_code)]
 pub fn copy_all(from_dir: &Path, to_dir: &Path) -> Result<(), Box<dyn error::Error>> {
-// pub fn copy_all(from_dir: &Path, to_dir: &Path) -> Result<(), Box<error::Error>> {
+    // pub fn copy_all(from_dir: &Path, to_dir: &Path) -> Result<(), Box<error::Error>> {
     println!("Copying everything in '{:?}' to '{:?}'", from_dir, to_dir);
     for from_path in WalkDir::new(&from_dir)
         .min_depth(1)

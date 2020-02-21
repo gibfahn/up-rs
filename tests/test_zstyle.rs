@@ -49,7 +49,7 @@ fn todo_gib() {
             "--hidden",
             &format!("TODO\\({}\\):", username),
         ]
-            .into_iter(),
+        .into_iter(),
     );
     println!("cmd: {:?}\n", cmd);
     let cmd_output = cmd.output().unwrap();
