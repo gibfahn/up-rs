@@ -1,7 +1,8 @@
-use std::{path::PathBuf, process::Command};
+use std::{path::PathBuf, process::Command, io};
 
 use anyhow::Result;
 use log::{debug, info};
+use thiserror::Error;
 
 use crate::config;
 
@@ -68,8 +69,7 @@ pub fn update(config: config::Config) -> Result<()> {
     tasks_dir.push("tasks");
 
     let tasks: Vec<Task> = tasks_dir
-        .read_dir()
-        .unwrap()
+        .read_dir().map_err(|e| UpdateError::ReadDirError{path: tasks_dir, source: e})?
         .filter_map(|d| d.ok())
         .map(|d| Task::from(d.path()))
         .collect();
@@ -89,4 +89,10 @@ pub fn update(config: config::Config) -> Result<()> {
     // TODO(gib): Need a command to show the tree and dependencies.
     // TODO(gib): If fixtures are needed can link to files or scripts.
     // TODO(gib): Should files be stored in ~/.config/up ?
+}
+
+#[derive(Error, Debug)]
+pub enum UpdateError {
+    #[error("Error walking directory '{}':", path.to_string_lossy())]
+    ReadDirError{path: PathBuf, source: io::Error},
 }

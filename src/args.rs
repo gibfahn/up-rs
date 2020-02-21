@@ -20,7 +20,7 @@ pub fn parse() -> Args {
 pub struct Args {
     // TODO(gib): Improve help text to cover env_logger setup.
     /// Set the logging level explicitly (options: Off, Error, Warn, Info, Debug, Trace).
-    #[structopt(long, default_value = "up=info,warn", env = "RUST_LOG")]
+    #[structopt(long, short = "l", default_value = "up=info,warn", env = "RUST_LOG")]
     pub log_level: String,
     /// Path to the up.toml file for up.
     #[structopt(short = "c", default_value = "$XDG_CONFIG_HOME/up/up.toml")]

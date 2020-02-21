@@ -7,7 +7,7 @@ use std::process::Command;
 #[test]
 fn fmt() {
     let mut cmd = Command::new("cargo");
-    cmd.args(["fmt", "--", "--check"].into_iter());
+    cmd.args(["fmt", "--", "--check"].iter());
     println!("cmd: {:?}\n", cmd);
     let cmd_output = cmd.output().unwrap();
     println!("status: {}", cmd_output.status);
@@ -49,7 +49,7 @@ fn todo_gib() {
             "--hidden",
             &format!("TODO\\({}\\):", username),
         ]
-        .into_iter(),
+        .iter(),
     );
     println!("cmd: {:?}\n", cmd);
     let cmd_output = cmd.output().unwrap();

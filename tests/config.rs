@@ -6,12 +6,11 @@ fn empty_toml() {
     let mut cmd = common::up_cmd();
     cmd.args(
         [
-            "-vvvv",
             "-c",
             fixtures_dir.join("up.toml").to_str().unwrap(),
-            "update",
+            "date",
         ]
-        .into_iter(),
+        .iter(),
     );
     println!("cmd: {:?}\n", cmd);
     let cmd_output = cmd.output().unwrap();
@@ -31,12 +30,11 @@ fn basic_toml() {
     let mut cmd = common::up_cmd();
     cmd.args(
         [
-            "-vvv",
             "-c",
             fixtures_dir.join("up.toml").to_str().unwrap(),
-            "update",
+            "date",
         ]
-        .into_iter(),
+        .iter(),
     );
     println!("cmd: {:?}\n", cmd);
     let cmd_output = cmd.output().unwrap();

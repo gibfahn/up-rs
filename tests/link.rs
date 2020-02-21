@@ -262,7 +262,7 @@ fn run_link_cmd(dotfile_dir: &Path, home_dir: &Path, result: LinkResult) -> Outp
             home_dir.to_str().unwrap(),
             home_dir.join("backup").to_str().unwrap(),
         ]
-        .into_iter(),
+        .iter(),
     );
 
     println!("cmd: {:?}\n", cmd);

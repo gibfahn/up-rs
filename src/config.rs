@@ -70,7 +70,6 @@ impl Config {
     /// 2. `$UP_CONFIG`
     /// 3. `$XDG_CONFIG_HOME/up/up.toml`
     /// 4. `~/.config/up/toml`
-    /// 4. `~/.up/up.toml`
     fn get_up_toml_path(args_config_path: &str) -> Result<PathBuf> {
         debug!("args_config_file: {}", args_config_path);
         let mut config_path: PathBuf;
@@ -95,11 +94,6 @@ impl Config {
                 .map_or_else(|_err| Path::new(&home_dir).join(".config"), PathBuf::from);
 
             config_path.push("up");
-
-            if !config_path.exists() {
-                config_path = PathBuf::from(home_dir);
-                config_path.push(".up");
-            }
 
             config_path.push("up.toml");
         } else {
@@ -155,25 +149,26 @@ mod toml_paths_tests {
         let config_path = Config::get_up_toml_path(default_path);
         assert_eq!(config_path.unwrap(), config_toml_1);
 
-        // If XDG_CONFIG_HOME is invalid we should use ~/.up/up.toml.
+        // If XDG_CONFIG_HOME is set we should use it.
         env::set_var("HOME", fake_home_1.clone());
         // Set XDG_CONFIG_HOME to a non-existent path.
         env::set_var("XDG_CONFIG_HOME", fake_home_1.join(".badconfig"));
         let config_path = Config::get_up_toml_path(default_path);
+        assert_eq!(config_path.unwrap(), fake_home_1.join(".badconfig/up/up.toml"));
 
         // If XDG_CONFIG_HOME is missing we should use ~/.config/up/up.toml.
-        assert_eq!(config_path.unwrap(), fake_home_1.join(".up/up.toml"));
         env::remove_var("XDG_CONFIG_HOME");
         let config_path = Config::get_up_toml_path(default_path);
         assert_eq!(config_path.unwrap(), config_toml_1);
 
-        // If XDG_CONFIG_HOME is missing and ~/.config doesn't exist we should use ~/.up/up.toml.
+        // If XDG_CONFIG_HOME is missing and ~/.config doesn't exist we should use
+        // still use it.
         env::set_var("HOME", fake_home_2.clone());
         env::remove_var("XDG_CONFIG_HOME");
         let config_path = Config::get_up_toml_path(default_path);
-        assert_eq!(config_path.unwrap(), fake_home_2.join(".up/up.toml"),);
+        assert_eq!(config_path.unwrap(), fake_home_2.join(".config/up/up.toml"),);
 
-        // If none of the options are present we should error.
+        // If none of the options are present and there is no ~ we should error.
         env::remove_var("HOME");
         env::remove_var("XDG_CONFIG_HOME");
         // Default arg, i.e. not passed.

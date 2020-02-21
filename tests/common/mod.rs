@@ -7,6 +7,7 @@ use std::{
 };
 
 use walkdir::WalkDir;
+use anyhow::Result;
 
 /// Returns the path to target/debug or target/release.
 fn up_binary_dir() -> PathBuf {
@@ -62,7 +63,7 @@ pub fn fixtures_dir() -> PathBuf {
 /// Returns the path to a temporary directory for your test (OS tempdir + test file name + test function name).
 /// Cleans the directory if it already exists.
 #[allow(dead_code)]
-pub fn temp_dir(test_fn: &str) -> Result<PathBuf, failure::Error> {
+pub fn temp_dir(test_fn: &str) -> Result<PathBuf> {
     let os_temp_dir = env::temp_dir().canonicalize()?;
     let mut temp_dir = os_temp_dir.clone();
     temp_dir.push(test_module());
