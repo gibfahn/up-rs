@@ -98,8 +98,13 @@ pub fn copy_all(from_dir: &Path, to_dir: &Path) -> Result<(), Box<dyn error::Err
 
 /// Panic if there is a file, directory, or link at the path.
 pub fn assert_nothing_at(path: &Path) {
-    assert!(!path.exists());
-    assert!(path.symlink_metadata().is_err());
+    assert!(!path.exists(), "Path '{:?}' shouldn't exist.", &path);
+    assert!(
+        path.symlink_metadata().is_err(),
+        "Path '{:?}' should not be a symlink, but found: '{:?}'.",
+        &path,
+        path.symlink_metadata().unwrap()
+    );
 }
 
 /// Panic if there is not a file at the path, or if the contents don't match.
