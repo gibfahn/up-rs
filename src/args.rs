@@ -41,13 +41,13 @@ pub(crate) enum SubCommand {
     #[structopt(name = "link")]
     Link {
         /// Path where your dotfiles are kept (hopefully in source control).
-        #[structopt(short = "f", default_value = "~/code/dotfiles")]
+        #[structopt(short = "f", long = "from", default_value = "~/code/dotfiles")]
         from_dir: String,
         /// Path to link them to.
-        #[structopt(short = "t", default_value = "~")]
+        #[structopt(short = "t", long = "to", default_value = "~")]
         to_dir: String,
         /// Path at which to store backups of overwritten files.
-        #[structopt(short = "b", default_value = "~/backup")]
+        #[structopt(short = "b", long = "backup", default_value = "~/backup")]
         backup_dir: String,
     },
 }

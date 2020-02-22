@@ -81,6 +81,7 @@ pub fn link(from_dir: &str, to_dir: &str, backup_dir: &str) -> Result<()> {
             for path in rel_path.ancestors().skip(1).filter(|p| p != &Path::new("")) {
                 debug!("Checking path {:?}", path);
                 let abs_path = to_dir.join(path);
+                // The path is a file/dir/symlink, or a broken symlink.
                 if abs_path.exists() || abs_path.symlink_metadata().is_ok() {
                     ensure!(!abs_path.is_dir(),
                             "Failed to create the parent directory for the symlink. We assumed it was because one of the parent directories was a file or symlink, but that doesn't seem to be the case, as the first file we've come across that exists is a directory.\n  Path: {:?}",
@@ -197,8 +198,9 @@ pub fn link(from_dir: &str, to_dir: &str, backup_dir: &str) -> Result<()> {
         })?;
     }
 
-    if let Err(err) = fs::remove_dir(backup_dir) {
-        info!("Backup dir remove err: {:?}", err);
+    // Remove backup dir if not empty.
+    if let Err(err) = fs::remove_dir(&backup_dir) {
+        info!("Not removing backup dir: {:?}", err);
     }
 
     debug!(
@@ -206,7 +208,14 @@ pub fn link(from_dir: &str, to_dir: &str, backup_dir: &str) -> Result<()> {
         fs::read_dir(&to_dir)
             .unwrap()
             .filter_map(|e| e.ok().map(|d| d.path()))
-            // .map(|d| d.path())
+            .collect::<Vec<_>>()
+    );
+
+    debug!(
+        "backup_dir final contents: {:#?}",
+        fs::read_dir(&backup_dir)
+            .unwrap()
+            .filter_map(|e| e.ok().map(|d| d.path()))
             .collect::<Vec<_>>()
     );
 
