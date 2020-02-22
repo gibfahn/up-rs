@@ -12,7 +12,6 @@ use anyhow::Result;
 use log::trace;
 
 fn main() -> Result<()> {
-    color_backtrace::install();
     let args = up_rs::args::parse();
     init_logging(&args.log_level)?;
     trace!("Starting up.");
