@@ -1,4 +1,5 @@
 //! Common functions that are used by other tests.
+
 use std::{
     env, error, fs,
     os::unix,
@@ -35,38 +36,26 @@ fn up_project_dir() -> PathBuf {
 }
 
 /// Returns a new command starting with /path/to/up (add args as needed).
-#[allow(dead_code)]
 pub fn up_cmd() -> Command {
     Command::new(up_binary_dir().join("up"))
 }
 
 /// Returns the test module name (usually the test file name).
-#[allow(dead_code)]
-pub fn test_module() -> String {
-    env::current_exe()
-        .unwrap()
-        .file_name()
-        .unwrap()
-        .to_str()
-        .unwrap()
-        .chars()
-        .take_while(|c| *c != '-')
-        .collect()
+pub fn test_path(file: &str) -> String {
+    file.chars().skip(6).take_while(|c| *c != '.').collect()
 }
 
 /// Returns the path to the tests/fixtures directory (relative to the crate root).
-#[allow(dead_code)]
 pub fn fixtures_dir() -> PathBuf {
     up_project_dir().join("tests/fixtures")
 }
 
 /// Returns the path to a temporary directory for your test (OS tempdir + test file name + test function name).
 /// Cleans the directory if it already exists.
-#[allow(dead_code)]
-pub fn temp_dir(test_fn: &str) -> Result<PathBuf> {
+pub fn temp_dir(file: &str, test_fn: &str) -> Result<PathBuf> {
     let os_temp_dir = env::temp_dir().canonicalize()?;
     let mut temp_dir = os_temp_dir.clone();
-    temp_dir.push(test_module());
+    temp_dir.push(test_path(file));
     temp_dir.push(test_fn);
     assert!(temp_dir.starts_with(os_temp_dir));
     if temp_dir.exists() {
@@ -79,7 +68,6 @@ pub fn temp_dir(test_fn: &str) -> Result<PathBuf> {
 }
 
 /// Copy everything in from_dir into to_dir (including broken links).
-#[allow(dead_code)]
 pub fn copy_all(from_dir: &Path, to_dir: &Path) -> Result<(), Box<dyn error::Error>> {
     // pub fn copy_all(from_dir: &Path, to_dir: &Path) -> Result<(), Box<error::Error>> {
     println!("Copying everything in '{:?}' to '{:?}'", from_dir, to_dir);
@@ -109,14 +97,12 @@ pub fn copy_all(from_dir: &Path, to_dir: &Path) -> Result<(), Box<dyn error::Err
 }
 
 /// Panic if there is a file, directory, or link at the path.
-#[allow(dead_code)]
 pub fn assert_nothing_at(path: &Path) {
     assert!(!path.exists());
     assert!(path.symlink_metadata().is_err());
 }
 
 /// Panic if there is not a file at the path, or if the contents don't match.
-#[allow(dead_code)]
 pub fn assert_file(path: &Path, contents: &str) {
     if !path.is_file() {
         println!("Path: {:?}", path)
@@ -145,7 +131,6 @@ pub fn assert_file(path: &Path, contents: &str) {
 }
 
 /// Panic if there is not a directory at the path.
-#[allow(dead_code)]
 pub fn assert_dir(path: &Path) {
     assert!(
         path.exists(),
@@ -167,7 +152,6 @@ pub fn assert_dir(path: &Path) {
 
 /// Panic if there is not a link at the path, or if the destination isn't the one provided
 /// (destination path must be an exact match).
-#[allow(dead_code)]
 pub fn assert_link(path: &Path, destination: &Path) {
     assert!(
         path.exists(),
@@ -188,32 +172,7 @@ pub fn assert_link(path: &Path, destination: &Path) {
     assert_eq!(path.read_link().unwrap(), destination);
 }
 
-/// Panic if there is not a bad link at the path, or if the destination isn't the one provided
-/// (destination path must be an exact match).
-#[allow(dead_code)]
-pub fn assert_bad_link(path: &Path, destination: &Path) {
-    assert!(
-        !path.exists(),
-        "Expected path to be a bad link, but it isn't.\n  \
-         Path: {:?}",
-        path
-    );
-    assert!(
-        path.symlink_metadata().unwrap().file_type().is_symlink(),
-        "Expected path to be a symlink, but it has the wrong type.\n  \
-         Path: {:?}\n  \
-         Is file: {}\n  \
-         Is directory: {}",
-        path,
-        path.is_file(),
-        path.is_dir()
-    );
-    assert_eq!(path.read_link().unwrap(), destination);
-}
-
 /// Panic if the text does not contain the expected pattern.
-#[cfg(test)]
-#[allow(dead_code)]
 pub fn assert_contains(text: &str, pattern: &str) {
     assert!(
         text.contains(pattern),

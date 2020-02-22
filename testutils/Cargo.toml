@@ -1,0 +1,11 @@
+[package]
+name = "testutils"
+version = "0.1.0"
+authors = ["Gibson Fahnestock <gibfahn@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.26"
+walkdir = "2.3.1"

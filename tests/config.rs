@@ -1,9 +1,7 @@
-use crate::common;
-
 #[test]
 fn empty_toml() {
-    let fixtures_dir = common::fixtures_dir().join("blank_config");
-    let mut cmd = common::up_cmd();
+    let fixtures_dir = testutils::fixtures_dir().join("blank_config");
+    let mut cmd = testutils::up_cmd();
     cmd.args(["-c", fixtures_dir.join("up.toml").to_str().unwrap(), "date"].iter());
     println!("cmd: {:?}\n", cmd);
     let cmd_output = cmd.output().unwrap();
@@ -19,8 +17,8 @@ fn empty_toml() {
 
 #[test]
 fn basic_toml() {
-    let fixtures_dir = common::fixtures_dir().join("basic_config");
-    let mut cmd = common::up_cmd();
+    let fixtures_dir = testutils::fixtures_dir().join("basic_config");
+    let mut cmd = testutils::up_cmd();
     cmd.args(["-c", fixtures_dir.join("up.toml").to_str().unwrap(), "date"].iter());
     println!("cmd: {:?}\n", cmd);
     let cmd_output = cmd.output().unwrap();
