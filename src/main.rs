@@ -25,7 +25,7 @@ fn main() -> Result<()> {
 }
 
 fn init_logging(level: &str) -> Result<()> {
-    let mut builder = env_logger::Builder::new();
-    builder.parse_filters(level).init();
+    env::set_var(env_logger::DEFAULT_FILTER_ENV, level);
+    env_logger::init();
     Ok(())
 }

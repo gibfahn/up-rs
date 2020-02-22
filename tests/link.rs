@@ -250,28 +250,39 @@ impl LinkResult {
 /// Helper function to run ./up link <home_dir> <dotfile_dir> <home_dir>/backup.
 #[cfg(test)]
 fn run_link_cmd(dotfile_dir: &Path, home_dir: &Path, result: LinkResult) -> Output {
-    let mut cmd = common::up_cmd();
-    cmd.env("RUST_BACKTRACE", "full");
+    let mut cmd = testutils::up_cmd();
+    // Always show coloured logs.
+    cmd.env("RUST_LOG_STYLE", "always");
     cmd.args(
         [
-            "-vvvv",
+            "--log-level=trace",
             "link",
+            "--from",
             dotfile_dir.to_str().unwrap(),
+            "--to",
             home_dir.to_str().unwrap(),
+            "--backup",
             home_dir.join("backup").to_str().unwrap(),
         ]
         .iter(),
     );
 
-    println!("cmd: {:?}\n", cmd);
+    println!("Running command '{:?}'.", cmd);
     let cmd_output = cmd.output().unwrap();
-    println!("status: {}", cmd_output.status);
-    println!("stdout: {}", String::from_utf8_lossy(&cmd_output.stdout));
-    println!("STDERR:\n\n{}", String::from_utf8_lossy(&cmd_output.stderr));
+    println!("  status: {}", cmd_output.status);
+    if !cmd_output.stdout.is_empty() {
+        println!("  stdout: {}", String::from_utf8_lossy(&cmd_output.stdout));
+    }
+    if !cmd_output.stderr.is_empty() {
+        println!(
+            "  stderr:\n\n{}",
+            String::from_utf8_lossy(&cmd_output.stderr)
+        );
+    }
     assert_eq!(
         cmd_output.status.success(),
         result.to_bool(),
-        "\n Expected result: {:?}, but status was: {:?}",
+        "\n Expected result: '{:?}', but status was: '{:?}'.",
         result,
         cmd_output.status
     );
