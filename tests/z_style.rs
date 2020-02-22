@@ -1,37 +1,51 @@
-//! This module is called "zstyle" rather than "style" so that it runs last (for people who
+//! This module is called "z_style" rather than "style" so that it runs last (for people who
 //! aren't aware of the `--no-fail-fast` flag for `cargo test` or would rather not type it).
 
-use std::process::Command;
+use std::{
+    env,
+    path::Path,
+    process::{Command, Output},
+};
 
 /// Fail if rustfmt (cargo fmt) hasn't been run.
 #[test]
 fn fmt() {
-    let mut cmd = Command::new("cargo");
-    cmd.args(["fmt", "--", "--check"].iter());
-    println!("cmd: {:?}\n", cmd);
-    let cmd_output = cmd.output().unwrap();
-    println!("status: {}", cmd_output.status);
-    println!("stdout: {}", String::from_utf8_lossy(&cmd_output.stdout));
-    println!("STDERR:\n\n{}", String::from_utf8_lossy(&cmd_output.stderr));
+    let current_dir = env::current_dir().unwrap();
+    let check_output = cargo_cmd(&current_dir, CargoCmdType::Check);
+
+    if !check_output.status.success() {
+        // Fix the formatting.
+        cargo_cmd(&current_dir, CargoCmdType::Fix);
+    }
     assert!(
-        cmd_output.status.success(),
-        "Rustfmt needs to be run, please run 'cargo fmt'."
+        check_output.status.success(),
+        "Rustfmt needs to be run, ran 'cargo fmt' to fix, please commit the changes."
+    );
+}
+
+/// Fail if rustfmt (cargo fmt) hasn't been run.
+#[test]
+fn testutils_fmt() {
+    let current_dir = env::current_dir().unwrap().join("testutils");
+    let check_output = cargo_cmd(&current_dir, CargoCmdType::Check);
+
+    if !check_output.status.success() {
+        // Fix the formatting.
+        cargo_cmd(&current_dir, CargoCmdType::Fix);
+    }
+    assert!(
+        check_output.status.success(),
+        "Rustfmt needs to be run, ran 'cargo fmt' to fix, please commit the changes."
     );
 }
 
 /// Fail if cargo clippy hasn't been run.
 #[test]
 fn clippy() {
-    let mut cmd = Command::new("cargo");
-    // If pedantic nits get too annoying we can use clippy::all instead.
-    cmd.args(&["clippy", "--", "--deny", "clippy::pedantic"]);
-    println!("cmd: {:?}\n", cmd);
-    let cmd_output = cmd.output().unwrap();
-    println!("status: {}", cmd_output.status);
-    println!("stdout: {}", String::from_utf8_lossy(&cmd_output.stdout));
-    println!("STDERR:\n\n{}", String::from_utf8_lossy(&cmd_output.stderr));
+    let current_dir = env::current_dir().unwrap();
+    let clippy_output = cargo_cmd(&current_dir, CargoCmdType::Clippy);
     assert!(
-        cmd_output.status.success(),
+        clippy_output.status.success(),
         "Clippy needs to be run, please run 'cargo clippy'."
     );
 }
@@ -51,7 +65,7 @@ fn todo_gib() {
         ]
         .iter(),
     );
-    println!("cmd: {:?}\n", cmd);
+    println!("cmd: '{:?}'", cmd);
     let cmd_output = cmd.output().unwrap();
     println!("status: {}", cmd_output.status);
     println!("stdout: {}", String::from_utf8_lossy(&cmd_output.stdout));
@@ -65,4 +79,39 @@ fn todo_gib() {
         "There are outstanding TODO({}): comments, please fix them.",
         username,
     );
+}
+
+/// Whether to check for the formatter having been run, or to actually fix any formatting
+/// issues.
+#[derive(Debug, PartialEq)]
+enum CargoCmdType {
+    /// Check the format.
+    Check,
+    /// Fix any formatting issues.
+    Fix,
+    /// Run clippy.
+    Clippy,
+}
+
+fn cargo_cmd(current_dir: &Path, fmt: CargoCmdType) -> Output {
+    let mut cmd = Command::new("cargo");
+    cmd.args(match fmt {
+        CargoCmdType::Check => ["fmt", "--", "--check"].iter(),
+        CargoCmdType::Fix => ["fmt"].iter(),
+        CargoCmdType::Clippy => ["clippy", "--", "--deny", "clippy::pedantic"].iter(),
+    });
+    cmd.current_dir(current_dir);
+    println!("Running '{:?}' in '{:?}'", cmd, current_dir);
+    let cmd_output = cmd.output().unwrap();
+    println!("  status: {}", cmd_output.status);
+    if !cmd_output.stdout.is_empty() {
+        println!("  stdout: {}", String::from_utf8_lossy(&cmd_output.stdout));
+    }
+    if !cmd_output.stderr.is_empty() {
+        println!(
+            "  stderr:\n\n{}",
+            String::from_utf8_lossy(&cmd_output.stderr)
+        );
+    }
+    cmd_output
 }
