@@ -1,7 +1,7 @@
 //! Common functions that are used by other tests.
 
 use std::{
-    env, error, fs,
+    env, fs,
     os::unix,
     path::{Path, PathBuf},
     process::Command,
@@ -38,22 +38,29 @@ fn up_project_dir() -> PathBuf {
 }
 
 /// Returns a new command starting with /path/to/up (add args as needed).
+#[must_use]
 pub fn up_cmd() -> Command {
     Command::new(up_binary_dir().join("up"))
 }
 
 /// Returns the test module name (usually the test file name).
+#[must_use]
 pub fn test_path(file: &str) -> String {
     file.chars().skip(6).take_while(|c| *c != '.').collect()
 }
 
 /// Returns the path to the tests/fixtures directory (relative to the crate root).
+#[must_use]
 pub fn fixtures_dir() -> PathBuf {
     up_project_dir().join("tests/fixtures")
 }
 
 /// Returns the path to a temporary directory for your test (OS tempdir + test file name + test function name).
 /// Cleans the directory if it already exists.
+///
+/// # Errors
+///
+/// Fails if any of the underlying file system operations fail.
 pub fn temp_dir(file: &str, test_fn: &str) -> Result<PathBuf> {
     let os_temp_dir = env::temp_dir().canonicalize()?;
     let mut temp_dir = os_temp_dir.clone();
@@ -69,14 +76,17 @@ pub fn temp_dir(file: &str, test_fn: &str) -> Result<PathBuf> {
     Ok(temp_dir)
 }
 
-/// Copy everything in from_dir into to_dir (including broken links).
-pub fn copy_all(from_dir: &Path, to_dir: &Path) -> Result<(), Box<dyn error::Error>> {
-    // pub fn copy_all(from_dir: &Path, to_dir: &Path) -> Result<(), Box<error::Error>> {
+/// Copy everything in `from_dir` into `to_dir` (including broken links).
+///
+/// # Errors
+///
+/// Fails if any of the underlying file system operations fail.
+pub fn copy_all(from_dir: &Path, to_dir: &Path) -> Result<()> {
     println!("Copying everything in '{:?}' to '{:?}'", from_dir, to_dir);
     for from_path in WalkDir::new(&from_dir)
         .min_depth(1)
         .into_iter()
-        .filter_map(|e| e.ok())
+        .filter_map(Result::ok)
     {
         let from_path_metadata = from_path.metadata()?;
         let from_path = from_path.path();

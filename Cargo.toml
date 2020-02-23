@@ -1,6 +1,6 @@
 [package]
 name = "up-rs"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Gibson Fahnestock <gibfahn@gmail.com>"]
 edition = '2018'
 
@@ -22,7 +22,8 @@ log = "0.4.8"
 anyhow = "1.0.26"
 thiserror = "1.0.11"
 env_logger = "0.7.1"
+chrono = "0.4.10"
 
 [dev-dependencies]
-whoami = "0.8.0"
 testutils = { path = "testutils" }
+ignore = "0.4.11"

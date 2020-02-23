@@ -1,5 +1,5 @@
 /dotfiles/.config/nvim/autoload
 /.env
 
-/target
+target/
 **/*.rs.bk

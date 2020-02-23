@@ -12,6 +12,9 @@ mod config;
 mod link;
 mod update;
 
+/// Run up_rs with provided [Args][] struct.
+///
+/// [Args]: crate::args::Args
 pub fn run(args: Args) -> Result<()> {
     // TODO(gib): Store and fetch config in config module.
     let config = Config::from(&args)?;

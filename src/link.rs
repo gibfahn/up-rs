@@ -5,6 +5,7 @@ use std::{
 };
 
 use anyhow::{bail, ensure, Context, Result};
+use chrono::{DateTime, Utc};
 use log::{debug, info, warn};
 use thiserror::Error;
 use walkdir::WalkDir;
@@ -17,6 +18,10 @@ use walkdir::WalkDir;
 /// as it's a symlink it'll actually edit ~/code/dotfiles/.bashrc. Then you can add and commit that
 /// change in ~/code/dotfiles.
 pub fn link(from_dir: &str, to_dir: &str, backup_dir: &str) -> Result<()> {
+    let now: DateTime<Utc> = Utc::now();
+
+    debug!("UTC time is: {}", now);
+
     // Expand ~, this is only used for the default options, if the user passes them as explicit
     // args then they will be expanded by the shell.
     let from_dir = PathBuf::from(shellexpand::tilde(from_dir).to_string());
@@ -91,7 +96,7 @@ pub fn link(from_dir: &str, to_dir: &str, backup_dir: &str) -> Result<()> {
     for from_path in WalkDir::new(&from_dir)
         .min_depth(1)
         .into_iter()
-        .filter_map(|e| e.ok())
+        .filter_map(Result::ok)
         .filter(|f| !f.file_type().is_dir())
     {
         let rel_path = from_path.path().strip_prefix(&from_dir).unwrap();
@@ -222,7 +227,7 @@ pub fn link(from_dir: &str, to_dir: &str, backup_dir: &str) -> Result<()> {
 
     // Remove backup dir if not empty.
     if let Err(err) = fs::remove_dir(&backup_dir) {
-        info!("Not removing backup dir: {:?}", err);
+        info!("Backup dir non-empty, check contents: {:?}", err);
     }
 
     debug!(
