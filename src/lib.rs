@@ -12,7 +12,11 @@ mod config;
 mod link;
 mod update;
 
-/// Run up_rs with provided [Args][] struct.
+/// Run `up_rs` with provided [Args][] struct.
+///
+/// # Errors
+///
+/// Errors if the relevant subcommand fails.
 ///
 /// [Args]: crate::args::Args
 pub fn run(args: Args) -> Result<()> {

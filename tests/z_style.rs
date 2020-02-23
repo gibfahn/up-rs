@@ -11,13 +11,13 @@ use ignore::WalkBuilder;
 
 /// Fail if rustfmt (cargo fmt) hasn't been run.
 #[test]
-fn fmt() {
+fn rustfmt() {
     let current_dir = env::current_dir().unwrap();
-    let check_output = cargo_cmd(&current_dir, CargoCmdType::Check);
+    let check_output = cargo_cmd(&current_dir, CargoCmdType::RustfmtCheck);
 
     if !check_output.status.success() {
         // Fix the formatting.
-        cargo_cmd(&current_dir, CargoCmdType::Fix);
+        cargo_cmd(&current_dir, CargoCmdType::RustfmtFix);
     }
     assert!(
         check_output.status.success(),
@@ -27,13 +27,13 @@ fn fmt() {
 
 /// Fail if rustfmt (cargo fmt) hasn't been run on testutils.
 #[test]
-fn testutils_fmt() {
+fn testutils_rustfmt() {
     let current_dir = env::current_dir().unwrap().join("testutils");
-    let check_output = cargo_cmd(&current_dir, CargoCmdType::Check);
+    let check_output = cargo_cmd(&current_dir, CargoCmdType::RustfmtCheck);
 
     if !check_output.status.success() {
         // Fix the formatting.
-        cargo_cmd(&current_dir, CargoCmdType::Fix);
+        cargo_cmd(&current_dir, CargoCmdType::RustfmtFix);
     }
     assert!(
         check_output.status.success(),
@@ -45,10 +45,15 @@ fn testutils_fmt() {
 #[test]
 fn clippy() {
     let current_dir = env::current_dir().unwrap();
-    let clippy_output = cargo_cmd(&current_dir, CargoCmdType::Clippy);
+    let clippy_output = cargo_cmd(&current_dir, CargoCmdType::ClippyCheck);
+
+    if !clippy_output.status.success() {
+        // Fix the clippy errors if possible.
+        cargo_cmd(&current_dir, CargoCmdType::ClippyFix);
+    }
     assert!(
         clippy_output.status.success(),
-        "Clippy needs to be run, please run 'cargo clippy'."
+        "Clippy needs to be run, please run 'cargo clippy-preview -Z=unstable-options -- --deny=clippy-pedantic'."
     );
 }
 
@@ -56,7 +61,12 @@ fn clippy() {
 #[test]
 fn testutils_clippy() {
     let current_dir = env::current_dir().unwrap().join("testutils");
-    let clippy_output = cargo_cmd(&current_dir, CargoCmdType::Clippy);
+    let clippy_output = cargo_cmd(&current_dir, CargoCmdType::ClippyCheck);
+
+    if !clippy_output.status.success() {
+        // Fix the clippy errors if possible.
+        cargo_cmd(&current_dir, CargoCmdType::ClippyFix);
+    }
     assert!(
         clippy_output.status.success(),
         "Clippy needs to be run, please run 'cargo clippy'."
@@ -70,7 +80,6 @@ fn no_todo() {
         // Check hidden files too.
         .hidden(false)
         .build()
-        .into_iter()
         .map(Result::unwrap)
         .filter(|file| {
             file.file_type()
@@ -99,26 +108,36 @@ fn no_todo() {
 #[derive(Debug, PartialEq)]
 enum CargoCmdType {
     /// Check the format.
-    Check,
+    RustfmtCheck,
     /// Fix any formatting issues.
-    Fix,
+    RustfmtFix,
     /// Run clippy.
-    Clippy,
+    ClippyCheck,
+    /// Fix clippy errors if possible.
+    ClippyFix,
 }
 
 fn cargo_cmd(current_dir: &Path, fmt: CargoCmdType) -> Output {
     let mut cmd = Command::new("cargo");
     cmd.args(match fmt {
-        CargoCmdType::Check => ["fmt", "--", "--check"].iter(),
-        CargoCmdType::Fix => ["fmt"].iter(),
-        CargoCmdType::Clippy => [
-            "clippy",
+        CargoCmdType::RustfmtCheck => ["fmt", "--", "--check"].iter(),
+        CargoCmdType::RustfmtFix => ["fmt"].iter(),
+        // TODO(gib): Stop using preview once clippy in cargo ships.
+        // See: https://github.com/rust-lang/rust-clippy/issues/3837
+        // Note that preview allows auto-fixing with `cargo fix --clippy`, and fixes
+        // the caching issue (https://github.com/rust-lang/rust-clippy/issues/2604).
+        CargoCmdType::ClippyCheck => [
+            "clippy-preview",
+            "-Z=unstable-options",
             "--color=always",
             "--",
             "--deny",
             "clippy::pedantic",
         ]
         .iter(),
+        CargoCmdType::ClippyFix => {
+            ["fix", "--clippy", "-Z=unstable-options", "--allow-staged"].iter()
+        }
     });
     cmd.current_dir(current_dir);
     println!("Running '{:?}' in '{:?}'", cmd, current_dir);

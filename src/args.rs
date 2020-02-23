@@ -1,6 +1,7 @@
 use structopt::{clap::AppSettings, StructOpt};
 
 /// Builds the Args struct from CLI input and from environment variable input.
+#[must_use]
 pub fn parse() -> Args {
     Args::from_args()
 }

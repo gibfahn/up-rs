@@ -74,8 +74,7 @@ pub fn update(config: config::Config) -> Result<()> {
             path: tasks_dir,
             source: e,
         })?
-        .filter_map(|d| d.ok())
-        .map(|d| Task::from(d.path()))
+        .filter_map(|r| r.ok().map(|d| Task::from(d.path())))
         .collect();
 
     debug!("Task count: {:?}", tasks.len());
