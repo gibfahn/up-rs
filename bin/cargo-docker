@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+set -eu -o pipefail
+
+# Takes the same args you would pass to cargo.
+# Usage:
+#   `bin/build-in-docker build` builds in debug.
+#   `bin/build-in-docker test` tests in debug.
+
+project_root="$(cd "$(dirname "$0")"/..; pwd)"
+
+if [[ ${1:-} == -s || ${1:-} == --shell ]]; then
+    build_args=bash
+elif [[ -n "$*" ]]; then
+    build_args=(cargo "$i")
+else
+    build_args=(cargo test --release -- --ignored)
+fi
+
+# Cross-compile this project into a static Linux binary.
+
+# Default target is set in Dockerfile ~/.cargo/config as x86_64-unknown-linux-musl
+set -x
+docker run --rm -it                                                                   \
+    -v "${XDG_CACHE_HOME:-~/.cache}"/docker/cargo/registry:/home/rust/.cargo/registry \
+    -v "${XDG_CACHE_HOME:-~/.cache}"/docker/cargo/git:/home/rust/.cargo/git           \
+    -v "$project_root":/workspace                                                     \
+    -e CARGO_HOME=/home/rust/.cargo                                                   \
+    -e RUSTUP_HOME=/home/rust/.rustup                                                 \
+    -u root -w /workspace                                                             \
+    ekidd/rust-musl-builder                                                           \
+    "${build_args[@]}"
