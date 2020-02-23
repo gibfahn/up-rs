@@ -24,6 +24,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+// TODO(gib): Use slog for trace logging to file.
 fn init_logging(level: &str) -> Result<()> {
     env::set_var(env_logger::DEFAULT_FILTER_ENV, level);
     env_logger::init();

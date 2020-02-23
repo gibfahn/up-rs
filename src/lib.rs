@@ -1,3 +1,5 @@
+#![allow(clippy::module_name_repetitions)]
+
 use anyhow::{bail, Result};
 
 use crate::{

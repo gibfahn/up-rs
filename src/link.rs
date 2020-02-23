@@ -23,14 +23,26 @@ pub fn link(from_dir: &str, to_dir: &str, backup_dir: &str) -> Result<()> {
     let to_dir = PathBuf::from(shellexpand::tilde(to_dir).to_string());
     let backup_dir = PathBuf::from(shellexpand::tilde(backup_dir).to_string());
 
-    ensure!(&from_dir.is_dir(), LinkError::MissingDir(from_dir));
+    ensure!(
+        &from_dir.is_dir(),
+        LinkError::MissingDir {
+            name: "From".to_string(),
+            path: from_dir
+        }
+    );
     let from_dir = from_dir
         .canonicalize()
         .map_err(|e| LinkError::CanonicalizeError {
             path: from_dir,
             source: e,
         })?;
-    ensure!(&to_dir.is_dir(), LinkError::MissingDir(to_dir));
+    ensure!(
+        &to_dir.is_dir(),
+        LinkError::MissingDir {
+            name: "To".to_string(),
+            path: to_dir
+        }
+    );
     let to_dir = to_dir
         .canonicalize()
         .map_err(|e| LinkError::CanonicalizeError {
@@ -40,6 +52,10 @@ pub fn link(from_dir: &str, to_dir: &str, backup_dir: &str) -> Result<()> {
 
     // Create the backup dir if it doesn't exist.
     if !backup_dir.exists() {
+        info!(
+            "Backup dir '{}' doesn't exist, creating it.",
+            backup_dir.display()
+        );
         fs::create_dir_all(&backup_dir).map_err(|e| LinkError::CreateDirError {
             path: backup_dir.clone(),
             source: e,
@@ -52,7 +68,13 @@ pub fn link(from_dir: &str, to_dir: &str, backup_dir: &str) -> Result<()> {
             source: e,
         })?;
 
-    ensure!(&backup_dir.is_dir(), LinkError::MissingDir(backup_dir));
+    ensure!(
+        &backup_dir.is_dir(),
+        LinkError::MissingDir {
+            name: "Backup".to_string(),
+            path: backup_dir
+        }
+    );
 
     info!("Linking from {:?} to {:?}.", from_dir, to_dir);
     debug!(
@@ -211,21 +233,23 @@ pub fn link(from_dir: &str, to_dir: &str, backup_dir: &str) -> Result<()> {
             .collect::<Vec<_>>()
     );
 
-    debug!(
-        "backup_dir final contents: {:#?}",
-        fs::read_dir(&backup_dir)
-            .unwrap()
-            .filter_map(|e| e.ok().map(|d| d.path()))
-            .collect::<Vec<_>>()
-    );
+    if backup_dir.exists() {
+        debug!(
+            "backup_dir final contents: {:#?}",
+            fs::read_dir(&backup_dir)
+                .unwrap()
+                .filter_map(|e| e.ok().map(|d| d.path()))
+                .collect::<Vec<_>>()
+        );
+    }
 
     Ok(())
 }
 
 #[derive(Error, Debug)]
 pub enum LinkError {
-    #[error("Directory '{}' should exist and be a directory.", .0.to_string_lossy())]
-    MissingDir(PathBuf),
+    #[error("{} directory '{}' should exist and be a directory.", .name, .path.to_string_lossy())]
+    MissingDir { name: String, path: PathBuf },
     #[error("Error canonicalizing '{}'", path.to_string_lossy())]
     CanonicalizeError { path: PathBuf, source: io::Error },
     #[error("Failed to create directory '{}'", path.to_string_lossy())]
