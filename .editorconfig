@@ -8,14 +8,17 @@ insert_final_newline = true
 max_line_length = 100
 indent_style = space
 
+# Rust files.
 [*.rs]
 indent_size = 4
 
 [*.{md,sh}]
 indent_size = 2
 
+# File used for git commit message editing.
 [COMMIT_EDITMSG]
 max_line_length = 72
 
-[COMMIT_EDITMSG]
+# File used by `hub` CLI for Pull Request messages.
+[PULLREQ_EDITMSG]
 max_line_length = unset
