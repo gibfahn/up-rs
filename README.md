@@ -9,7 +9,7 @@ See `up --help` for more details.
 ### Link
 
 ```console
-$ up link ~/code/dotfiles ~
+$ up link --from ~/code/dotfiles --to ~
 ```
 
 symlinks the files in `dotfiles` into the matching directory in `~` (so `~/.config/git/config` becomes a link to
