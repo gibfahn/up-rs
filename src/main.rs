@@ -3,8 +3,8 @@
 // Run: `cargo test -- --ignored`
 // https://github.com/japaric/trust
 
-#![feature(external_doc)]
-#![doc(include = "../README.md")]
+// #![feature(external_doc)]
+// #![doc(include = "../README.md")]
 
 use std::env;
 
