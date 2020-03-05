@@ -1,6 +1,6 @@
 [package]
 name = "up-rs"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Gibson Fahnestock <gibfahn@gmail.com>"]
 edition = '2018'
 license = "MIT OR Apache-2.0"
@@ -34,6 +34,7 @@ anyhow = "1.0.26"
 thiserror = "1.0.11"
 env_logger = "0.7.1"
 chrono = "0.4.10"
+git2 = "0.12.0"
 
 [dev-dependencies]
 testutils = { path = "testutils" }

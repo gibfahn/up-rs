@@ -8,6 +8,7 @@ use crate::{
 };
 
 pub mod args;
+mod clone;
 mod config;
 mod link;
 mod update;
@@ -34,8 +35,20 @@ pub fn run(args: Args) -> Result<()> {
         Some(SubCommand::Link {
             from_dir,
             to_dir,
+            git_url,
+            git_path,
             backup_dir,
         }) => {
+            match (git_url, git_path) {
+                (None, Some(_)) | (Some(_), None) => {
+                    bail!("Need to set both --git-url and --git-path")
+                }
+                (None, None) => (),
+                (Some(git_url), Some(git_path)) => {
+                    clone::clone(&git_url, &git_path)?;
+                }
+            }
+
             link::link(&from_dir, &to_dir, &backup_dir)?;
         }
         None => {

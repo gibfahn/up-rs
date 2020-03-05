@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use structopt::{clap::AppSettings, StructOpt};
 
 /// Builds the Args struct from CLI input and from environment variable input.
@@ -43,6 +45,12 @@ pub(crate) enum SubCommand {
     /// Symlink your dotfiles from a git repo to your home directory.
     #[structopt(name = "link")]
     Link {
+        /// URL of git repo to download before linking.
+        #[structopt(long)]
+        git_url: Option<String>,
+        /// Path to download git repo to before linking.
+        #[structopt(long, parse(from_os_str))]
+        git_path: Option<PathBuf>,
         /// Path where your dotfiles are kept (hopefully in source control).
         #[structopt(short = "f", long = "from", default_value = "~/code/dotfiles")]
         from_dir: String,
