@@ -10,19 +10,21 @@ use log::{debug, info, warn};
 use thiserror::Error;
 use walkdir::{DirEntry, WalkDir};
 
-/// Symlink everything from `to_dir` (default: ~/code/dotfiles/) into `from_dir` (default: ~).
-/// Anything that would be overwritten is copied into `backup_dir` (default: ~/backup/).
+/// Symlink everything from `to_dir` (default: ~/code/dotfiles/) into `from_dir`
+/// (default: ~). Anything that would be overwritten is copied into `backup_dir`
+/// (default: ~/backup/).
 ///
-/// Basically you put your dotfiles in ~/code/dotfiles/, in the same structure they were in
-/// relative to ~. Then if you want to edit your .bashrc (for example) you just edit ~/.bashrc, and
-/// as it's a symlink it'll actually edit ~/code/dotfiles/.bashrc. Then you can add and commit that
-/// change in ~/code/dotfiles.
+/// Basically you put your dotfiles in ~/code/dotfiles/, in the same structure
+/// they were in relative to ~. Then if you want to edit your .bashrc (for
+/// example) you just edit ~/.bashrc, and as it's a symlink it'll actually edit
+/// ~/code/dotfiles/.bashrc. Then you can add and commit that change in ~/code/
+/// dotfiles.
 pub fn link(from_dir: &str, to_dir: &str, backup_dir: &str) -> Result<()> {
     let now: DateTime<Utc> = Utc::now();
     debug!("UTC time is: {}", now);
 
-    // Expand ~, this is only used for the default options, if the user passes them as explicit
-    // args then they will be expanded by the shell.
+    // Expand ~, this is only used for the default options, if the user passes them
+    // as explicit args then they will be expanded by the shell.
     let from_dir = PathBuf::from(shellexpand::tilde(from_dir).to_string());
     let to_dir = PathBuf::from(shellexpand::tilde(to_dir).to_string());
     let backup_dir = PathBuf::from(shellexpand::tilde(backup_dir).to_string());

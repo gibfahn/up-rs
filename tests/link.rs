@@ -8,8 +8,8 @@ use std::{
 
 use testutils::assert;
 
-/// Set up a basic home_dir, run the link function against it, and make sure we get the
-/// expected changes.
+/// Set up a basic home_dir, run the link function against it, and make sure we
+/// get the expected changes.
 #[test]
 fn new_link() {
     let (home_dir, dotfile_dir) = get_home_dotfile_dirs("new_link");
@@ -27,8 +27,8 @@ fn new_link() {
     assert::nothing_at(&home_dir.join("backup"));
 }
 
-/// Set up a basic home_dir, run the link function against it, and make sure we get the
-/// expected changes.
+/// Set up a basic home_dir, run the link function against it, and make sure we
+/// get the expected changes.
 #[test]
 fn backup_files() {
     let (home_dir, dotfile_dir) = get_home_dotfile_dirs("backup_files");
@@ -123,7 +123,8 @@ fn hidden_and_nested() {
         &home_dir.join("dir_to_file"),
         &dotfile_dir.join("dir_to_file"),
     );
-    // Files inside directories that are converted to file links should be moved to backup.
+    // Files inside directories that are converted to file links should be moved to
+    // backup.
     assert::file(
         &home_dir.join("backup/dir_to_file/file"),
         "dir_to_file dir file\n",
@@ -201,7 +202,8 @@ fn missing_to_dir() {
     );
 }
 
-/// Make sure we fail if the backup dir can't be created (e.g. because it's already a file).
+/// Make sure we fail if the backup dir can't be created (e.g. because it's
+/// already a file).
 #[test]
 fn uncreateable_backup_dir() {
     let temp_dir = testutils::temp_dir(file!(), "uncreateable_backup_dir").unwrap();
@@ -223,8 +225,8 @@ fn uncreateable_backup_dir() {
     );
 }
 
-/// Helper function to copy the test fixtures for a given test into the OS tempdir (and
-/// return the created home_dir and dotfile_dir paths.
+/// Helper function to copy the test fixtures for a given test into the OS
+/// tempdir (and return the created home_dir and dotfile_dir paths.
 #[cfg(test)]
 fn get_home_dotfile_dirs(test_fn: &str) -> (PathBuf, PathBuf) {
     let temp_dir = testutils::temp_dir(file!(), test_fn).unwrap();
@@ -243,7 +245,8 @@ fn get_home_dotfile_dirs(test_fn: &str) -> (PathBuf, PathBuf) {
     )
 }
 
-/// Enum to capture whether we expected the link command to return success or failure?
+/// Enum to capture whether we expected the link command to return success or
+/// failure?
 #[derive(Debug, PartialEq)]
 enum LinkResult {
     Success,
@@ -251,8 +254,8 @@ enum LinkResult {
 }
 
 impl LinkResult {
-    /// Convert LinkResult to a bool (LinkResult::Success -> true, LinkResult::Failure
-    /// -> false).
+    /// Convert LinkResult to a bool (LinkResult::Success -> true,
+    /// LinkResult::Failure -> false).
     fn to_bool(&self) -> bool {
         match &self {
             LinkResult::Success => true,

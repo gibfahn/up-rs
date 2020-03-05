@@ -64,8 +64,8 @@ impl Config {
     }
 
     /// Get the path to the up.toml file, given the args passed to the cli.
-    /// If the `args_config_path` is `$XDG_CONFIG_HOME/up/up.toml` (the default) then
-    /// we assume it is unset and check the other options. Order is:
+    /// If the `args_config_path` is `$XDG_CONFIG_HOME/up/up.toml` (the default)
+    /// then we assume it is unset and check the other options. Order is:
     /// 1. `--config`
     /// 2. `$UP_CONFIG`
     /// 3. `$XDG_CONFIG_HOME/up/up.toml`
@@ -114,8 +114,8 @@ mod toml_paths_tests {
 
     use std::env;
 
-    /// Test possible options for the up.toml. All run in one file as they modify the
-    /// shared test environment.
+    /// Test possible options for the up.toml. All run in one file as they
+    /// modify the shared test environment.
     #[test]
     fn get_toml_paths() {
         // Set up paths.

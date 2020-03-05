@@ -49,14 +49,15 @@ pub fn test_path(file: &str) -> String {
     file.chars().skip(6).take_while(|c| *c != '.').collect()
 }
 
-/// Returns the path to the tests/fixtures directory (relative to the crate root).
+/// Returns the path to the tests/fixtures directory (relative to the crate
+/// root).
 #[must_use]
 pub fn fixtures_dir() -> PathBuf {
     up_project_dir().join("tests/fixtures")
 }
 
-/// Returns the path to a temporary directory for your test (OS tempdir + test file name + test function name).
-/// Cleans the directory if it already exists.
+/// Returns the path to a temporary directory for your test (OS tempdir + test
+/// file name + test function name). Cleans the directory if it already exists.
 ///
 /// # Errors
 ///

@@ -59,8 +59,8 @@ pub fn dir(path: &Path) {
     );
 }
 
-/// Panic if there is not a link at the path, or if the destination isn't the one provided
-/// (destination path must be an exact match).
+/// Panic if there is not a link at the path, or if the destination isn't the
+/// one provided (destination path must be an exact match).
 pub fn link(path: &Path, destination: &Path) {
     assert!(
         path.exists(),

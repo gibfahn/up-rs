@@ -6,21 +6,23 @@ pub fn parse() -> Args {
     Args::from_args()
 }
 
-/// Up is a tool to help you manage your developer machine. When run by itself (`up`) it
-/// does two things. It links configuration files into the right locations, and it runs scripts to
-/// make sure the tools you need are installed and up to date.
+/// Up is a tool to help you manage your developer machine. When run by itself
+/// (`up`) it does two things. It links configuration files into the right
+/// locations, and it runs scripts to make sure the tools you need are installed
+/// and up to date.
 ///
 /// The `up link` command symlinks your dotfiles into your home directory.
 ///
-/// The `up date` command provides an easy way to specify what you want on your system, and how
-/// to keep it up to date. It is designed to work with and complement existing package
-/// managers rather than replace them.
+/// The `up date` command provides an easy way to specify what you want on your
+/// system, and how to keep it up to date. It is designed to work with and
+/// complement existing package managers rather than replace them.
 #[derive(Debug, StructOpt)]
 #[structopt(rename_all = "kebab-case")]
 #[structopt(global_settings = &[AppSettings::ColoredHelp])]
 pub struct Args {
     // TODO(gib): Improve help text to cover env_logger setup.
-    /// Set the logging level explicitly (options: Off, Error, Warn, Info, Debug, Trace).
+    /// Set the logging level explicitly (options: Off, Error, Warn, Info,
+    /// Debug, Trace).
     #[structopt(long, short = "l", default_value = "up=info,warn", env = "RUST_LOG")]
     pub log_level: String,
     /// Path to the up.toml file for up.

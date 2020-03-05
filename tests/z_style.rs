@@ -1,5 +1,6 @@
-//! This module is called "z_style" rather than "style" so that it runs last (for people who
-//! aren't aware of the `--no-fail-fast` flag for `cargo test` or would rather not type it).
+//! This module is called "z_style" rather than "style" so that it runs last
+//! (for people who aren't aware of the `--no-fail-fast` flag for `cargo test`
+//! or would rather not type it).
 
 use std::{
     env,
@@ -103,8 +104,8 @@ fn no_todo() {
     );
 }
 
-/// Whether to check for the formatter having been run, or to actually fix any formatting
-/// issues.
+/// Whether to check for the formatter having been run, or to actually fix any
+/// formatting issues.
 #[derive(Debug, PartialEq)]
 enum CargoCmdType {
     /// Check the format.
