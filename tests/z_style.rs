@@ -121,13 +121,14 @@ enum CargoCmdType {
 fn cargo_cmd(current_dir: &Path, fmt: CargoCmdType) -> Output {
     let mut cmd = Command::new("cargo");
     cmd.args(match fmt {
-        CargoCmdType::RustfmtCheck => ["fmt", "--", "--check"].iter(),
-        CargoCmdType::RustfmtFix => ["fmt"].iter(),
+        CargoCmdType::RustfmtCheck => ["+nightly", "fmt", "--", "--check"].iter(),
+        CargoCmdType::RustfmtFix => ["+nightly", "fmt"].iter(),
         // TODO(gib): Stop using preview once clippy in cargo ships.
         // See: https://github.com/rust-lang/rust-clippy/issues/3837
         // Note that preview allows auto-fixing with `cargo fix --clippy`, and fixes
         // the caching issue (https://github.com/rust-lang/rust-clippy/issues/2604).
         CargoCmdType::ClippyCheck => [
+            "+nightly",
             "clippy-preview",
             "-Z=unstable-options",
             "--color=always",
@@ -136,9 +137,14 @@ fn cargo_cmd(current_dir: &Path, fmt: CargoCmdType) -> Output {
             "clippy::pedantic",
         ]
         .iter(),
-        CargoCmdType::ClippyFix => {
-            ["fix", "--clippy", "-Z=unstable-options", "--allow-staged"].iter()
-        }
+        CargoCmdType::ClippyFix => [
+            "+nightly",
+            "fix",
+            "--clippy",
+            "-Z=unstable-options",
+            "--allow-staged",
+        ]
+        .iter(),
     });
     cmd.current_dir(current_dir);
     println!("Running '{:?}' in '{:?}'", cmd, current_dir);
