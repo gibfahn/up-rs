@@ -4,6 +4,21 @@ I use this to keep my machine up to date. It does a couple of different things.
 
 See `up --help` for more details.
 
+## Install
+
+The binary is self-contained, you can simply download it and mark the binary as executable:
+
+```shell
+curl --create-dirs -Lo ~/bin/up https://github.com/gibfahn/up-rs/releases/latest/download/up-darwin
+chmod +x ~/bin/up
+```
+
+Or if you have Cargo on your system you can install it directly:
+
+```shell
+cargo install up-rs
+```
+
 ## Subcommands
 
 ### Link
