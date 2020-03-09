@@ -34,7 +34,7 @@ pub fn link(from_dir: &str, to_dir: &str, backup_dir: &str) -> Result<()> {
 
     // Create the backup dir if it doesn't exist.
     if !backup_dir.exists() {
-        info!(
+        debug!(
             "Backup dir '{}' doesn't exist, creating it.",
             backup_dir.display()
         );
@@ -45,7 +45,10 @@ pub fn link(from_dir: &str, to_dir: &str, backup_dir: &str) -> Result<()> {
     }
     let backup_dir = resolve_directory(backup_dir, "Backup")?;
 
-    info!("Linking from {:?} to {:?}.", from_dir, to_dir);
+    info!(
+        "Linking from {:?} to {:?} (backup dir {:?}).",
+        from_dir, to_dir, backup_dir
+    );
     debug!(
         "to_dir contents: {:?}",
         fs::read_dir(&to_dir)
