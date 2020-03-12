@@ -11,9 +11,22 @@ use git2::{
 };
 use log::debug;
 
+pub(crate) fn clone_or_update(git_url: &str, git_path: &Path) -> Result<()> {
+    if git_path.is_dir() {
+        update(git_url, git_path)
+    } else {
+        clone(git_url, git_path)
+    }
+}
+
 // TODO(gib): Add tests for this.
-// TODO(gib): update if directory already exists.
-pub(crate) fn clone(git_url: &str, git_path: &Path) -> Result<()> {
+fn update(git_url: &str, git_path: &Path) -> Result<()> {
+    debug!("Updating '{:?}' from '{}'", git_path, git_url);
+    Ok(())
+}
+
+// TODO(gib): Add tests for this.
+fn clone(git_url: &str, git_path: &Path) -> Result<()> {
     debug!("Cloning '{}' into '{:?}'", git_url, git_path);
     let state = RefCell::new(State {
         progress: None,

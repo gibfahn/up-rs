@@ -45,7 +45,7 @@ pub fn run(args: Args) -> Result<()> {
                 }
                 (None, None) => (),
                 (Some(git_url), Some(git_path)) => {
-                    git::clone(&git_url, &git_path)?;
+                    git::clone_or_update(&git_url, &git_path)?;
                 }
             }
 
