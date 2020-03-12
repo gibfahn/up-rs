@@ -4,7 +4,7 @@ use std::{
     env, fs,
     os::unix,
     path::{Path, PathBuf},
-    process::Command,
+    process::{Command, Output},
 };
 
 use anyhow::Result;
@@ -40,7 +40,32 @@ fn up_project_dir() -> PathBuf {
 /// Returns a new command starting with /path/to/up (add args as needed).
 #[must_use]
 pub fn up_cmd() -> Command {
-    Command::new(up_binary_dir().join("up"))
+    let mut cmd = Command::new(up_binary_dir().join("up"));
+    // Always print colours, even when output is not a tty.
+    cmd.env("RUST_LOG_STYLE", "always");
+    // Show backtrace on exit, nightly only for now.
+    // https://github.com/rust-lang/rust/issues/53487
+    cmd.env("RUST_BACKTRACE", "1");
+    cmd
+}
+
+/// Runs a command and prints out the stdout/stderr nicely.
+/// Returns the command output.
+#[must_use]
+pub fn run_cmd(mut cmd: Command) -> Output {
+    println!("Running command '{:?}'.", cmd);
+    let cmd_output = cmd.output().unwrap();
+    println!("  status: {}", cmd_output.status);
+    if !cmd_output.stdout.is_empty() {
+        println!("  stdout: {}", String::from_utf8_lossy(&cmd_output.stdout));
+    }
+    if !cmd_output.stderr.is_empty() {
+        println!(
+            "  stderr:\n\n{}",
+            String::from_utf8_lossy(&cmd_output.stderr)
+        );
+    }
+    cmd_output
 }
 
 /// Returns the test module name (usually the test file name).

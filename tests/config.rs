@@ -3,11 +3,7 @@ fn empty_toml() {
     let fixtures_dir = testutils::fixtures_dir().join("blank_config");
     let mut cmd = testutils::up_cmd();
     cmd.args(["-c", fixtures_dir.join("up.toml").to_str().unwrap(), "date"].iter());
-    println!("cmd: {:?}\n", cmd);
-    let cmd_output = cmd.output().unwrap();
-    println!("status: {}", cmd_output.status);
-    println!("stdout: {}", String::from_utf8_lossy(&cmd_output.stdout));
-    println!("STDERR:\n\n{}", String::from_utf8_lossy(&cmd_output.stderr));
+    let cmd_output = testutils::run_cmd(cmd);
     assert_eq!(
         cmd_output.status.success(),
         true,
@@ -21,10 +17,7 @@ fn basic_toml() {
     let mut cmd = testutils::up_cmd();
     cmd.args(["-c", fixtures_dir.join("up.toml").to_str().unwrap(), "date"].iter());
     println!("cmd: {:?}\n", cmd);
-    let cmd_output = cmd.output().unwrap();
-    println!("status: {}", cmd_output.status);
-    println!("stdout: {}", String::from_utf8_lossy(&cmd_output.stdout));
-    println!("STDERR:\n\n{}", String::from_utf8_lossy(&cmd_output.stderr));
+    let cmd_output = testutils::run_cmd(cmd);
     // TODO(gib): Why is this test passing with unknown keys in the up.toml?
     assert_eq!(
         cmd_output.status.success(),

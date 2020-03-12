@@ -269,8 +269,6 @@ impl LinkResult {
 fn run_link_cmd(dotfile_dir: &Path, home_dir: &Path, result: LinkResult) -> Output {
     let mut cmd = testutils::up_cmd();
     // Always show coloured logs.
-    cmd.env("RUST_LOG_STYLE", "always");
-    cmd.env("RUST_BACKTRACE", "1"); // Show backtrace on exit.
     cmd.args(
         [
             "--log-level=debug",
@@ -285,18 +283,7 @@ fn run_link_cmd(dotfile_dir: &Path, home_dir: &Path, result: LinkResult) -> Outp
         .iter(),
     );
 
-    println!("Running command '{:?}'.", cmd);
-    let cmd_output = cmd.output().unwrap();
-    println!("  status: {}", cmd_output.status);
-    if !cmd_output.stdout.is_empty() {
-        println!("  stdout: {}", String::from_utf8_lossy(&cmd_output.stdout));
-    }
-    if !cmd_output.stderr.is_empty() {
-        println!(
-            "  stderr:\n\n{}",
-            String::from_utf8_lossy(&cmd_output.stderr)
-        );
-    }
+    let cmd_output = testutils::run_cmd(cmd);
     assert_eq!(
         cmd_output.status.success(),
         result.to_bool(),
