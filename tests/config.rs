@@ -1,8 +1,14 @@
+use std::fs;
+
 #[test]
 fn empty_toml() {
     let fixtures_dir = testutils::fixtures_dir().join("blank_config");
+    let temp_dir = testutils::temp_dir(file!(), "empty_toml").unwrap();
+    testutils::copy_all(&fixtures_dir, &temp_dir).unwrap();
+    // Can't check empty dir into git.
+    fs::create_dir(temp_dir.join("tasks")).unwrap();
     let mut cmd = testutils::up_cmd();
-    cmd.args(["-c", fixtures_dir.join("up.toml").to_str().unwrap(), "date"].iter());
+    cmd.args(["-c", temp_dir.join("up.toml").to_str().unwrap(), "date"].iter());
     let cmd_output = testutils::run_cmd(cmd);
     assert_eq!(
         cmd_output.status.success(),

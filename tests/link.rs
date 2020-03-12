@@ -13,6 +13,8 @@ use testutils::assert;
 #[test]
 fn new_link() {
     let (home_dir, dotfile_dir) = get_home_dotfile_dirs("new_link");
+    // Create empty dir (can't check in as git doesn't store dirs without contents.
+    fs::create_dir(home_dir.join("existing_dir")).unwrap();
     run_link_cmd(&dotfile_dir, &home_dir, LinkResult::Success);
 
     // Existing files shouldn't be touched.
