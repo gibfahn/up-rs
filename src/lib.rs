@@ -8,8 +8,8 @@ use crate::{
 };
 
 pub mod args;
-mod clone;
 mod config;
+mod git;
 mod link;
 mod update;
 
@@ -45,7 +45,7 @@ pub fn run(args: Args) -> Result<()> {
                 }
                 (None, None) => (),
                 (Some(git_url), Some(git_path)) => {
-                    clone::clone(&git_url, &git_path)?;
+                    git::clone(&git_url, &git_path)?;
                 }
             }
 
