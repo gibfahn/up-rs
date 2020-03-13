@@ -39,3 +39,6 @@ git2 = { version = "0.12.0", features = ["vendored-openssl"]}
 [dev-dependencies]
 testutils = { path = "testutils" }
 ignore = "0.4.11"
+
+[features]
+CI = [] # Enabled when running in CI.

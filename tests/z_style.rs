@@ -14,12 +14,23 @@ use ignore::WalkBuilder;
 #[test]
 fn rustfmt() {
     let current_dir = env::current_dir().unwrap();
-    let check_output = cargo_cmd(&current_dir, CargoCmdType::RustfmtCheck);
+    let check_output;
 
-    if !check_output.status.success() {
-        // Fix the formatting.
-        cargo_cmd(&current_dir, CargoCmdType::RustfmtFix);
+    #[cfg(feature = "CI")]
+    {
+        check_output = cargo_cmd(&current_dir, CargoCmdType::RustfmtStableCheck);
     }
+
+    #[cfg(not(feature = "CI"))]
+    {
+        check_output = cargo_cmd(&current_dir, CargoCmdType::RustfmtCheck);
+
+        if !check_output.status.success() {
+            // Fix the formatting.
+            cargo_cmd(&current_dir, CargoCmdType::RustfmtFix);
+        }
+    }
+
     assert!(
         check_output.status.success(),
         "Rustfmt needs to be run, ran 'cargo fmt' to fix, please commit the changes."
@@ -30,12 +41,23 @@ fn rustfmt() {
 #[test]
 fn testutils_rustfmt() {
     let current_dir = env::current_dir().unwrap().join("testutils");
-    let check_output = cargo_cmd(&current_dir, CargoCmdType::RustfmtCheck);
+    let check_output;
 
-    if !check_output.status.success() {
-        // Fix the formatting.
-        cargo_cmd(&current_dir, CargoCmdType::RustfmtFix);
+    #[cfg(feature = "CI")]
+    {
+        check_output = cargo_cmd(&current_dir, CargoCmdType::RustfmtStableCheck);
     }
+
+    #[cfg(not(feature = "CI"))]
+    {
+        check_output = cargo_cmd(&current_dir, CargoCmdType::RustfmtCheck);
+
+        if !check_output.status.success() {
+            // Fix the formatting.
+            cargo_cmd(&current_dir, CargoCmdType::RustfmtFix);
+        }
+    }
+
     assert!(
         check_output.status.success(),
         "Rustfmt needs to be run, ran 'cargo fmt' to fix, please commit the changes."
@@ -46,12 +68,23 @@ fn testutils_rustfmt() {
 #[test]
 fn clippy() {
     let current_dir = env::current_dir().unwrap();
-    let clippy_output = cargo_cmd(&current_dir, CargoCmdType::ClippyCheck);
+    let clippy_output;
 
-    if !clippy_output.status.success() {
-        // Fix the clippy errors if possible.
-        cargo_cmd(&current_dir, CargoCmdType::ClippyFix);
+    #[cfg(feature = "CI")]
+    {
+        clippy_output = cargo_cmd(&current_dir, CargoCmdType::ClippyStableCheck);
     }
+
+    #[cfg(not(feature = "CI"))]
+    {
+        clippy_output = cargo_cmd(&current_dir, CargoCmdType::ClippyCheck);
+
+        if !clippy_output.status.success() {
+            // Fix the clippy errors if possible.
+            cargo_cmd(&current_dir, CargoCmdType::ClippyFix);
+        }
+    }
+
     assert!(
         clippy_output.status.success(),
         "Clippy needs to be run, please run 'cargo clippy-preview -Z=unstable-options -- --deny=clippy-pedantic'."
@@ -62,12 +95,23 @@ fn clippy() {
 #[test]
 fn testutils_clippy() {
     let current_dir = env::current_dir().unwrap().join("testutils");
-    let clippy_output = cargo_cmd(&current_dir, CargoCmdType::ClippyCheck);
+    let clippy_output;
 
-    if !clippy_output.status.success() {
-        // Fix the clippy errors if possible.
-        cargo_cmd(&current_dir, CargoCmdType::ClippyFix);
+    #[cfg(feature = "CI")]
+    {
+        clippy_output = cargo_cmd(&current_dir, CargoCmdType::ClippyStableCheck);
     }
+
+    #[cfg(not(feature = "CI"))]
+    {
+        clippy_output = cargo_cmd(&current_dir, CargoCmdType::ClippyCheck);
+
+        if !clippy_output.status.success() {
+            // Fix the clippy errors if possible.
+            cargo_cmd(&current_dir, CargoCmdType::ClippyFix);
+        }
+    }
+
     assert!(
         clippy_output.status.success(),
         "Clippy needs to be run, please run 'cargo clippy'."
@@ -108,25 +152,49 @@ fn no_todo() {
 /// formatting issues.
 #[derive(Debug, PartialEq)]
 enum CargoCmdType {
+    /// Check the format in CI.
+    #[cfg(feature = "CI")]
+    RustfmtStableCheck,
     /// Check the format.
+    #[cfg(not(feature = "CI"))]
     RustfmtCheck,
     /// Fix any formatting issues.
+    #[cfg(not(feature = "CI"))]
     RustfmtFix,
+    /// Run clippy in CI.
+    #[cfg(feature = "CI")]
+    ClippyStableCheck,
     /// Run clippy.
+    #[cfg(not(feature = "CI"))]
     ClippyCheck,
     /// Fix clippy errors if possible.
+    #[cfg(not(feature = "CI"))]
     ClippyFix,
 }
 
 fn cargo_cmd(current_dir: &Path, fmt: CargoCmdType) -> Output {
     let mut cmd = Command::new("cargo");
     cmd.args(match fmt {
+        #[cfg(feature = "CI")]
+        CargoCmdType::RustfmtStableCheck => ["fmt", "--", "--check"].iter(),
+        #[cfg(not(feature = "CI"))]
         CargoCmdType::RustfmtCheck => ["+nightly", "fmt", "--", "--check"].iter(),
+        #[cfg(not(feature = "CI"))]
         CargoCmdType::RustfmtFix => ["+nightly", "fmt"].iter(),
+        #[cfg(feature = "CI")]
+        CargoCmdType::ClippyStableCheck => [
+            "clippy",
+            "--color=always",
+            "--",
+            "--deny",
+            "clippy::pedantic",
+        ]
+        .iter(),
         // TODO(gib): Stop using preview once clippy in cargo ships.
         // See: https://github.com/rust-lang/rust-clippy/issues/3837
         // Note that preview allows auto-fixing with `cargo fix --clippy`, and fixes
         // the caching issue (https://github.com/rust-lang/rust-clippy/issues/2604).
+        #[cfg(not(feature = "CI"))]
         CargoCmdType::ClippyCheck => [
             "+nightly",
             "clippy-preview",
@@ -137,6 +205,7 @@ fn cargo_cmd(current_dir: &Path, fmt: CargoCmdType) -> Output {
             "clippy::pedantic",
         ]
         .iter(),
+        #[cfg(not(feature = "CI"))]
         CargoCmdType::ClippyFix => [
             "+nightly",
             "fix",
