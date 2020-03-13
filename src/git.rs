@@ -22,6 +22,7 @@ pub(crate) fn clone_or_update(git_url: &str, git_path: &Path) -> Result<()> {
 // TODO(gib): Add tests for this.
 fn update(git_url: &str, git_path: &Path) -> Result<()> {
     debug!("Updating '{:?}' from '{}'", git_path, git_url);
+    // TODO(gib): add update logic.
     Ok(())
 }
 
