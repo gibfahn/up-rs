@@ -43,16 +43,18 @@ pub fn run(args: Args) -> Result<()> {
                 }
             }
 
+            // Expand ~, this is only used for the default options, if the user passes them
+            // as explicit args then they will be expanded by the shell.
             tasks::link::run(LinkConfig {
-                from_dir,
-                to_dir,
-                backup_dir,
+                from_dir: shellexpand::tilde(&from_dir).into_owned(),
+                to_dir: shellexpand::tilde(&to_dir).into_owned(),
+                backup_dir: shellexpand::tilde(&backup_dir).into_owned(),
             })?;
         }
         None => {
             // TODO(gib): Store and fetch config in config module.
             let config = UpConfig::from(&args)?;
-            update::update(config)?;
+            update::update(&config)?;
         }
     }
     Ok(())

@@ -11,11 +11,25 @@ use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
 use walkdir::{DirEntry, WalkDir};
 
+use crate::tasks::ResolveEnv;
+
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub(crate) struct LinkConfig {
     pub from_dir: String,
     pub to_dir: String,
     pub backup_dir: String,
+}
+
+impl ResolveEnv for LinkConfig {
+    fn resolve_env<F>(&mut self, env_fn: F) -> Result<()>
+    where
+        F: Fn(&str) -> Result<String>,
+    {
+        self.from_dir = env_fn(&self.from_dir)?;
+        self.to_dir = env_fn(&self.to_dir)?;
+        self.backup_dir = env_fn(&self.backup_dir)?;
+        Ok(())
+    }
 }
 
 /// Symlink everything from `to_dir` (default: ~/code/dotfiles/) into `from_dir`
@@ -31,11 +45,9 @@ pub(crate) fn run(config: LinkConfig) -> Result<()> {
     let now: DateTime<Utc> = Utc::now();
     debug!("UTC time is: {}", now);
 
-    // Expand ~, this is only used for the default options, if the user passes them
-    // as explicit args then they will be expanded by the shell.
-    let from_dir = PathBuf::from(shellexpand::tilde(&config.from_dir).to_string());
-    let to_dir = PathBuf::from(shellexpand::tilde(&config.to_dir).to_string());
-    let backup_dir = PathBuf::from(shellexpand::tilde(&config.backup_dir).to_string());
+    let from_dir = PathBuf::from(config.from_dir);
+    let to_dir = PathBuf::from(config.to_dir);
+    let backup_dir = PathBuf::from(config.backup_dir);
 
     let from_dir = resolve_directory(from_dir, "From")?;
     let to_dir = resolve_directory(to_dir, "To")?;

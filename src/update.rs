@@ -5,12 +5,15 @@ use std::{
     process::{Command, Output},
 };
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use log::{debug, info, trace};
 use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::{config, tasks, tasks::link::LinkConfig};
+use crate::{
+    config, tasks,
+    tasks::{link::LinkConfig, ResolveEnv, TaskError},
+};
 
 #[derive(Debug)]
 struct Task {
@@ -52,19 +55,25 @@ impl Task {
     }
 
     // TODO(gib): Test for this (using basic config).
-    fn run(&self, config: &config::UpConfig) -> Result<()> {
+    fn run<F>(&self, env_fn: F, env: &HashMap<String, String>) -> Result<()>
+    where
+        F: Fn(&str) -> Result<String>,
+    {
         info!("Running task '{}'", &self.name);
 
         if let Some(lib) = &self.config.run_lib {
             match lib.as_str() {
-                "link" => tasks::link::run(
-                    self.config
+                "link" => {
+                    let mut data = self
+                        .config
                         .data
                         .as_ref()
                         .unwrap()
                         .clone()
-                        .try_into::<LinkConfig>()?,
-                )?,
+                        .try_into::<LinkConfig>()?;
+                    data.resolve_env(env_fn)?;
+                    tasks::link::run(data)?;
+                }
                 _ => todo!(),
             }
             return Ok(());
@@ -72,7 +81,7 @@ impl Task {
         todo!();
 
         if let Some(check_cmd) = &self.config.check_cmd {
-            let check_output = self.run_cmd(&check_cmd)?;
+            let check_output = self.run_cmd(&check_cmd, env)?;
             if !check_output.status.success() {
                 todo!()
             }
@@ -98,9 +107,13 @@ impl Task {
         Ok(())
     }
 
-    fn run_cmd(&self, cmd: &[String]) -> Result<Output> {
+    fn run_cmd(&self, cmd: &[String], env: &HashMap<String, String>) -> Result<Output> {
         // TODO(gib): set current dir.
-        let output = Command::new(&cmd[0]).args(&cmd[1..]).output()?;
+        let output = Command::new(&cmd[0])
+            .args(&cmd[1..])
+            .env_clear()
+            .envs(env.iter())
+            .output()?;
 
         // TODO(gib): How do we separate out the task output?
         // TODO(gib): Document error codes.
@@ -120,11 +133,36 @@ impl Task {
 }
 
 /// Run a update checks specified in the `up_dir` config files.
-pub fn update(config: config::UpConfig) -> Result<()> {
+pub fn update(config: &config::UpConfig) -> Result<()> {
     // TODO(gib): Handle missing dir & move into config.
     let mut tasks_dir = config.up_toml_path.as_ref().unwrap().clone();
     tasks_dir.pop();
     tasks_dir.push("tasks");
+
+    let mut env = config.config_toml.env.clone();
+    trace!("Unexpanded config env: {:?}", env);
+    for val in env.values_mut() {
+        *val = shellexpand::full_with_context(val, dirs::home_dir, |k| std::env::var(k).map(Some))
+            .map_err(|e| UpdateError::EnvLookupError {
+                var: e.var_name,
+                source: e.cause,
+            })?
+            .into_owned();
+    }
+    debug!("Expanded config env: {:?}", env);
+
+    let env_fn = &|s: &str| {
+        let out = shellexpand::full_with_context(s, dirs::home_dir, |k| {
+            env.get(k).ok_or(anyhow!("Value not found")).map(Some)
+        })
+        .map(|s| s.into_owned())
+        .map_err(|e| TaskError::ResolveEnvError {
+            var: e.var_name,
+            source: e.cause,
+        })?;
+
+        Ok(out)
+    };
 
     let tasks: HashMap<String, Task> = tasks_dir
         .read_dir()
@@ -149,7 +187,7 @@ pub fn update(config: config::UpConfig) -> Result<()> {
     tasks_to_run.sort();
 
     for name in tasks_to_run {
-        tasks.get(&name).unwrap().run(&config)?;
+        tasks.get(&name).unwrap().run(env_fn, &env)?;
     }
 
     Ok(())
@@ -167,4 +205,9 @@ pub fn update(config: config::UpConfig) -> Result<()> {
 pub enum UpdateError {
     #[error("Error walking directory '{}':", path.to_string_lossy())]
     ReadDirError { path: PathBuf, source: io::Error },
+    #[error("Env lookup error, please define '{}' in your up.toml:", var)]
+    EnvLookupError {
+        var: String,
+        source: std::env::VarError,
+    },
 }

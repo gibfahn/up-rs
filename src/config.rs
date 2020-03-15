@@ -30,7 +30,7 @@ pub struct ConfigToml {
     /// Path to tasks directory (relative to `up.toml`). Default is ./tasks.
     tasks_path: Option<String>,
     /// Environment variables to pass to scripts.
-    env: HashMap<String, String>,
+    pub env: HashMap<String, String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
