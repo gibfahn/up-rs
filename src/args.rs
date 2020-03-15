@@ -40,6 +40,7 @@ pub(crate) enum SubCommand {
     // TODO(gib): Work out how to do clap's help and long_help in structopt.
     /// Symlink your dotfiles from a git repo to your home directory.
     #[structopt(name = "link")]
+    // TODO(gib): move contents to LinkConfig.
     Link {
         /// URL of git repo to download before linking.
         #[structopt(long)]

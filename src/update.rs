@@ -2,11 +2,11 @@ use std::{
     collections::HashMap,
     fs, io,
     path::PathBuf,
-    process::{Command, Output},
+    process::{Command, Output, Stdio},
 };
 
-use anyhow::{anyhow, Result};
-use log::{debug, info, trace};
+use anyhow::{anyhow, bail, Result};
+use log::{debug, info, trace, warn};
 use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -28,7 +28,7 @@ struct TaskConfig {
     /// Task name, defaults to file name (minus extension) if unset.
     name: Option<String>,
     /// Set of Constraints that will cause the task to be run.
-    constraints: HashMap<String, String>,
+    constraints: Option<HashMap<String, String>>,
     /// Tasks that must have been executed beforehand.
     requires: Option<Vec<String>>,
     /// Whether to run this by default, or only if required.
@@ -59,7 +59,7 @@ impl Task {
     where
         F: Fn(&str) -> Result<String>,
     {
-        info!("Running task '{}'", &self.name);
+        debug!("Running task '{}'", &self.name);
 
         if let Some(lib) = &self.config.run_lib {
             match lib.as_str() {
@@ -78,53 +78,67 @@ impl Task {
             }
             return Ok(());
         }
-        todo!();
 
-        if let Some(check_cmd) = &self.config.check_cmd {
-            let check_output = self.run_cmd(&check_cmd, env)?;
-            if !check_output.status.success() {
-                todo!()
+        if let Some(cmd) = &self.config.check_cmd {
+            trace!("Running '{}' check command.", &self.name);
+            let check_output = self.run_command(&cmd, env)?;
+            // TODO(gib): Allow choosing how to validate check_cmd output (stdout, zero exit
+            // code, non-zero exit code).
+            if check_output.status.success() {
+                debug!("Skipping task '{}' as check command passed.", &self.name);
+                return Ok(());
+            }
+        } else {
+            // TODO(gib): Allow silencing warning by setting check_cmd to boolean false.
+            warn!(
+                "You haven't specified a check command for '{}', so it will always be run",
+                &self.name
+            )
+        }
+
+        if let Some(mut cmd) = self.config.run_cmd.clone() {
+            trace!("Running '{}' run command.", &self.name);
+            for s in cmd.iter_mut() {
+                *s = env_fn(&s)?;
+            }
+            let run_output = self.run_command(&cmd, env)?;
+            if run_output.status.success() {
+                debug!("Task '{}' complete.", &self.name);
+                return Ok(());
+            } else {
+                bail!(UpdateError::CmdFailedError {
+                    name: self.name.clone(),
+                });
             }
         }
 
-        // TODO(gib): Only run if check failed.
-        let update_file = &self.path.join("update");
-
-        let update_output = Command::new(update_file).current_dir(&self.path).output()?;
-
-        // TODO(gib): How do we separate out the task output?
-        info!(
-            "Task {} update stdout: {}",
-            &self.name,
-            String::from_utf8_lossy(&update_output.stdout)
-        );
-        info!(
-            "Task {} update stderr: {}",
-            &self.name,
-            String::from_utf8_lossy(&update_output.stderr)
-        );
-
-        Ok(())
+        bail!(UpdateError::MissingCmdError {
+            name: self.name.clone()
+        });
     }
 
-    fn run_cmd(&self, cmd: &[String], env: &HashMap<String, String>) -> Result<Output> {
+    fn run_command(&self, cmd: &[String], env: &HashMap<String, String>) -> Result<Output> {
         // TODO(gib): set current dir.
-        let output = Command::new(&cmd[0])
+        let mut command = Command::new(&cmd[0]);
+        command
             .args(&cmd[1..])
             .env_clear()
             .envs(env.iter())
-            .output()?;
+            .stdin(Stdio::inherit());
+        trace!("Running command: {:?}", &command);
+
+        let output = command.output()?;
 
         // TODO(gib): How do we separate out the task output?
         // TODO(gib): Document error codes.
         debug!("Task '{}' status: {}", &self.name, output.status);
         debug!(
-            "Task '{}' check stdout: {}",
+            "Task '{}' stdout:\n\n{}",
             &self.name,
             String::from_utf8_lossy(&output.stdout)
         );
         debug!(
-            "Task '{}' check stderr: {}",
+            "Task '{}' stderr:\n\n{}",
             &self.name,
             String::from_utf8_lossy(&output.stderr)
         );
@@ -151,9 +165,13 @@ pub fn update(config: &config::UpConfig) -> Result<()> {
     }
     debug!("Expanded config env: {:?}", env);
 
+    // TODO(gib): Allow vars to refer to other vars, detect cycles (topologically
+    // sort inputs).
     let env_fn = &|s: &str| {
         let out = shellexpand::full_with_context(s, dirs::home_dir, |k| {
-            env.get(k).ok_or(anyhow!("Value not found")).map(Some)
+            env.get(k)
+                .ok_or_else(|| anyhow!("Value not found"))
+                .map(Some)
         })
         .map(|s| s.into_owned())
         .map_err(|e| TaskError::ResolveEnvError {
@@ -163,6 +181,8 @@ pub fn update(config: &config::UpConfig) -> Result<()> {
 
         Ok(out)
     };
+
+    // TODO(gib): Handle and filter by constraints.
 
     let tasks: HashMap<String, Task> = tasks_dir
         .read_dir()
@@ -186,6 +206,9 @@ pub fn update(config: &config::UpConfig) -> Result<()> {
 
     tasks_to_run.sort();
 
+    // TODO(gib): check requires in a loop, run what can be run each time, if no
+    // change exit.
+    // TODO(gib): Run tasks in parallel.
     for name in tasks_to_run {
         tasks.get(&name).unwrap().run(env_fn, &env)?;
     }
@@ -210,4 +233,8 @@ pub enum UpdateError {
         var: String,
         source: std::env::VarError,
     },
+    #[error("Task '{}' had no run command.", name)]
+    MissingCmdError { name: String },
+    #[error("Task '{}' run command failed:", name)]
+    CmdFailedError { name: String },
 }
