@@ -1,6 +1,7 @@
 //! Manages the config files (default location ~/.config/up/).
 
 use std::{
+    collections::HashMap,
     env, fs,
     path::{Path, PathBuf},
 };
@@ -12,7 +13,7 @@ use serde_derive::{Deserialize, Serialize};
 use crate::args::Args;
 
 #[derive(Default, Debug)]
-pub struct Config {
+pub struct UpConfig {
     pub up_toml_path: Option<PathBuf>,
     pub config_toml: ConfigToml,
 }
@@ -26,8 +27,10 @@ pub struct Config {
 pub struct ConfigToml {
     /// Link options.
     link: Option<LinkConfigToml>,
-    /// Path to tasks directory (default up_dir/tasks).
+    /// Path to tasks directory (relative to `up.toml`). Default is ./tasks.
     tasks_path: Option<String>,
+    /// Environment variables to pass to scripts.
+    env: HashMap<String, String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -38,8 +41,8 @@ pub struct LinkConfigToml {
     backup_dir: Option<String>,
 }
 
-impl Config {
-    /// Build the `Config` struct by parsing the config toml files.
+impl UpConfig {
+    /// Build the `UpConfig` struct by parsing the config toml files.
     pub fn from(args: &Args) -> Result<Self> {
         let mut config_toml = ConfigToml::default();
 
@@ -110,7 +113,7 @@ impl Config {
 
 #[cfg(test)]
 mod toml_paths_tests {
-    use super::Config;
+    use super::UpConfig;
 
     use std::env;
 
@@ -128,28 +131,28 @@ mod toml_paths_tests {
         let args_config_path = env::current_exe().unwrap();
         env::set_var("HOME", fake_home_1.clone());
         env::set_var("XDG_CONFIG_HOME", fake_home_1.join(".config"));
-        let config_path = Config::get_up_toml_path(args_config_path.to_str().unwrap());
+        let config_path = UpConfig::get_up_toml_path(args_config_path.to_str().unwrap());
         assert_eq!(config_path.unwrap(), args_config_path);
 
         // If nothing is passed as an arg but UP_CONFIG exists, we should use it.
         env::set_var("UP_CONFIG", args_config_path.clone());
         env::set_var("HOME", fake_home_1.clone());
         env::set_var("XDG_CONFIG_HOME", fake_home_1.join(".config"));
-        let config_path = Config::get_up_toml_path(default_path);
+        let config_path = UpConfig::get_up_toml_path(default_path);
         assert_eq!(config_path.unwrap(), args_config_path);
         env::remove_var("UP_CONFIG");
 
         // If nothing is passed as an arg, we should use the XDG_CONFIG_HOME/up/up.toml.
         env::set_var("HOME", fake_home_1.clone());
         env::set_var("XDG_CONFIG_HOME", fake_home_1.join(".config"));
-        let config_path = Config::get_up_toml_path(default_path);
+        let config_path = UpConfig::get_up_toml_path(default_path);
         assert_eq!(config_path.unwrap(), config_toml_1);
 
         // If XDG_CONFIG_HOME is set we should use it.
         env::set_var("HOME", fake_home_1.clone());
         // Set XDG_CONFIG_HOME to a non-existent path.
         env::set_var("XDG_CONFIG_HOME", fake_home_1.join(".badconfig"));
-        let config_path = Config::get_up_toml_path(default_path);
+        let config_path = UpConfig::get_up_toml_path(default_path);
         assert_eq!(
             config_path.unwrap(),
             fake_home_1.join(".badconfig/up/up.toml")
@@ -157,21 +160,21 @@ mod toml_paths_tests {
 
         // If XDG_CONFIG_HOME is missing we should use ~/.config/up/up.toml.
         env::remove_var("XDG_CONFIG_HOME");
-        let config_path = Config::get_up_toml_path(default_path);
+        let config_path = UpConfig::get_up_toml_path(default_path);
         assert_eq!(config_path.unwrap(), config_toml_1);
 
         // If XDG_CONFIG_HOME is missing and ~/.config doesn't exist we should use
         // still use it.
         env::set_var("HOME", fake_home_2.clone());
         env::remove_var("XDG_CONFIG_HOME");
-        let config_path = Config::get_up_toml_path(default_path);
+        let config_path = UpConfig::get_up_toml_path(default_path);
         assert_eq!(config_path.unwrap(), fake_home_2.join(".config/up/up.toml"),);
 
         // If none of the options are present and there is no ~ we should error.
         env::remove_var("HOME");
         env::remove_var("XDG_CONFIG_HOME");
         // Default arg, i.e. not passed.
-        let config_path = Config::get_up_toml_path(default_path);
-        assert!(config_path.is_err(), "Config path: {:?}", config_path);
+        let config_path = UpConfig::get_up_toml_path(default_path);
+        assert!(config_path.is_err(), "UpConfig path: {:?}", config_path);
     }
 }

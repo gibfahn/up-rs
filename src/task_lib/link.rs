@@ -7,8 +7,16 @@ use std::{
 use anyhow::{bail, ensure, Context, Result};
 use chrono::{DateTime, Utc};
 use log::{debug, info, warn};
+use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
 use walkdir::{DirEntry, WalkDir};
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub(crate) struct LinkConfig {
+    pub from_dir: String,
+    pub to_dir: String,
+    pub backup_dir: String,
+}
 
 /// Symlink everything from `to_dir` (default: ~/code/dotfiles/) into `from_dir`
 /// (default: ~). Anything that would be overwritten is copied into `backup_dir`
@@ -19,15 +27,15 @@ use walkdir::{DirEntry, WalkDir};
 /// example) you just edit ~/.bashrc, and as it's a symlink it'll actually edit
 /// ~/code/dotfiles/.bashrc. Then you can add and commit that change in ~/code/
 /// dotfiles.
-pub fn link(from_dir: &str, to_dir: &str, backup_dir: &str) -> Result<()> {
+pub(crate) fn run(config: LinkConfig) -> Result<()> {
     let now: DateTime<Utc> = Utc::now();
     debug!("UTC time is: {}", now);
 
     // Expand ~, this is only used for the default options, if the user passes them
     // as explicit args then they will be expanded by the shell.
-    let from_dir = PathBuf::from(shellexpand::tilde(from_dir).to_string());
-    let to_dir = PathBuf::from(shellexpand::tilde(to_dir).to_string());
-    let backup_dir = PathBuf::from(shellexpand::tilde(backup_dir).to_string());
+    let from_dir = PathBuf::from(shellexpand::tilde(&config.from_dir).to_string());
+    let to_dir = PathBuf::from(shellexpand::tilde(&config.to_dir).to_string());
+    let backup_dir = PathBuf::from(shellexpand::tilde(&config.backup_dir).to_string());
 
     let from_dir = resolve_directory(from_dir, "From")?;
     let to_dir = resolve_directory(to_dir, "To")?;

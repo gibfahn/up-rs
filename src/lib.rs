@@ -4,13 +4,14 @@ use anyhow::{bail, Result};
 
 use crate::{
     args::{Args, SubCommand},
-    config::Config,
+    config::UpConfig,
+    task_lib::link::LinkConfig,
 };
 
 pub mod args;
 mod config;
 mod git;
-mod link;
+mod task_lib;
 mod update;
 
 /// Run `up_rs` with provided [Args][] struct.
@@ -21,14 +22,7 @@ mod update;
 ///
 /// [Args]: crate::args::Args
 pub fn run(args: Args) -> Result<()> {
-    // TODO(gib): Store and fetch config in config module.
-    let config = Config::from(&args)?;
-
     match args.cmd {
-        Some(SubCommand::Update {}) => {
-            // TODO(gib): Handle updates.
-            update::update(config)?;
-        }
         // TODO(gib): Handle multiple link directories both as args and in config.
         // TODO(gib): Add option to warn instead of failing if there are conflicts.
         // TODO(gib): Check for conflicts before doing any linking.
@@ -49,10 +43,16 @@ pub fn run(args: Args) -> Result<()> {
                 }
             }
 
-            link::link(&from_dir, &to_dir, &backup_dir)?;
+            task_lib::link::run(LinkConfig {
+                from_dir,
+                to_dir,
+                backup_dir,
+            })?;
         }
         None => {
-            bail!("up requires a subcommand, use -h or --help for the usage args.");
+            // TODO(gib): Store and fetch config in config module.
+            let config = UpConfig::from(&args)?;
+            update::update(config)?;
         }
     }
     Ok(())

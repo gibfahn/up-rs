@@ -9,9 +9,9 @@ pub fn parse() -> Args {
 }
 
 /// Up is a tool to help you manage your developer machine. When run by itself
-/// (`up`) it does two things. It links configuration files into the right
-/// locations, and it runs scripts to make sure the tools you need are installed
-/// and up to date.
+/// (`up`) runs the tasks defined in its config directory. It links
+/// configuration files into the right locations, and it runs scripts to make
+/// sure the tools you need are installed and up to date.
 ///
 /// The `up link` command symlinks your dotfiles into your home directory.
 ///
@@ -38,10 +38,6 @@ pub struct Args {
 #[derive(Debug, StructOpt)]
 pub(crate) enum SubCommand {
     // TODO(gib): Work out how to do clap's help and long_help in structopt.
-    /// Install and update things on your computer.
-    #[structopt(name = "date")]
-    Update {},
-
     /// Symlink your dotfiles from a git repo to your home directory.
     #[structopt(name = "link")]
     Link {
