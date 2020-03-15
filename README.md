@@ -1,4 +1,7 @@
-# up-rs: a tool for keeping your system up to date
+# up-rs
+
+[![Latest Version](https://img.shields.io/crates/v/up-rs.svg)](https://crates.io/crates/up-rs)
+[![Documentation](https://docs.rs/up-rs/badge.svg)](https://docs.rs/up-rs)
 
 I use this to keep my machine up to date. It does a couple of different things.
 
