@@ -10,7 +10,7 @@ use log::{debug, info, trace};
 use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::{config, task_lib, task_lib::link::LinkConfig};
+use crate::{config, tasks, tasks::link::LinkConfig};
 
 #[derive(Debug)]
 struct Task {
@@ -57,7 +57,7 @@ impl Task {
 
         if let Some(lib) = &self.config.run_lib {
             match lib.as_str() {
-                "link" => task_lib::link::run(
+                "link" => tasks::link::run(
                     self.config
                         .data
                         .as_ref()

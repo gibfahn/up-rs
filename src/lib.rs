@@ -5,13 +5,13 @@ use anyhow::{bail, Result};
 use crate::{
     args::{Args, SubCommand},
     config::UpConfig,
-    task_lib::link::LinkConfig,
+    tasks::link::LinkConfig,
 };
 
 pub mod args;
 mod config;
 mod git;
-mod task_lib;
+mod tasks;
 mod update;
 
 /// Run `up_rs` with provided [Args][] struct.
@@ -43,7 +43,7 @@ pub fn run(args: Args) -> Result<()> {
                 }
             }
 
-            task_lib::link::run(LinkConfig {
+            tasks::link::run(LinkConfig {
                 from_dir,
                 to_dir,
                 backup_dir,
