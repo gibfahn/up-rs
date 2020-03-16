@@ -12,11 +12,11 @@ See `up --help` for more details.
 The binary is self-contained, you can simply download it and mark the binary as executable:
 
 ```shell
-curl --create-dirs -Lo ~/bin/up https://github.com/gibfahn/up-rs/releases/latest/download/up-darwin
+curl --create-dirs -Lo ~/bin/up https://github.com/gibfahn/up-rs/releases/latest/download/up-$(uname)
 chmod +x ~/bin/up
 ```
 
-Or if you have Cargo on your system you can install it directly:
+Or if you have Cargo on your system you can also build it from source:
 
 ```shell
 cargo install up-rs
@@ -39,22 +39,6 @@ Coming soon.
 
 Updates all the software on your machine.
 
-## Developing
+## Contributing and Developing
 
-Build the documentation including internal functions with:
-
-```console
-$ cargo doc --document-private-items --open
-```
-
-You can run it on your own system as you develop, for example with:
-
-```shell
-# Run on file change.
-fd | entr -s 'cargo +nightly fmt && RUST_BACKTRACE=1 cargo +nightly r -- --log-level=trace'
-
-# In another window, replace with your command logging output.
-less ~/tmp/dot-tmp.log
-```
-
-<!-- TODO(gib): Finish this. -->
+See [CONTRIBUTING.md](./CONTRIBUTING.md).

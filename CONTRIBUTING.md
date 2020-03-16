@@ -149,6 +149,16 @@ cargo watch -x test                # Run `cargo test` when files change.
 cargo watch -x 'run -- --some-arg' # Run `cargo run -- --some-arg` when files change.
 ```
 
+You can also run arbitrary commands on your own system as you develop, for example with:
+
+```shell
+# Run on file change.
+fd | entr -s 'cargo +nightly fmt && RUST_BACKTRACE=1 cargo +nightly r -- --log-level=trace'
+
+# In another window, replace with your command logging output.
+less ~/tmp/dot-tmp.log
+```
+
 ### Command Aliases
 
 You can also define command aliases as in git, for an example see [my dotfiles][cargo config].
