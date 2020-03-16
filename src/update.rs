@@ -160,7 +160,12 @@ pub fn update(config: &config::UpConfig) -> Result<()> {
     tasks_dir.pop();
     tasks_dir.push("tasks");
 
-    let mut env = config.config_toml.env.clone();
+    // Clone if Some(HashMap), new HashMap if None.
+    let mut env = config
+        .config_toml
+        .env
+        .as_ref()
+        .map_or_else(HashMap::new, std::clone::Clone::clone);
     trace!("Unexpanded config env: {:?}", env);
     for val in env.values_mut() {
         *val = shellexpand::full_with_context(val, dirs::home_dir, |k| std::env::var(k).map(Some))

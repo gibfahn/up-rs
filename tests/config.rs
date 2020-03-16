@@ -8,7 +8,7 @@ fn empty_toml() {
     // Can't check empty dir into git.
     fs::create_dir(temp_dir.join("tasks")).unwrap();
     let mut cmd = testutils::up_cmd();
-    cmd.args(["-c", temp_dir.join("up.toml").to_str().unwrap(), "date"].iter());
+    cmd.args(["-c", temp_dir.join("up.toml").to_str().unwrap()].iter());
     let cmd_output = testutils::run_cmd(cmd);
     assert_eq!(
         cmd_output.status.success(),
@@ -21,8 +21,7 @@ fn empty_toml() {
 fn basic_toml() {
     let fixtures_dir = testutils::fixtures_dir().join("basic_config");
     let mut cmd = testutils::up_cmd();
-    cmd.args(["-c", fixtures_dir.join("up.toml").to_str().unwrap(), "date"].iter());
-    println!("cmd: {:?}\n", cmd);
+    cmd.args(["-c", fixtures_dir.join("up.toml").to_str().unwrap()].iter());
     let cmd_output = testutils::run_cmd(cmd);
     // TODO(gib): Why is this test passing with unknown keys in the up.toml?
     assert_eq!(
