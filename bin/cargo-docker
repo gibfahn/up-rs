@@ -12,7 +12,7 @@ project_root="$(cd "$(dirname "$0")"/..; pwd)"
 if [[ ${1:-} == -s || ${1:-} == --shell ]]; then
     build_args=bash
 elif [[ -n "$*" ]]; then
-    build_args=(cargo "$i")
+    build_args=(cargo "${@}")
 else
     build_args=(cargo test --release -- --ignored)
 fi
