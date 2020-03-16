@@ -47,4 +47,14 @@ Build the documentation including internal functions with:
 $ cargo doc --document-private-items --open
 ```
 
+You can run it on your own system as you develop, for example with:
+
+```shell
+# Run on file change.
+fd | entr -s 'cargo +nightly fmt && RUST_BACKTRACE=1 cargo +nightly r -- --log-level=trace'
+
+# In another window, replace with your command logging output.
+less ~/tmp/dot-tmp.log
+```
+
 <!-- TODO(gib): Finish this. -->
