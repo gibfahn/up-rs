@@ -3,6 +3,7 @@ use std::{
     fs, io,
     path::PathBuf,
     process::{Command, Output, Stdio},
+    time::Instant,
 };
 
 use anyhow::{anyhow, bail, Result};
@@ -127,18 +128,24 @@ impl Task {
             .stdin(Stdio::inherit());
         trace!("Running command: {:?}", &command);
 
+        let now = Instant::now();
         let output = command.output()?;
 
         // TODO(gib): How do we separate out the task output?
         // TODO(gib): Document error codes.
-        debug!("Task '{}' status: {}", &self.name, output.status);
         debug!(
-            "Task '{}' stdout:\n\n{}",
+            "Task '{}' command ran in {:?} with status: {}",
+            &self.name,
+            now.elapsed(),
+            output.status
+        );
+        debug!(
+            "Task '{}' command stdout:\n\n{}",
             &self.name,
             String::from_utf8_lossy(&output.stdout)
         );
         debug!(
-            "Task '{}' stderr:\n\n{}",
+            "Task '{}' command stderr:\n\n{}",
             &self.name,
             String::from_utf8_lossy(&output.stderr)
         );
@@ -210,7 +217,9 @@ pub fn update(config: &config::UpConfig) -> Result<()> {
     // change exit.
     // TODO(gib): Run tasks in parallel.
     for name in tasks_to_run {
+        let now = Instant::now();
         tasks.get(&name).unwrap().run(env_fn, &env)?;
+        debug!("Task '{}' ran in {:?}.", &name, now.elapsed(),);
     }
 
     Ok(())
