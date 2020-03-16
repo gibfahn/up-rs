@@ -7,7 +7,7 @@ use std::{
 };
 
 use anyhow::{anyhow, bail, Result};
-use log::{debug, trace, warn};
+use log::{debug, info, trace, warn};
 use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -81,7 +81,7 @@ impl Task {
         }
 
         if let Some(cmd) = &self.config.check_cmd {
-            trace!("Running '{}' check command.", &self.name);
+            info!("Running '{}' check command.", &self.name);
             let check_output = self.run_command(&cmd, env)?;
             // TODO(gib): Allow choosing how to validate check_cmd output (stdout, zero exit
             // code, non-zero exit code).
@@ -98,7 +98,7 @@ impl Task {
         }
 
         if let Some(mut cmd) = self.config.run_cmd.clone() {
-            trace!("Running '{}' run command.", &self.name);
+            info!("Running '{}' run command.", &self.name);
             for s in &mut cmd {
                 *s = env_fn(&s)?;
             }
