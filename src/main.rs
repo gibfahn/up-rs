@@ -6,12 +6,13 @@
 // #![feature(external_doc)]
 // #![doc(include = "../README.md")]
 
-use std::env;
+use std::{env, time::Instant};
 
 use anyhow::Result;
-use log::trace;
+use log::{info, trace};
 
 fn main() -> Result<()> {
+    let now = Instant::now();
     let args = up_rs::args::parse();
     init_logging(&args.log_level)?;
     trace!("Starting up.");
@@ -21,6 +22,7 @@ fn main() -> Result<()> {
     up_rs::run(args)?;
 
     trace!("Finished up.");
+    info!("Up-rs ran successfully in {:?}", now.elapsed());
     Ok(())
 }
 
