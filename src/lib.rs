@@ -51,6 +51,7 @@ pub fn run(args: Args) -> Result<()> {
                 backup_dir: shellexpand::tilde(&backup_dir).into_owned(),
             })?;
         }
+        Some(_) => todo!(),
         None => {
             // TODO(gib): Store and fetch config in config module.
             let config = UpConfig::from(&args)?;

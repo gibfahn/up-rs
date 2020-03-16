@@ -7,7 +7,7 @@ use std::{
 };
 
 use anyhow::{anyhow, bail, Result};
-use log::{debug, info, trace, warn};
+use log::{debug, trace, warn};
 use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -99,7 +99,7 @@ impl Task {
 
         if let Some(mut cmd) = self.config.run_cmd.clone() {
             trace!("Running '{}' run command.", &self.name);
-            for s in cmd.iter_mut() {
+            for s in &mut cmd {
                 *s = env_fn(&s)?;
             }
             let run_output = self.run_command(&cmd, env)?;
@@ -107,13 +107,13 @@ impl Task {
                 debug!("Task '{}' complete.", &self.name);
                 return Ok(());
             } else {
-                bail!(UpdateError::CmdFailedError {
+                bail!(UpdateError::CmdFailed {
                     name: self.name.clone(),
                 });
             }
         }
 
-        bail!(UpdateError::MissingCmdError {
+        bail!(UpdateError::MissingCmd {
             name: self.name.clone()
         });
     }
@@ -164,7 +164,7 @@ pub fn update(config: &config::UpConfig) -> Result<()> {
     trace!("Unexpanded config env: {:?}", env);
     for val in env.values_mut() {
         *val = shellexpand::full_with_context(val, dirs::home_dir, |k| std::env::var(k).map(Some))
-            .map_err(|e| UpdateError::EnvLookupError {
+            .map_err(|e| UpdateError::EnvLookup {
                 var: e.var_name,
                 source: e.cause,
             })?
@@ -180,8 +180,8 @@ pub fn update(config: &config::UpConfig) -> Result<()> {
                 .ok_or_else(|| anyhow!("Value not found"))
                 .map(Some)
         })
-        .map(|s| s.into_owned())
-        .map_err(|e| TaskError::ResolveEnvError {
+        .map(std::borrow::Cow::into_owned)
+        .map_err(|e| TaskError::ResolveEnv {
             var: e.var_name,
             source: e.cause,
         })?;
@@ -191,9 +191,10 @@ pub fn update(config: &config::UpConfig) -> Result<()> {
 
     // TODO(gib): Handle and filter by constraints.
 
+    #[allow(clippy::filter_map)]
     let tasks: HashMap<String, Task> = tasks_dir
         .read_dir()
-        .map_err(|e| UpdateError::ReadDirError {
+        .map_err(|e| UpdateError::ReadDir {
             path: tasks_dir.clone(),
             source: e,
         })?
@@ -205,6 +206,7 @@ pub fn update(config: &config::UpConfig) -> Result<()> {
     debug!("Task count: {:?}", tasks.len());
     trace!("Task list: {:#?}", tasks);
 
+    #[allow(clippy::filter_map)]
     let mut tasks_to_run: Vec<String> = tasks
         .iter()
         .filter(|(_, task)| task.config.auto_run.unwrap_or(true))
@@ -236,14 +238,14 @@ pub fn update(config: &config::UpConfig) -> Result<()> {
 #[derive(Error, Debug)]
 pub enum UpdateError {
     #[error("Error walking directory '{}':", path.to_string_lossy())]
-    ReadDirError { path: PathBuf, source: io::Error },
+    ReadDir { path: PathBuf, source: io::Error },
     #[error("Env lookup error, please define '{}' in your up.toml:", var)]
-    EnvLookupError {
+    EnvLookup {
         var: String,
         source: std::env::VarError,
     },
     #[error("Task '{}' had no run command.", name)]
-    MissingCmdError { name: String },
+    MissingCmd { name: String },
     #[error("Task '{}' run command failed:", name)]
-    CmdFailedError { name: String },
+    CmdFailed { name: String },
 }

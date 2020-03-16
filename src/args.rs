@@ -58,4 +58,6 @@ pub(crate) enum SubCommand {
         #[structopt(short = "b", long = "backup", default_value = "~/backup")]
         backup_dir: String,
     },
+    // TODO(gib): Implement this.
+    Defaults {},
 }
