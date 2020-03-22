@@ -41,11 +41,13 @@ use anyhow::{bail, Result};
 use chrono::Utc;
 use displaydoc::Display;
 use log::{info, trace};
-use slog::{o, Drain, Duplicate, FnValue, Level, LevelFilter, Logger};
+use slog::{o, Drain, Duplicate, FnValue, LevelFilter, Logger};
 use slog_async;
 use slog_stdlog;
 use slog_term;
 use thiserror::Error;
+
+use up_rs::args::Color;
 
 fn main() -> Result<()> {
     // Get starting time.
@@ -54,7 +56,15 @@ fn main() -> Result<()> {
 
     // TODO(gib): Don't need dates in stderr as we have them in file logger.
     // Create stderr logger.
-    let stderr_decorator = slog_term::TermDecorator::new().stderr().build();
+    let stderr_decorator_builder = slog_term::TermDecorator::new().stderr();
+
+    let stderr_decorator = match &args.color {
+        Color::Auto => stderr_decorator_builder,
+        Color::Always => stderr_decorator_builder.force_color(),
+        Color::Never => stderr_decorator_builder.force_plain(),
+    }
+    .build();
+
     let stderr_drain = slog_term::CompactFormat::new(stderr_decorator)
         .build()
         .fuse();
@@ -62,7 +72,7 @@ fn main() -> Result<()> {
 
     // TODO(gib): Parse input &args.log_level and set filter level.
     // TODO(gib): Update --help text to note how you set the log level.
-    let stderr_level_filter = LevelFilter::new(stderr_async_drain, Level::Info);
+    let stderr_level_filter = LevelFilter::new(stderr_async_drain, args.log_level);
 
     let should_log_to_file = match &args.log_dir {
         Some(p) if p == &PathBuf::new() => false,

@@ -273,7 +273,6 @@ fn run_link_cmd(dotfile_dir: &Path, home_dir: &Path, result: LinkResult) -> Outp
     // Always show coloured logs.
     cmd.args(
         [
-            "--log-level=debug",
             "link",
             "--from",
             dotfile_dir.to_str().unwrap(),

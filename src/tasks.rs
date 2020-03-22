@@ -1,6 +1,7 @@
 use anyhow::Result;
 use thiserror::Error;
 
+pub(crate) mod git;
 pub(crate) mod link;
 
 pub(crate) trait ResolveEnv {

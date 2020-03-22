@@ -18,12 +18,11 @@ use anyhow::{bail, Result};
 use crate::{
     args::{Args, SubCommand},
     config::UpConfig,
-    tasks::link::LinkConfig,
+    tasks::{git, link::LinkConfig},
 };
 
 pub mod args;
 mod config;
-mod git;
 mod tasks;
 mod update;
 
@@ -42,20 +41,8 @@ pub fn run(args: Args) -> Result<()> {
         Some(SubCommand::Link {
             from_dir,
             to_dir,
-            git_url,
-            git_path,
             backup_dir,
         }) => {
-            match (git_url, git_path) {
-                (None, Some(_)) | (Some(_), None) => {
-                    bail!("Need to set both --git-url and --git-path")
-                }
-                (None, None) => (),
-                (Some(git_url), Some(git_path)) => {
-                    git::clone_or_update(&git_url, &git_path)?;
-                }
-            }
-
             // Expand ~, this is only used for the default options, if the user passes them
             // as explicit args then they will be expanded by the shell.
             tasks::link::run(LinkConfig {
@@ -65,7 +52,12 @@ pub fn run(args: Args) -> Result<()> {
             })?;
         }
         // TODO(gib): Implement this.
-        Some(_) => {}
+        Some(SubCommand::Git(git_config)) => {
+            git::clone_or_update(git_config)?;
+        }
+        Some(SubCommand::Defaults {}) => {
+            bail!("Not yet implemented.");
+        }
         None => {
             // TODO(gib): Store and fetch config in config module.
             let config = UpConfig::from(&args)?;

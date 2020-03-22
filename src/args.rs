@@ -1,6 +1,13 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, str::FromStr};
 
-use structopt::{clap::AppSettings, StructOpt};
+use anyhow::{anyhow, Result};
+use slog::Level;
+use structopt::{
+    clap::{arg_enum, AppSettings},
+    StructOpt,
+};
+
+use crate::tasks::git::GitConfig;
 
 /// Builds the Args struct from CLI input and from environment variable input.
 #[must_use]
@@ -25,12 +32,15 @@ pub struct Args {
     // TODO(gib): Improve help text to cover env_logger setup.
     /// Set the logging level explicitly (options: Off, Error, Warn, Info,
     /// Debug, Trace).
-    #[structopt(long, short = "l", default_value = "up=info,warn", env = "RUST_LOG")]
-    pub log_level: String,
+    #[structopt(long, short = "l", default_value = "info", env = "LOG_LEVEL", parse(try_from_str = from_level))]
+    pub log_level: Level,
     /// Write file logs to directory. Default: $TMPDIR/up-rs/logs. Set to empty
     /// to disable file logging.
     #[structopt(long)]
     pub log_dir: Option<PathBuf>,
+    /// Whether to color terminal output.
+    #[structopt(long, default_value = "auto", possible_values = &Color::variants(), case_insensitive = true)]
+    pub color: Color,
     /// Path to the up.toml file for up.
     #[structopt(short = "c", default_value = "$XDG_CONFIG_HOME/up/up.toml")]
     pub(crate) config: String,
@@ -38,20 +48,30 @@ pub struct Args {
     pub(crate) cmd: Option<SubCommand>,
 }
 
+fn from_level(level: &str) -> Result<Level> {
+    Level::from_str(level).map_err(|_| anyhow!("Failed to parse level {}", level))
+}
+
+arg_enum! {
+    /// Settings for colouring output.
+    /// Auto: Colour on if stderr isatty, else off.
+    /// Always: Always enable colours.
+    /// Never: Never enable colours.
+    #[derive(Debug)]
+    pub enum Color {
+        Auto,
+        Always,
+        Never,
+    }
+}
+
 // Optional subcommand (e.g. the "update" in "up update").
 #[derive(Debug, StructOpt)]
 pub(crate) enum SubCommand {
     // TODO(gib): Work out how to do clap's help and long_help in structopt.
     /// Symlink your dotfiles from a git repo to your home directory.
-    #[structopt(name = "link")]
     // TODO(gib): move contents to LinkConfig.
     Link {
-        /// URL of git repo to download before linking.
-        #[structopt(long)]
-        git_url: Option<String>,
-        /// Path to download git repo to before linking.
-        #[structopt(long, parse(from_os_str))]
-        git_path: Option<PathBuf>,
         /// Path where your dotfiles are kept (hopefully in source control).
         #[structopt(short = "f", long = "from", default_value = "~/code/dotfiles")]
         from_dir: String,
@@ -62,6 +82,8 @@ pub(crate) enum SubCommand {
         #[structopt(short = "b", long = "backup", default_value = "~/backup")]
         backup_dir: String,
     },
+    /// Symlink your dotfiles from a git repo to your home directory.
+    Git(GitConfig),
     // TODO(gib): Implement this.
     /// Set macOS defaults in plist files.
     Defaults {},

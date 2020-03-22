@@ -14,23 +14,16 @@ use git2::{
 };
 use log::debug;
 
-pub(crate) fn clone_or_update(git_url: &str, git_path: &Path) -> Result<()> {
-    if git_path.is_dir() {
-        update(git_url, git_path)
-    } else {
-        clone(git_url, git_path)
-    }
-}
+use crate::tasks::git::{GitConfig, DEFAULT_REMOTE_NAME};
 
 // TODO(gib): Add tests for this.
-fn update(git_url: &str, git_path: &Path) -> Result<()> {
-    debug!("Updating '{:?}' from '{}'", git_path, git_url);
-    // TODO(gib): add update logic.
-    Ok(())
-}
-
-// TODO(gib): Add tests for this.
-fn clone(git_url: &str, git_path: &Path) -> Result<()> {
+pub(super) fn clone(git_config: GitConfig) -> Result<()> {
+    let GitConfig {
+        git_url,
+        git_path,
+        remote,
+        branch,
+    } = git_config;
     debug!("Cloning '{}' into '{:?}'", git_url, git_path);
     let state = RefCell::new(State {
         progress: None,
@@ -58,12 +51,21 @@ fn clone(git_url: &str, git_path: &Path) -> Result<()> {
 
     let mut fo = FetchOptions::new();
     fo.remote_callbacks(cb);
-    RepoBuilder::new()
-        .fetch_options(fo)
-        .with_checkout(co)
-        .clone(git_url, git_path)?;
+    let mut repo_builder = RepoBuilder::new();
+    repo_builder.fetch_options(fo).with_checkout(co);
+
+    if let Some(branch_name) = branch {
+        repo_builder.branch(&branch_name);
+    }
+
+    let repo = repo_builder.clone(&git_url, &git_path)?;
     println!();
 
+    // Sanity check, we should have created a remote called "origin".
+    repo.find_remote(DEFAULT_REMOTE_NAME)?;
+    if remote != DEFAULT_REMOTE_NAME {
+        repo.remote_rename(DEFAULT_REMOTE_NAME, &remote)?;
+    }
     Ok(())
 }
 
