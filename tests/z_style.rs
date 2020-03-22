@@ -182,14 +182,9 @@ fn cargo_cmd(current_dir: &Path, fmt: CargoCmdType) -> Output {
         #[cfg(not(feature = "CI"))]
         CargoCmdType::RustfmtFix => ["+nightly", "fmt"].iter(),
         #[cfg(feature = "CI")]
-        CargoCmdType::ClippyStableCheck => [
-            "clippy",
-            "--color=always",
-            "--",
-            "--deny",
-            "clippy::pedantic",
-        ]
-        .iter(),
+        CargoCmdType::ClippyStableCheck => {
+            ["clippy", "--color=always", "--", "--deny=warnings"].iter()
+        }
         // TODO(gib): Stop using preview once clippy in cargo ships.
         // See: https://github.com/rust-lang/rust-clippy/issues/3837
         // Note that preview allows auto-fixing with `cargo fix --clippy`, and fixes
@@ -197,12 +192,10 @@ fn cargo_cmd(current_dir: &Path, fmt: CargoCmdType) -> Output {
         #[cfg(not(feature = "CI"))]
         CargoCmdType::ClippyCheck => [
             "+nightly",
-            "clippy-preview",
-            "-Z=unstable-options",
+            "clippy",
             "--color=always",
             "--",
-            "--deny",
-            "clippy::pedantic",
+            "--deny=warnings",
         ]
         .iter(),
         #[cfg(not(feature = "CI"))]
@@ -210,7 +203,8 @@ fn cargo_cmd(current_dir: &Path, fmt: CargoCmdType) -> Output {
             "+nightly",
             "fix",
             "--clippy",
-            "-Z=unstable-options",
+            "-Z",
+            "unstable-options",
             "--allow-staged",
         ]
         .iter(),
