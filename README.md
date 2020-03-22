@@ -1,7 +1,8 @@
 # up-rs
 
-[![Latest Version](https://img.shields.io/crates/v/up-rs.svg)](https://crates.io/crates/up-rs)
-[![Documentation](https://docs.rs/up-rs/badge.svg)](https://docs.rs/up-rs)
+[![Latest Version (crates.io)](https://img.shields.io/crates/v/up-rs.svg)](https://crates.io/crates/up-rs)
+[![Latest Version (lib.rs)](https://img.shields.io/crates/v/up-rs.svg)](https://lib.rs/crates/up-rs)
+[![Documentation (docs.rs)](https://docs.rs/up-rs/badge.svg)](https://docs.rs/up-rs)
 
 I use this to keep my machine up to date. It does a couple of different things.
 
@@ -42,3 +43,7 @@ Updates all the software on your machine.
 ## Contributing and Developing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+## Related Projects
+
+- [`topgrade`](https://github.com/r-darwish/topgrade)
