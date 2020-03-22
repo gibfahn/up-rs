@@ -1,4 +1,17 @@
-#![allow(clippy::module_name_repetitions)]
+// Max clippy pedanticness.
+#![warn(
+    clippy::all,
+    clippy::restriction,
+    clippy::pedantic,
+    clippy::nursery,
+    clippy::cargo
+)]
+#![allow(
+    clippy::module_name_repetitions,
+    clippy::implicit_return,
+    clippy::missing_inline_in_public_items,
+    clippy::missing_docs_in_private_items
+)]
 
 use anyhow::{bail, Result};
 
@@ -51,7 +64,8 @@ pub fn run(args: Args) -> Result<()> {
                 backup_dir: shellexpand::tilde(&backup_dir).into_owned(),
             })?;
         }
-        Some(_) => todo!(),
+        // TODO(gib): Implement this.
+        Some(_) => {}
         None => {
             // TODO(gib): Store and fetch config in config module.
             let config = UpConfig::from(&args)?;

@@ -6,7 +6,8 @@ use std::{
 
 use anyhow::{bail, ensure, Context, Result};
 use chrono::{DateTime, Utc};
-use log::{debug, info, warn};
+use displaydoc::Display;
+use log::{debug, info, trace, warn};
 use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
 use walkdir::{DirEntry, WalkDir};
@@ -71,12 +72,11 @@ pub(crate) fn run(config: LinkConfig) -> Result<()> {
     );
     debug!(
         "to_dir contents: {:?}",
-        fs::read_dir(&to_dir)
-            .unwrap()
+        fs::read_dir(&to_dir)?
             .filter_map(|d| d
                 .ok()
-                .map(|x| x.path().strip_prefix(&to_dir).unwrap().to_path_buf()))
-            .collect::<Vec<_>>()
+                .map(|x| Ok(x.path().strip_prefix(&to_dir)?.to_path_buf())))
+            .collect::<Result<Vec<_>>>()
     );
 
     // For each non-directory file in from_dir.
@@ -86,7 +86,7 @@ pub(crate) fn run(config: LinkConfig) -> Result<()> {
         .filter_map(Result::ok)
         .filter(|f| !f.file_type().is_dir())
     {
-        let rel_path = from_path.path().strip_prefix(&from_dir).unwrap();
+        let rel_path = from_path.path().strip_prefix(&from_dir)?;
         create_parent_dir(&to_dir, rel_path, &backup_dir)?;
         link_path(&from_path, &to_dir, rel_path, &backup_dir)?;
     }
@@ -98,8 +98,7 @@ pub(crate) fn run(config: LinkConfig) -> Result<()> {
 
     debug!(
         "to_dir final contents: {:#?}",
-        fs::read_dir(&to_dir)
-            .unwrap()
+        fs::read_dir(&to_dir)?
             .filter_map(|e| e.ok().map(|d| d.path()))
             .collect::<Vec<_>>()
     );
@@ -107,8 +106,7 @@ pub(crate) fn run(config: LinkConfig) -> Result<()> {
     if backup_dir.exists() {
         debug!(
             "backup_dir final contents: {:#?}",
-            fs::read_dir(&backup_dir)
-                .unwrap()
+            fs::read_dir(&backup_dir)?
                 .filter_map(|e| e.ok().map(|d| d.path()))
                 .collect::<Vec<_>>()
         );
@@ -139,7 +137,8 @@ fn resolve_directory(dir_path: PathBuf, name: &str) -> Result<PathBuf> {
 /// Create the parent directory to create the symlink in.
 fn create_parent_dir(to_dir: &Path, rel_path: &Path, backup_dir: &Path) -> Result<()> {
     let to_path = to_dir.join(rel_path);
-    fs::create_dir_all(to_path.parent().unwrap()).or_else(|_err| {
+    let to_path_parent = get_parent_path(&to_path)?;
+    fs::create_dir_all(to_path_parent).or_else(|_err| {
         info!("Failed to create parent dir, walking up the tree to see if there's a file that needs to become a directory.");
         for path in rel_path.ancestors().skip(1).filter(|p| p != &Path::new("")) {
             debug!("Checking path {:?}", path);
@@ -155,12 +154,9 @@ fn create_parent_dir(to_dir: &Path, rel_path: &Path, backup_dir: &Path) -> Resul
                     &abs_path, &to_path
                 );
                 if abs_path.is_file() {
-                    info!("Parent path: {:?}", &path.parent().unwrap());
-                    let parent_path_opt = &path.parent();
-                    if parent_path_opt.is_some() {
-                        let parent_path = parent_path_opt.unwrap();
+                    if let Some(parent_path) = &path.parent() {
                         info!("Path: {:?}, parent: {:?}", path, parent_path);
-                        if parent_path != Path::new("") {
+                        if parent_path != &Path::new("") {
                             let path = backup_dir.join(parent_path);
                             fs::create_dir_all(&path).map_err(|e| LinkError::CreateDirError{path, source: e})?;
                         }
@@ -178,13 +174,21 @@ fn create_parent_dir(to_dir: &Path, rel_path: &Path, backup_dir: &Path) -> Resul
             }
         }
         // We should be able to create the directory now (if not bail with a Failure error).
-        fs::create_dir_all(to_path.parent().unwrap()).with_context(|| format!("Failed to create parent dir {:?}.", to_path.parent()))
+        let to_parent_path = get_parent_path(&to_path)?;
+        fs::create_dir_all(to_parent_path).with_context(|| format!("Failed to create parent dir {:?}.", to_path.parent()))
     })
+}
+
+fn get_parent_path(path: &Path) -> Result<&Path> {
+    Ok(path.parent().ok_or_else(|| LinkError::MissingParentDir {
+        path: path.to_path_buf(),
+    })?)
 }
 
 /// Create a symlink from `from_path` -> `to_path`.
 /// `rel_path` is the relative path within `from_dir`.
 /// Moves any existing files that would be overwritten into `backup_dir`.
+#[allow(clippy::filetype_is_file)]
 fn link_path(
     from_path: &DirEntry,
     to_dir: &Path,
@@ -238,17 +242,18 @@ fn link_path(
         } else if to_path_file_type.is_file() {
             warn!("Existing file at {:?}, moving to {:?}", to_path, backup_dir);
             let backup_path = backup_dir.join(rel_path);
-            fs::create_dir_all(backup_path.parent().unwrap()).map_err(|e| {
-                LinkError::CreateDirError {
-                    path: backup_path.parent().unwrap().to_path_buf(),
-                    source: e,
-                }
+            let backup_parent_path = get_parent_path(&backup_path)?;
+            fs::create_dir_all(backup_parent_path).map_err(|e| LinkError::CreateDirError {
+                path: backup_parent_path.to_path_buf(),
+                source: e,
             })?;
             fs::rename(&to_path, &backup_path).map_err(|e| LinkError::RenameError {
                 from_path: to_path.to_path_buf(),
                 to_path: backup_path,
                 source: e,
             })?;
+        } else {
+            bail!("This should be unreachable.")
         }
     } else if to_path.symlink_metadata().is_ok() {
         warn!(
@@ -263,6 +268,8 @@ fn link_path(
             path: to_path.to_path_buf(),
             source: e,
         })?;
+    } else {
+        trace!("File '{:?}' doesn't exist.", to_path);
     }
     info!("Linking:\n  From: {:?}\n  To: {:?}", from_path, to_path);
     unix::fs::symlink(from_path.path(), &to_path).map_err(|e| {
@@ -275,28 +282,31 @@ fn link_path(
     })
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Display)]
+/// Errors thrown by this file.
 pub enum LinkError {
-    #[error("{} directory '{}' should exist and be a directory.", .name, .path.to_string_lossy())]
+    /// {name} directory '{path}' should exist and be a directory.
     MissingDir { name: String, path: PathBuf },
-    #[error("Error canonicalizing '{}'", path.to_string_lossy())]
+    /// Error canonicalizing {path}.
     CanonicalizeError { path: PathBuf, source: io::Error },
-    #[error("Failed to create directory '{}'", path.to_string_lossy())]
+    /// Failed to create directory '{path}'
     CreateDirError { path: PathBuf, source: io::Error },
-    #[error("Failed to delete '{}'", path.to_string_lossy())]
+    /// Failed to delete '{path}'.
     DeleteError { path: PathBuf, source: io::Error },
-    #[error("Failure for path '{}'", path.to_string_lossy())]
+    /// Failure for path '{path}'.
     IOError { path: PathBuf, source: io::Error },
-    #[error("Failed to rename from '{}' to '{}'", from_path.to_string_lossy(), to_path.to_string_lossy())]
+    /// Failed to rename from '{from_path}' to '{to_path}'.
     RenameError {
         from_path: PathBuf,
         to_path: PathBuf,
         source: io::Error,
     },
-    #[error("Failed to symlink from '{}' to '{}'", from_path.to_string_lossy(), to_path.to_string_lossy())]
+    /// Failed to symlink from '{from_path}' to '{to_path}'.
     SymlinkError {
         from_path: PathBuf,
         to_path: PathBuf,
         source: io::Error,
     },
+    /// Path '{path}' should have a parent directory.
+    MissingParentDir { path: PathBuf },
 }

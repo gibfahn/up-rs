@@ -27,6 +27,10 @@ pub struct Args {
     /// Debug, Trace).
     #[structopt(long, short = "l", default_value = "up=info,warn", env = "RUST_LOG")]
     pub log_level: String,
+    /// Write file logs to directory. Default: $TMPDIR/up-rs/logs. Set to empty
+    /// to disable file logging.
+    #[structopt(long)]
+    pub log_dir: Option<PathBuf>,
     /// Path to the up.toml file for up.
     #[structopt(short = "c", default_value = "$XDG_CONFIG_HOME/up/up.toml")]
     pub(crate) config: String,
@@ -59,5 +63,6 @@ pub(crate) enum SubCommand {
         backup_dir: String,
     },
     // TODO(gib): Implement this.
+    /// Set macOS defaults in plist files.
     Defaults {},
 }

@@ -6,8 +6,11 @@ use std::{
     time::Instant,
 };
 
+// TODO(gib): Use https://lib.rs/crates/indicatif for progress bars.
+
 use anyhow::{anyhow, bail, Result};
-use log::{debug, info, trace, warn};
+use displaydoc::Display;
+use log::{debug, error, info, trace, warn};
 use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -48,7 +51,12 @@ impl Task {
         let config = toml::from_str::<TaskConfig>(&s)?;
         let name = match &config.name {
             Some(n) => n.clone(),
-            None => path.file_stem().unwrap().to_str().unwrap().to_owned(),
+            None => path
+                .file_stem()
+                .ok_or_else(|| anyhow!("Task had no path."))?
+                .to_str()
+                .ok_or_else(|| UpdateError::None {})?
+                .to_owned(),
         };
         let task = Self { name, path, config };
         debug!("Task '{}': {:?}", &task.name, task);
@@ -69,20 +77,26 @@ impl Task {
                         .config
                         .data
                         .as_ref()
-                        .unwrap()
+                        .ok_or_else(|| anyhow!("Task '{}' data had no value.", &self.name))?
                         .clone()
                         .try_into::<LinkConfig>()?;
                     data.resolve_env(env_fn)?;
                     tasks::link::run(data)?;
                 }
-                _ => todo!(),
+                // TODO(gib): Implement this.
+                "defaults" => {
+                    bail!("Defaults code isn't yet implemented.");
+                }
+                _ => {
+                    bail!("This code isn't yet implemented.");
+                }
             }
             return Ok(());
         }
 
         if let Some(cmd) = &self.config.check_cmd {
             info!("Running '{}' check command.", &self.name);
-            let check_output = self.run_command(&cmd, env)?;
+            let check_output = self.run_command(cmd, env)?;
             // TODO(gib): Allow choosing how to validate check_cmd output (stdout, zero exit
             // code, non-zero exit code).
             if check_output.status.success() {
@@ -100,7 +114,7 @@ impl Task {
         if let Some(mut cmd) = self.config.run_cmd.clone() {
             info!("Running '{}' run command.", &self.name);
             for s in &mut cmd {
-                *s = env_fn(&s)?;
+                *s = env_fn(s)?;
             }
             let run_output = self.run_command(&cmd, env)?;
             if run_output.status.success() {
@@ -120,9 +134,12 @@ impl Task {
 
     fn run_command(&self, cmd: &[String], env: &HashMap<String, String>) -> Result<Output> {
         // TODO(gib): set current dir.
-        let mut command = Command::new(&cmd[0]);
+        let mut command = Command::new(
+            &cmd.get(0)
+                .ok_or_else(|| anyhow!("Task '{}' command was empty."))?,
+        );
         command
-            .args(&cmd[1..])
+            .args(cmd.get(1..).unwrap_or(&[]))
             .env_clear()
             .envs(env.iter())
             .stdin(Stdio::inherit());
@@ -131,24 +148,39 @@ impl Task {
         let now = Instant::now();
         let output = command.output()?;
 
+        let elapsed_time = now.elapsed();
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+
         // TODO(gib): How do we separate out the task output?
         // TODO(gib): Document error codes.
-        debug!(
-            "Task '{}' command ran in {:?} with status: {}",
-            &self.name,
-            now.elapsed(),
-            output.status
-        );
-        debug!(
-            "Task '{}' command stdout:\n\n{}",
-            &self.name,
-            String::from_utf8_lossy(&output.stdout)
-        );
-        debug!(
-            "Task '{}' command stderr:\n\n{}",
-            &self.name,
-            String::from_utf8_lossy(&output.stderr)
-        );
+        if output.status.success() {
+            debug!(
+                "Task '{}' command ran in {:?} with status: {}",
+                &self.name, elapsed_time, output.status
+            );
+            debug!(
+                "Task '{}' command stdout:\n<<<\n{}\n>>>\n",
+                &self.name, stdout,
+            );
+            debug!(
+                "Task '{}' command stderr:\n<<<\n{}\n>>>\n",
+                &self.name, stderr
+            );
+        } else {
+            error!(
+                "Task '{}' command failed in {:?} with status: {}",
+                &self.name, elapsed_time, output.status
+            );
+            error!(
+                "Task '{}' command stdout:\n<<<\n{}\n>>>\n",
+                &self.name, stdout,
+            );
+            error!(
+                "Task '{}' command stderr:\n<<<\n{}\n>>>\n",
+                &self.name, stderr,
+            );
+        }
         Ok(output)
     }
 }
@@ -156,7 +188,11 @@ impl Task {
 /// Run a update checks specified in the `up_dir` config files.
 pub fn update(config: &config::UpConfig) -> Result<()> {
     // TODO(gib): Handle missing dir & move into config.
-    let mut tasks_dir = config.up_toml_path.as_ref().unwrap().clone();
+    let mut tasks_dir = config
+        .up_toml_path
+        .as_ref()
+        .ok_or_else(|| UpdateError::None {})?
+        .clone();
     tasks_dir.pop();
     tasks_dir.push("tasks");
 
@@ -197,16 +233,18 @@ pub fn update(config: &config::UpConfig) -> Result<()> {
     // TODO(gib): Handle and filter by constraints.
 
     #[allow(clippy::filter_map)]
-    let tasks: HashMap<String, Task> = tasks_dir
-        .read_dir()
-        .map_err(|e| UpdateError::ReadDir {
-            path: tasks_dir.clone(),
-            source: e,
-        })?
-        .filter(|r| !(r.is_ok() && r.as_ref().unwrap().file_type().unwrap().is_dir()))
-        .filter_map(|r| r.ok().map(|d| Task::from(d.path())))
-        .map(|r| r.map(|task| (task.name.clone(), task)))
-        .collect::<Result<_>>()?;
+    let mut tasks: HashMap<String, Task> = HashMap::new();
+    for entry in tasks_dir.read_dir().map_err(|e| UpdateError::ReadDir {
+        path: tasks_dir.clone(),
+        source: e,
+    })? {
+        let entry = entry?;
+        if entry.file_type()?.is_dir() {
+            continue;
+        }
+        let task = Task::from(entry.path())?;
+        tasks.insert(task.name.clone(), task);
+    }
 
     debug!("Task count: {:?}", tasks.len());
     trace!("Task list: {:#?}", tasks);
@@ -225,7 +263,10 @@ pub fn update(config: &config::UpConfig) -> Result<()> {
     // TODO(gib): Run tasks in parallel.
     for name in tasks_to_run {
         let now = Instant::now();
-        tasks.get(&name).unwrap().run(env_fn, &env)?;
+        tasks
+            .get(&name)
+            .ok_or_else(|| anyhow!("Task '{}' was missing.", &name))?
+            .run(env_fn, &env)?;
         debug!("Task '{}' ran in {:?}.", &name, now.elapsed(),);
     }
 
@@ -240,17 +281,20 @@ pub fn update(config: &config::UpConfig) -> Result<()> {
     // TODO(gib): Should files be stored in ~/.config/up ?
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Display)]
+/// Errors thrown by this file.
 pub enum UpdateError {
-    #[error("Error walking directory '{}':", path.to_string_lossy())]
+    /// Error walking directory '{path}':"
     ReadDir { path: PathBuf, source: io::Error },
-    #[error("Env lookup error, please define '{}' in your up.toml:", var)]
+    /// Env lookup error, please define '{var}' in your up.toml:"
     EnvLookup {
         var: String,
         source: std::env::VarError,
     },
-    #[error("Task '{}' had no run command.", name)]
+    /// Task '{name}' had no run command.
     MissingCmd { name: String },
-    #[error("Task '{}' run command failed:", name)]
+    /// Task '{name}' run command failed.
     CmdFailed { name: String },
+    /// Unexpectedly empty option found.
+    None {},
 }

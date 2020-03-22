@@ -1,3 +1,6 @@
+// TODO(gib): Use https://lib.rs/crates/indicatif for progress bars and remove this.
+#![allow(clippy::print_stdout, clippy::integer_division, clippy::integer_arithmetic)]
+
 use std::{
     cell::RefCell,
     io::{self, Write},
@@ -72,6 +75,7 @@ struct State {
     newline: bool,
 }
 
+#[allow(clippy::result_unwrap_used, clippy::option_unwrap_used)]
 fn print(state: &mut State) {
     let progress = state.progress.as_ref().unwrap();
     let network_pct = (100 * progress.received_objects()) / progress.total_objects();

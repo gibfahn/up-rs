@@ -46,6 +46,7 @@ pub fn up_cmd() -> Command {
     // Show backtrace on exit, nightly only for now.
     // https://github.com/rust-lang/rust/issues/53487
     cmd.env("RUST_BACKTRACE", "1");
+    cmd.arg("--log-dir=");
     cmd
 }
 
