@@ -1,6 +1,7 @@
 #[test]
 fn help_test() {
-    let mut cmd = testutils::up_cmd();
+    let temp_dir = testutils::temp_dir(file!(), "help_test").unwrap();
+    let mut cmd = testutils::up_cmd(&temp_dir);
     cmd.arg("--help");
     let cmd_output = cmd.output().unwrap();
     assert!(cmd_output.status.success());

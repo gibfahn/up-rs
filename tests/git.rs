@@ -1,11 +1,12 @@
-use std::process::Command;
+use std::{path::Path, process::Command};
 
 use testutils::assert;
 
 /// Make sure we can't run this without required args.
 #[test]
 fn missing_args() {
-    let mut cmd = testutils::up_cmd();
+    let temp_dir = testutils::temp_dir(file!(), "missing_args").unwrap();
+    let mut cmd = testutils::up_cmd(&temp_dir);
     cmd.args(["git"].iter());
     let cmd_output = testutils::run_cmd(cmd);
     assert_eq!(
@@ -22,8 +23,8 @@ fn real_clone() {
     let git_pathbuf = temp_dir.join("hello_world_repo");
     let git_path = git_pathbuf.to_string_lossy();
 
-    fn get_cmd(git_path: &str) -> Command {
-        let mut cmd = testutils::up_cmd();
+    fn get_cmd(git_path: &str, temp_dir: &Path) -> Command {
+        let mut cmd = testutils::up_cmd(&temp_dir);
         cmd.args(
             [
                 "git",
@@ -39,7 +40,7 @@ fn real_clone() {
 
     // Clone to directory.
     {
-        let cmd_output = testutils::run_cmd(get_cmd(&git_path));
+        let cmd_output = testutils::run_cmd(get_cmd(&git_path, &temp_dir));
         assert_eq!(
             cmd_output.status.success(),
             true,
@@ -50,7 +51,7 @@ fn real_clone() {
 
     // Clone again to the same directory.
     {
-        let cmd_output = testutils::run_cmd(get_cmd(&git_path));
+        let cmd_output = testutils::run_cmd(get_cmd(&git_path, &temp_dir));
         assert_eq!(
             cmd_output.status.success(),
             true,

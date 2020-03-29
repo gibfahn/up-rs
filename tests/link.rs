@@ -12,10 +12,10 @@ use testutils::assert;
 /// get the expected changes.
 #[test]
 fn new_link() {
-    let (home_dir, dotfile_dir) = get_home_dotfile_dirs("new_link");
+    let (home_dir, dotfile_dir, temp_dir) = get_home_dotfile_dirs("new_link");
     // Create empty dir (can't check in as git doesn't store dirs without contents.
     fs::create_dir(home_dir.join("existing_dir")).unwrap();
-    run_link_cmd(&dotfile_dir, &home_dir, LinkResult::Success);
+    run_link_cmd(&dotfile_dir, &home_dir, &temp_dir, LinkResult::Success);
 
     // Existing files shouldn't be touched.
     assert::file(&home_dir.join("existing_file"), "existing file 1\n");
@@ -33,8 +33,8 @@ fn new_link() {
 /// get the expected changes.
 #[test]
 fn backup_files() {
-    let (home_dir, dotfile_dir) = get_home_dotfile_dirs("backup_files");
-    run_link_cmd(&dotfile_dir, &home_dir, LinkResult::Success);
+    let (home_dir, dotfile_dir, temp_dir) = get_home_dotfile_dirs("backup_files");
+    run_link_cmd(&dotfile_dir, &home_dir, &temp_dir, LinkResult::Success);
 
     // Backup dir should stay.
     assert::dir(&home_dir.join("backup"));
@@ -88,14 +88,14 @@ fn backup_files() {
 
 #[test]
 fn hidden_and_nested() {
-    let (home_dir, dotfile_dir) = get_home_dotfile_dirs("hidden_and_nested");
+    let (home_dir, dotfile_dir, temp_dir) = get_home_dotfile_dirs("hidden_and_nested");
     // If this symlink is correct, it shouldn't make a difference.
     unix::fs::symlink(
         &dotfile_dir.join("existing_link"),
         &home_dir.join("existing_link"),
     )
     .unwrap();
-    run_link_cmd(&dotfile_dir, &home_dir, LinkResult::Success);
+    run_link_cmd(&dotfile_dir, &home_dir, &temp_dir, LinkResult::Success);
 
     // Backup dir should stay.
     assert::dir(&home_dir.join("backup"));
@@ -172,6 +172,7 @@ fn missing_from_dir() {
     let output = run_link_cmd(
         &temp_dir.join("dotfile_dir"),
         &temp_dir.join("home_dir"),
+        &temp_dir,
         LinkResult::Failure,
     );
     assert::contains_all(
@@ -192,6 +193,7 @@ fn missing_to_dir() {
     let output = run_link_cmd(
         &temp_dir.join("dotfile_dir"),
         &temp_dir.join("home_dir"),
+        &temp_dir,
         LinkResult::Failure,
     );
     assert::contains_all(
@@ -215,6 +217,7 @@ fn uncreateable_backup_dir() {
     let output = run_link_cmd(
         &temp_dir.join("dotfile_dir"),
         &temp_dir.join("home_dir"),
+        &temp_dir,
         LinkResult::Failure,
     );
     assert::contains_all(
@@ -230,7 +233,7 @@ fn uncreateable_backup_dir() {
 /// Helper function to copy the test fixtures for a given test into the OS
 /// tempdir (and return the created home_dir and dotfile_dir paths.
 #[cfg(test)]
-fn get_home_dotfile_dirs(test_fn: &str) -> (PathBuf, PathBuf) {
+fn get_home_dotfile_dirs(test_fn: &str) -> (PathBuf, PathBuf, PathBuf) {
     let temp_dir = testutils::temp_dir(file!(), test_fn).unwrap();
 
     testutils::copy_all(
@@ -244,6 +247,7 @@ fn get_home_dotfile_dirs(test_fn: &str) -> (PathBuf, PathBuf) {
     (
         temp_dir.join("home_dir").canonicalize().unwrap(),
         temp_dir.join("dotfile_dir").canonicalize().unwrap(),
+        temp_dir,
     )
 }
 
@@ -268,8 +272,13 @@ impl LinkResult {
 
 /// Helper function to run ./up link <home_dir> <dotfile_dir> <home_dir>/backup.
 #[cfg(test)]
-fn run_link_cmd(dotfile_dir: &Path, home_dir: &Path, result: LinkResult) -> Output {
-    let mut cmd = testutils::up_cmd();
+fn run_link_cmd(
+    dotfile_dir: &Path,
+    home_dir: &Path,
+    temp_dir: &Path,
+    result: LinkResult,
+) -> Output {
+    let mut cmd = testutils::up_cmd(temp_dir);
     // Always show coloured logs.
     cmd.args(
         [

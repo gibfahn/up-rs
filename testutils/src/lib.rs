@@ -39,8 +39,10 @@ fn up_project_dir() -> PathBuf {
 
 /// Returns a new command starting with /path/to/up (add args as needed).
 #[must_use]
-pub fn up_cmd() -> Command {
+pub fn up_cmd(temp_dir: &Path) -> Command {
     let mut cmd = Command::new(up_binary_dir().join("up"));
+    // Set temp dir to be inside our test's temp dir.
+    cmd.env("TMPDIR", temp_dir.join("up_temp_dir"));
     // Always print colours, even when output is not a tty.
     cmd.env("RUST_LOG_STYLE", "always");
     // Show backtrace on exit, nightly only for now.
