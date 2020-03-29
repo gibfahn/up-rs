@@ -135,15 +135,15 @@ fn no_todo() {
         })
         // Find anything containing a todo.
         .filter(|file| {
-            let text = std::fs::read_to_string(dbg!(file.path())).unwrap();
-            text.contains("TODO") || text.contains("todo!")
+            let text = std::fs::read_to_string(file.path()).unwrap();
+            text.contains("XXX") || text.contains("todo!")
         })
         .map(|file| file.path().display().to_string())
         .collect::<Vec<_>>();
 
     assert!(
         files_with_todos.is_empty(),
-        "\nTODOs should not be committed to the master branch, use FIXME instead\n {:#?}\n",
+        "\nXXX: should not be committed to the master branch, use TODO: instead\n {:#?}\n",
         files_with_todos,
     );
 }
