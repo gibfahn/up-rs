@@ -159,27 +159,35 @@ impl Task {
                 "Task '{}' command ran in {:?} with status: {}",
                 &self.name, elapsed_time, output.status
             );
-            debug!(
-                "Task '{}' command stdout:\n<<<\n{}\n>>>\n",
-                &self.name, stdout,
-            );
-            debug!(
-                "Task '{}' command stderr:\n<<<\n{}\n>>>\n",
-                &self.name, stderr
-            );
+            if !stdout.is_empty() {
+                debug!(
+                    "Task '{}' command stdout:\n<<<\n{}>>>\n",
+                    &self.name, stdout,
+                );
+            }
+            if !stderr.is_empty() {
+                debug!(
+                    "Task '{}' command stderr:\n<<<\n{}>>>\n",
+                    &self.name, stderr
+                );
+            }
         } else {
             error!(
                 "Task '{}' command failed in {:?} with status: {}",
                 &self.name, elapsed_time, output.status
             );
-            error!(
-                "Task '{}' command stdout:\n<<<\n{}\n>>>\n",
-                &self.name, stdout,
-            );
-            error!(
-                "Task '{}' command stderr:\n<<<\n{}\n>>>\n",
-                &self.name, stderr,
-            );
+            if !stdout.is_empty() {
+                error!(
+                    "Task '{}' command stdout:\n<<<\n{}>>>\n",
+                    &self.name, stdout,
+                );
+            }
+            if !stderr.is_empty() {
+                error!(
+                    "Task '{}' command stderr:\n<<<\n{}>>>\n",
+                    &self.name, stderr,
+                );
+            }
         }
         Ok(output)
     }
