@@ -1,4 +1,7 @@
 use std::{path::PathBuf, str::FromStr};
+// TODO(gib): generate zsh completions (in build.rs?).
+// https://github.com/sharkdp/fd/blob/master/build.rs
+// https://github.com/TeXitoi/structopt/blob/d1a50bf204970bccd55a0351a114fc8e05c854ce/examples/gen_completions.rs
 
 use anyhow::{anyhow, Result};
 use slog::Level;
