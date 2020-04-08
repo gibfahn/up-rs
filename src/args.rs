@@ -47,6 +47,14 @@ pub struct Args {
     /// Path to the up.toml file for up.
     #[structopt(short = "c", default_value = "$XDG_CONFIG_HOME/up/up.toml")]
     pub(crate) config: String,
+    /// Fallback git repo URL to download to get the config.
+    #[structopt(short = "f")]
+    pub(crate) fallback_url: Option<String>,
+    /// Fallback path inside the git repo to get the config.
+    /// The default path assumes your fallback_url points to a dotfiles repo
+    /// that is linked into ~.
+    #[structopt(short = "p", default_value = ".config/up/up.toml")]
+    pub(crate) fallback_path: String,
     #[structopt(subcommand)]
     pub(crate) cmd: Option<SubCommand>,
 }

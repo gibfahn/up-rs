@@ -43,19 +43,39 @@ pub struct LinkConfigToml {
 
 impl UpConfig {
     /// Build the `UpConfig` struct by parsing the config toml files.
-    pub fn from(args: &Args) -> Result<Self> {
+    pub fn from(args: Args) -> Result<Self> {
         let mut config_toml = ConfigToml::default();
 
-        let maybe_up_toml_path = Self::get_up_toml_path(&args.config)?;
-        let up_toml_path = if maybe_up_toml_path.exists() {
-            let read_result = fs::read(&maybe_up_toml_path);
+        let mut config_path_explicitly_specified = true;
+        let up_toml_path = match (Self::get_up_toml_path(&args.config), args.fallback_url) {
+            // File exists, use file.
+            (Ok(up_toml_path), _) if up_toml_path.exists() => up_toml_path,
+            (result, Some(fallback_url)) => {
+                info!("Config path not found, falling back to {}", fallback_url);
+                debug!("Toml path failure: {:?}", result);
+                if result.is_ok() {
+                    config_path_explicitly_specified = false;
+                }
+                get_fallback_config_path(fallback_url, args.fallback_path)?
+            }
+            // File doesn't exists, use file.
+            (Ok(up_toml_path), _) => up_toml_path,
+            (Err(e), None) => {
+                return Err(e);
+            }
+        };
+
+        let up_toml_path = if up_toml_path.exists() {
+            let read_result = fs::read(&up_toml_path);
             if let Ok(file_contents) = read_result {
                 let config_str = String::from_utf8_lossy(&file_contents);
                 debug!("config_str: {:?}", config_str);
                 config_toml = toml::from_str::<ConfigToml>(&config_str)?;
                 debug!("Config_toml: {:?}", config_toml);
             }
-            Some(maybe_up_toml_path)
+            Some(up_toml_path)
+        } else if config_path_explicitly_specified {
+            bail!("Config path explicitly provided, but not found.");
         } else {
             None
         };
@@ -109,6 +129,31 @@ impl UpConfig {
         }
         Ok(config_path)
     }
+}
+
+// TODO(gib): add tests.
+/// If the fallback repo path was provided, clone or update that path into a
+/// temporary directory, and then return the path to the `up.toml` file within
+/// that directory by joining `<fallback_url>/<fallback_path>`.
+fn get_fallback_config_path(fallback_url: String, fallback_path: String) -> Result<PathBuf> {
+    let fallback_repo_path = env::temp_dir().join("up-rs/fallback_repo");
+    fs::create_dir_all(&fallback_repo_path)
+        .with_context(|| format!("Failed to create {:?}", fallback_repo_path))?;
+
+    let fallback_config_path = fallback_repo_path.join(fallback_path);
+    git::clone_or_update(git::GitConfig {
+        git_url: fallback_url,
+        git_path: fallback_repo_path,
+        remote: git::DEFAULT_REMOTE_NAME.to_owned(),
+        ..git::GitConfig::default()
+    })?;
+
+    ensure!(
+        fallback_config_path.exists(),
+        "Fallback config path doesn't exist.\n  config_path: {:?}",
+        &fallback_config_path,
+    );
+    Ok(fallback_config_path)
 }
 
 #[cfg(test)]
