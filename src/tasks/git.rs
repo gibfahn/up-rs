@@ -10,10 +10,10 @@ use thiserror::Error;
 mod clone;
 mod update;
 
-pub(crate) const DEFAULT_REMOTE_NAME: &str = "origin";
+pub const DEFAULT_REMOTE_NAME: &str = "origin";
 
 #[derive(Debug, Default, StructOpt)]
-pub(crate) struct GitConfig {
+pub struct GitConfig {
     /// URL of git repo to download.
     #[structopt(long)]
     pub git_url: String,
@@ -29,7 +29,7 @@ pub(crate) struct GitConfig {
     pub branch: Option<String>,
 }
 
-pub(crate) fn clone_or_update(git_config: GitConfig) -> Result<()> {
+pub fn clone_or_update(git_config: GitConfig) -> Result<()> {
     if !git_config.git_path.is_dir() {
         debug!("Dir doesn't exist, creating...");
         fs::create_dir_all(&git_config.git_path).map_err(|e| GitError::CreateDirError {

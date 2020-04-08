@@ -1,10 +1,10 @@
 use anyhow::Result;
 use thiserror::Error;
 
-pub(crate) mod git;
-pub(crate) mod link;
+pub mod git;
+pub mod link;
 
-pub(crate) trait ResolveEnv {
+pub trait ResolveEnv {
     fn resolve_env<F>(&mut self, env_fn: F) -> Result<()>
     where
         F: Fn(&str) -> Result<String>;
