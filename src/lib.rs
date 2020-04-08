@@ -60,7 +60,7 @@ pub fn run(args: Args) -> Result<()> {
         }
         None => {
             // TODO(gib): Store and fetch config in config module.
-            let config = UpConfig::from(&args)?;
+            let config = UpConfig::from(args)?;
             update::update(&config)?;
         }
     }
