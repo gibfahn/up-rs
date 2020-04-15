@@ -58,7 +58,7 @@ pub(super) fn update(git_config: GitConfig, repo: &Repository) -> Result<()> {
 
     if needs_checkout {
         info!("Checking out branch: {}", branch_name);
-        // XXX(gib): Check out branch.
+        // TODO(gib): Check out branch.
     }
 
     let fetch_commit = do_fetch(repo, &[&branch_name], &mut remote)?;
