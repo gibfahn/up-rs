@@ -22,11 +22,7 @@
     clippy::nursery,
     clippy::cargo
 )]
-#![allow(
-    clippy::single_component_path_imports,
-    clippy::implicit_return,
-    clippy::missing_docs_in_private_items
-)]
+#![allow(clippy::implicit_return, clippy::missing_docs_in_private_items)]
 
 use std::{
     env, fs,
@@ -42,9 +38,6 @@ use chrono::Utc;
 use displaydoc::Display;
 use log::{info, trace};
 use slog::{o, Drain, Duplicate, FnValue, LevelFilter, Logger};
-use slog_async;
-use slog_stdlog;
-use slog_term;
 use thiserror::Error;
 
 use up_rs::args::Color;
