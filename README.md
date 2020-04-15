@@ -42,7 +42,7 @@ Updates all the software on your machine.
 
 ## Contributing and Developing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md).
+See [CONTRIBUTING.md](/docs/CONTRIBUTING.md).
 
 ## Related Projects
 
