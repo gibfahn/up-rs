@@ -185,16 +185,6 @@ Update pinned versions in `Cargo.lock` to the latest versions matching the range
 cargo update
 ```
 
-[CONTRIBUTING.md]: /CONTRIBUTING.md
-[rustup]: https://rustup.rs/
-[Language Server Protocol]: https://langserver.org/
-[`rls`]: https://github.com/rust-lang/rls
-[`rustfmt`]: https://github.com/rust-lang/rustfmt
-[`clippy`]: https://github.com/rust-lang/rust-clippy
-[`cargo-edit`]: https://github.com/killercup/cargo-edit
-[`cargo-watch`]: https://github.com/passcod/cargo-watch
-[cargo config]: https://github.com/gibfahn/dot/blob/master/dotfiles/.local/share/cargo/config
-[Rust Barebones]: https://anderspitman.net/blog/rust-docker-barebones/
 ## Writing doc comments
 
 Useful links:
@@ -205,9 +195,20 @@ Useful links:
 - [RFC 1946: intra-rustdoc links][]
 - [Documentation - Reddit][]
 
+[CONTRIBUTING.md]: /CONTRIBUTING.md
 [Documentation - API Reference]: https://doc.rust-lang.org/stable/reference/comments.html#doc-comments
 [Documentation - Reddit]: https://www.reddit.com/r/rust/comments/ahb50s/is_there_any_documentation_style_guide_for/
 [Documentation - Rust By Example]: https://doc.rust-lang.org/rust-by-example/meta/doc.html
 [Documentation - The Book]: https://doc.rust-lang.org/book/ch14-02-publishing-to-crates-io.html#making-useful-documentation-comments
+[Language Server Protocol]: https://langserver.org/
 [RFC 1574: API Documentation Conventions]: https://rust-lang.github.io/rfcs/1574-more-api-documentation-conventions.html#appendix-a-full-conventions-text
 [RFC 1946: intra-rustdoc links]: https://rust-lang.github.io/rfcs/1946-intra-rustdoc-links.html
+[Rust Barebones]: https://anderspitman.net/blog/rust-docker-barebones/
+[`cargo-edit`]: https://github.com/killercup/cargo-edit
+[`cargo-watch`]: https://github.com/passcod/cargo-watch
+[`clippy`]: https://github.com/rust-lang/rust-clippy
+[`rls`]: https://github.com/rust-lang/rls
+[`rustfmt`]: https://github.com/rust-lang/rustfmt
+[cargo config]: https://github.com/gibfahn/dot/blob/master/dotfiles/.local/share/cargo/config
+[rustup]: https://rustup.rs/
+
