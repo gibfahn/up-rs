@@ -3,6 +3,7 @@
 [![Latest Version (crates.io)](https://img.shields.io/crates/v/up-rs.svg)](https://crates.io/crates/up-rs)
 [![Latest Version (lib.rs)](https://img.shields.io/crates/v/up-rs.svg)](https://lib.rs/crates/up-rs)
 [![Documentation (docs.rs)](https://docs.rs/up-rs/badge.svg)](https://docs.rs/up-rs)
+![Master CI Status](https://github.com/gibfahn/up-rs/workflows/Rust/badge.svg)
 
 I use this to keep my machine up to date. It does a couple of different things.
 
