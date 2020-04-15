@@ -195,7 +195,24 @@ Useful links:
 - [RFC 1946: intra-rustdoc links][]
 - [Documentation - Reddit][]
 
-[CONTRIBUTING.md]: /CONTRIBUTING.md
+## Commit Messages
+
+This project uses [Conventional Commit messages][], with the following categories:
+
+- build: Changes that affect the build system or external dependencies (example scopes: gulp, broccoli, npm)
+- chore: (updating grunt tasks etc; no production code change)
+- ci: Changes to our CI configuration files and scripts (example scopes: Travis, Circle, BrowserStack, SauceLabs)
+- docs: Documentation only changes
+- feat: A new feature
+- fix: A bug fix
+- perf: A code change that improves performance
+- refactor: A code change that neither fixes a bug nor adds a feature
+- revert: revert of a previous commit
+- style: Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)
+- test: Adding missing tests or correcting existing tests
+
+[CONTRIBUTING.md]: /docs/CONTRIBUTING.md
+[Conventional Commit messages]: https://www.conventionalcommits.org/en/v1.0.0-beta.4/
 [Documentation - API Reference]: https://doc.rust-lang.org/stable/reference/comments.html#doc-comments
 [Documentation - Reddit]: https://www.reddit.com/r/rust/comments/ahb50s/is_there_any_documentation_style_guide_for/
 [Documentation - Rust By Example]: https://doc.rust-lang.org/rust-by-example/meta/doc.html
@@ -211,4 +228,3 @@ Useful links:
 [`rustfmt`]: https://github.com/rust-lang/rustfmt
 [cargo config]: https://github.com/gibfahn/dot/blob/master/dotfiles/.local/share/cargo/config
 [rustup]: https://rustup.rs/
-
