@@ -15,7 +15,7 @@ link-style = "github"
 # Do not use with outfile or infile fields!
 #
 # Defaults to stdout when omitted
-changelog = "CHANGELOG.md"
+# changelog = "CHANGELOG.md"
 
 # This sets an output file only! If it exists already, new changelog data will be
 # prepended, if not it will be created.
