@@ -136,7 +136,7 @@ fn no_todo() {
         // Find anything containing a todo.
         .filter(|file| {
             let text = std::fs::read_to_string(file.path()).unwrap();
-            text.contains("XXX") || text.contains("todo!")
+            text.contains("XXX") || text.contains("todo!") || text.contains("dbg!")
         })
         .map(|file| file.path().display().to_string())
         .collect::<Vec<_>>();
