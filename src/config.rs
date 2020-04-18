@@ -27,12 +27,21 @@ pub struct UpConfig {
 #[derive(Default, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ConfigToml {
+    // TODO(gib): we can remove this now.
     /// Link options.
     link: Option<LinkConfigToml>,
     /// Path to tasks directory (relative to `up.toml`). Default is ./tasks.
     tasks_path: Option<String>,
     /// Environment variables to pass to scripts.
     pub env: Option<HashMap<String, String>>,
+    // TODO(gib): handle sudo requirements more granularly.
+    /// Set to true to prompt for sudo privileges before running.
+    #[serde(default = "default_false")]
+    pub needs_sudo: bool,
+}
+
+const fn default_false() -> bool {
+    false
 }
 
 #[derive(Debug, Serialize, Deserialize)]

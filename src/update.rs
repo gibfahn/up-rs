@@ -1,9 +1,11 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     fs, io,
+    io::Read,
     path::PathBuf,
-    process::{Command, Output, Stdio},
-    time::Instant,
+    process::{Child, Command, ExitStatus, Output, Stdio},
+    thread,
+    time::{self, Duration, Instant},
 };
 
 // TODO(gib): Use https://lib.rs/crates/indicatif for progress bars.
@@ -20,10 +22,28 @@ use crate::{
 };
 
 #[derive(Debug)]
+enum TaskStatus {
+    /// We haven't checked this task yet.
+    New,
+    /// Not yet ready to run as some requires still haven't finished.
+    Blocked,
+    /// In progress.
+    Running(Child, Instant),
+    /// Skipped.
+    Skipped,
+    /// Completed successfully.
+    Passed,
+    /// Completed unsuccessfully.
+    Failed,
+}
+
+#[derive(Debug)]
 struct Task {
     name: String,
     path: PathBuf,
     config: TaskConfig,
+    start_time: Instant,
+    status: TaskStatus,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -37,18 +57,29 @@ struct TaskConfig {
     requires: Option<Vec<String>>,
     /// Whether to run this by default, or only if required.
     auto_run: Option<bool>,
-    /// run
+    /// Run library: up-rs library to use for this task. Either use this or
+    /// `run_cmd` + `check_cmd`.
     run_lib: Option<String>,
+    /// Check command: only run the `run_cmd` if this command returns a non-zero
+    /// exit code.
     check_cmd: Option<Vec<String>>,
+    /// Run command: command to run to perform the update.
     run_cmd: Option<Vec<String>>,
+    /// Set of data provided to the Run library.
     data: Option<toml::Value>,
+    /// Description of the task.
+    description: Option<String>,
 }
 
 impl Task {
     fn from(path: PathBuf) -> Result<Self> {
+        let start_time = Instant::now();
         let s = fs::read_to_string(&path)?;
         trace!("Task '{:?}' contents: <<<{}>>>", &path, &s);
-        let config = toml::from_str::<TaskConfig>(&s)?;
+        let config = toml::from_str::<TaskConfig>(&s).map_err(|e| UpdateError::InvalidToml {
+            path: path.clone(),
+            source: e,
+        })?;
         let name = match &config.name {
             Some(n) => n.clone(),
             None => path
@@ -58,17 +89,35 @@ impl Task {
                 .ok_or_else(|| UpdateError::None {})?
                 .to_owned(),
         };
-        let task = Self { name, path, config };
+        let status = TaskStatus::New;
+        let task = Self {
+            name,
+            path,
+            config,
+            status,
+            start_time,
+        };
         debug!("Task '{}': {:?}", &task.name, task);
         Ok(task)
     }
 
+    fn try_start<F>(&mut self, env_fn: F, env: &HashMap<String, String>) -> Result<()>
+    where
+        F: Fn(&str) -> Result<String>,
+    {
+        // XXX(gib): actually check whether we're blocked.
+
+        self.status = TaskStatus::Blocked;
+        self.start(env_fn, env)
+    }
+
     // TODO(gib): Test for this (using basic config).
-    fn run<F>(&self, env_fn: F, env: &HashMap<String, String>) -> Result<()>
+    fn start<F>(&mut self, env_fn: F, env: &HashMap<String, String>) -> Result<()>
     where
         F: Fn(&str) -> Result<String>,
     {
         debug!("Running task '{}'", &self.name);
+        self.status = TaskStatus::Passed;
 
         if let Some(lib) = &self.config.run_lib {
             match lib.as_str() {
@@ -81,6 +130,7 @@ impl Task {
                         .clone()
                         .try_into::<LinkConfig>()?;
                     data.resolve_env(env_fn)?;
+                    // TODO(gib): Continue on error, saving status as for run commands.
                     tasks::link::run(data)?;
                 }
                 // TODO(gib): Implement this.
@@ -91,6 +141,7 @@ impl Task {
                     bail!("This code isn't yet implemented.");
                 }
             }
+            self.status = TaskStatus::Passed;
             return Ok(());
         }
 
@@ -101,6 +152,7 @@ impl Task {
             // code, non-zero exit code).
             if check_output.status.success() {
                 debug!("Skipping task '{}' as check command passed.", &self.name);
+                self.status = TaskStatus::Skipped;
                 return Ok(());
             }
         } else {
@@ -116,15 +168,9 @@ impl Task {
             for s in &mut cmd {
                 *s = env_fn(s)?;
             }
-            let run_output = self.run_command(&cmd, env)?;
-            if run_output.status.success() {
-                debug!("Task '{}' complete.", &self.name);
-                return Ok(());
-            } else {
-                bail!(UpdateError::CmdFailed {
-                    name: self.name.clone(),
-                });
-            }
+            let (child, start_time) = Self::start_command(&cmd, env)?;
+            self.status = TaskStatus::Running(child, start_time);
+            return Ok(());
         }
 
         bail!(UpdateError::MissingCmd {
@@ -132,7 +178,70 @@ impl Task {
         });
     }
 
+    /// If command has completed set output state.
+    fn try_finish(&mut self) -> Result<()> {
+        let (child, start_time) = match &mut self.status {
+            TaskStatus::Running(child, start_time) => (child, start_time),
+            _ => bail!(anyhow!("Can't finish non-running task.")),
+        };
+
+        if let Some(status) = child.try_wait()? {
+            debug!("Task '{}' complete.", &self.name);
+            let elapsed_time = start_time.elapsed();
+
+            let mut stdout = String::new();
+            child
+                .stdout
+                .as_mut()
+                .ok_or_else(|| anyhow!("Missing stdout"))?
+                .read_to_string(&mut stdout)?;
+
+            let mut stderr = String::new();
+            child
+                .stderr
+                .as_mut()
+                .ok_or_else(|| anyhow!("Missing stderr"))?
+                .read_to_string(&mut stderr)?;
+
+            self.log_command_output(status, &stdout, &stderr, elapsed_time);
+            if status.success() {
+                self.status = TaskStatus::Passed;
+            } else {
+                self.status = TaskStatus::Failed;
+            }
+        } else {
+            // Still running.
+            // trace!("Task '{}' still in progress.", &self.name);
+        }
+
+        Ok(())
+    }
+
     fn run_command(&self, cmd: &[String], env: &HashMap<String, String>) -> Result<Output> {
+        let mut command = Self::get_command(cmd, env)?;
+
+        let now = Instant::now();
+        let output = command.output()?;
+
+        let elapsed_time = now.elapsed();
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+
+        self.log_command_output(output.status, &stdout, &stderr, elapsed_time);
+        Ok(output)
+    }
+
+    fn start_command(cmd: &[String], env: &HashMap<String, String>) -> Result<(Child, Instant)> {
+        let command = Self::get_command(cmd, env);
+        let now = Instant::now();
+        let child = command?
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()?;
+        Ok((child, now))
+    }
+
+    fn get_command(cmd: &[String], env: &HashMap<String, String>) -> Result<Command> {
         // TODO(gib): set current dir.
         let mut command = Command::new(
             &cmd.get(0)
@@ -144,20 +253,22 @@ impl Task {
             .envs(env.iter())
             .stdin(Stdio::inherit());
         trace!("Running command: {:?}", &command);
+        Ok(command)
+    }
 
-        let now = Instant::now();
-        let output = command.output()?;
-
-        let elapsed_time = now.elapsed();
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        let stderr = String::from_utf8_lossy(&output.stderr);
-
+    fn log_command_output(
+        &self,
+        status: ExitStatus,
+        stdout: &str,
+        stderr: &str,
+        elapsed_time: Duration,
+    ) {
         // TODO(gib): How do we separate out the task output?
         // TODO(gib): Document error codes.
-        if output.status.success() {
+        if status.success() {
             debug!(
                 "Task '{}' command ran in {:?} with status: {}",
-                &self.name, elapsed_time, output.status
+                &self.name, elapsed_time, status
             );
             if !stdout.is_empty() {
                 debug!(
@@ -174,7 +285,7 @@ impl Task {
         } else {
             error!(
                 "Task '{}' command failed in {:?} with status: {}",
-                &self.name, elapsed_time, output.status
+                &self.name, elapsed_time, status
             );
             if !stdout.is_empty() {
                 error!(
@@ -189,7 +300,6 @@ impl Task {
                 );
             }
         }
-        Ok(output)
     }
 }
 
@@ -238,6 +348,12 @@ pub fn update(config: &config::UpConfig) -> Result<()> {
         Ok(out)
     };
 
+    if config.config_toml.needs_sudo {
+        // TODO(gib): this only lasts for 5 minutes.
+        debug!("Prompting for superuser privileges with 'sudo -v'");
+        Command::new("sudo").arg("-v").output()?;
+    }
+
     // TODO(gib): Handle and filter by constraints.
 
     #[allow(clippy::filter_map)]
@@ -258,24 +374,76 @@ pub fn update(config: &config::UpConfig) -> Result<()> {
     trace!("Task list: {:#?}", tasks);
 
     #[allow(clippy::filter_map)]
-    let mut tasks_to_run: Vec<String> = tasks
+    let mut tasks_to_run: HashSet<String> = tasks
         .iter()
         .filter(|(_, task)| task.config.auto_run.unwrap_or(true))
         .map(|(name, _)| name.clone())
         .collect();
 
-    tasks_to_run.sort();
+    let mut tasks_passed = Vec::new();
+    let mut tasks_skipped = Vec::new();
+    let mut tasks_failed = Vec::new();
 
-    // TODO(gib): check requires in a loop, run what can be run each time, if no
-    // change exit.
-    // TODO(gib): Run tasks in parallel.
-    for name in tasks_to_run {
-        let now = Instant::now();
-        tasks
-            .get(&name)
-            .ok_or_else(|| anyhow!("Task '{}' was missing.", &name))?
-            .run(env_fn, &env)?;
-        debug!("Task '{}' ran in {:?}.", &name, now.elapsed(),);
+    let mut tasks_to_run_completed = Vec::new();
+
+    while !tasks_to_run.is_empty() {
+        // TODO(gib): Remove or make tunable sleep delay.
+        thread::sleep(time::Duration::from_millis(10));
+        for name in &tasks_to_run {
+            let task = tasks
+                .get_mut(name)
+                .ok_or_else(|| anyhow!("Task '{}' was missing.", name))?;
+
+            match task.status {
+                TaskStatus::New => {
+                    // Start the task or mark it as blocked.
+                    task.try_start(env_fn, &env)?;
+                }
+                TaskStatus::Blocked => {
+                    // Check if still blocked, if not start it.
+                }
+                TaskStatus::Running(_, _) => {
+                    // Check if finished, if so gather status.
+                    task.try_finish()?;
+                }
+                TaskStatus::Failed => {
+                    tasks_to_run_completed.push(name.clone());
+                    tasks_failed.push(name.clone());
+                }
+                TaskStatus::Passed => {
+                    tasks_to_run_completed.push(name.clone());
+                    tasks_passed.push(name.clone());
+                }
+                TaskStatus::Skipped => {
+                    tasks_to_run_completed.push(name.clone());
+                    tasks_skipped.push(name.clone());
+                }
+            }
+        }
+        for name in tasks_to_run_completed.drain(..) {
+            tasks_to_run.remove(&name);
+        }
+    }
+
+    info!(
+        "Ran {} tasks, {} passed, {} failed, {} skipped",
+        tasks.len(),
+        tasks_passed.len(),
+        tasks_failed.len(),
+        tasks_skipped.len()
+    );
+    if !tasks_passed.is_empty() {
+        info!("Tasks passed: {:#?}", tasks_passed);
+    }
+    if !tasks_skipped.is_empty() {
+        info!("Tasks skipped: {:#?}", tasks_skipped);
+    }
+
+    if !tasks_failed.is_empty() {
+        // Error out.
+        error!("Tasks failed: {:#?}", tasks_failed);
+        error!("One or more tasks failed, exiting.");
+        bail!(anyhow!("One or more tasks failed."))
     }
 
     Ok(())
@@ -301,8 +469,11 @@ pub enum UpdateError {
     },
     /// Task '{name}' had no run command.
     MissingCmd { name: String },
-    /// Task '{name}' run command failed.
-    CmdFailed { name: String },
     /// Unexpectedly empty option found.
     None {},
+    /// Invalid toml at '{path}':
+    InvalidToml {
+        path: PathBuf,
+        source: toml::de::Error,
+    },
 }
