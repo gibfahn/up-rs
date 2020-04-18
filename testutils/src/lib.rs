@@ -48,7 +48,15 @@ pub fn up_cmd(temp_dir: &Path) -> Command {
     // Show backtrace on exit, nightly only for now.
     // https://github.com/rust-lang/rust/issues/53487
     cmd.env("RUST_BACKTRACE", "1");
-    cmd.args(["--log-level=trace", "--log-dir=", "--color=always"].iter());
+    cmd.args(
+        [
+            "--log-level=trace",
+            "--log-dir",
+            temp_dir.join("logs").to_str().unwrap(),
+            "--color=always",
+        ]
+        .iter(),
+    );
     cmd
 }
 
