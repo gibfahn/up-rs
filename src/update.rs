@@ -303,6 +303,15 @@ impl Task {
     }
 }
 
+// TODO(gib): Implement update function:
+// TODO(gib): Need a graph of toml files, each one representing a component.
+// TODO(gib): Need a root file that can set variables (e.g. boolean flags).
+// TODO(gib): Everything has one (or more?) parents (root is the root).
+// TODO(gib): Need a command to show the tree and dependencies.
+// TODO(gib): If fixtures are needed can link to files or scripts.
+// TODO(gib): Should files be stored in ~/.config/up ?
+
+#[allow(clippy::clippy::too_many_lines)] // Function is pretty linear right now.
 /// Run a update checks specified in the `up_dir` config files.
 pub fn update(config: &config::UpConfig) -> Result<()> {
     // TODO(gib): Handle missing dir & move into config.
@@ -447,14 +456,6 @@ pub fn update(config: &config::UpConfig) -> Result<()> {
     }
 
     Ok(())
-
-    // TODO(gib): Implement update function:
-    // TODO(gib): Need a graph of toml files, each one representing a component.
-    // TODO(gib): Need a root file that can set variables (e.g. boolean flags).
-    // TODO(gib): Everything has one (or more?) parents (root is the root).
-    // TODO(gib): Need a command to show the tree and dependencies.
-    // TODO(gib): If fixtures are needed can link to files or scripts.
-    // TODO(gib): Should files be stored in ~/.config/up ?
 }
 
 #[derive(Error, Debug, Display)]
