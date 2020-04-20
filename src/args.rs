@@ -23,11 +23,13 @@ pub fn parse() -> Args {
 /// configuration files into the right locations, and it runs scripts to make
 /// sure the tools you need are installed and up to date.
 ///
-/// The `up link` command symlinks your dotfiles into your home directory.
 ///
-/// The `up date` command provides an easy way to specify what you want on your
-/// system, and how to keep it up to date. It is designed to work with and
-/// complement existing package managers rather than replace them.
+/// Running `up` without a subcommand provides an easy way to specify what you
+/// want on your system, and how to keep it up to date. It is designed to work
+/// with and complement existing package managers rather than replace them.
+///
+/// There are also a number of libraries built into up, that can be accessed
+/// directly, e.g. `up link` to link dotfiles.
 #[derive(Debug, StructOpt)]
 #[structopt(rename_all = "kebab-case")]
 #[structopt(global_settings = &[AppSettings::ColoredHelp])]
