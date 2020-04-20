@@ -59,9 +59,10 @@ pub fn run(args: Args) -> Result<()> {
             bail!("Not yet implemented.");
         }
         None => {
+            let tasks = args.tasks.clone();
             // TODO(gib): Store and fetch config in config module.
             let config = UpConfig::from(args)?;
-            update::update(&config)?;
+            update::update(&config, &tasks)?;
         }
     }
     Ok(())

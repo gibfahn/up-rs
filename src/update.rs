@@ -317,7 +317,7 @@ impl Task {
 
 #[allow(clippy::clippy::too_many_lines)] // Function is pretty linear right now.
 /// Run a update checks specified in the `up_dir` config files.
-pub fn update(config: &config::UpConfig) -> Result<()> {
+pub fn update(config: &config::UpConfig, filter_tasks: &Option<Vec<String>>) -> Result<()> {
     // TODO(gib): Handle missing dir & move into config.
     let mut tasks_dir = config
         .up_toml_path
@@ -369,6 +369,9 @@ pub fn update(config: &config::UpConfig) -> Result<()> {
 
     // TODO(gib): Handle and filter by constraints.
 
+    let filter_tasks_set: Option<HashSet<String>> =
+        filter_tasks.clone().map(|v| v.into_iter().collect());
+
     #[allow(clippy::filter_map)]
     let mut tasks: HashMap<String, Task> = HashMap::new();
     for entry in tasks_dir.read_dir().map_err(|e| UpdateError::ReadDir {
@@ -380,6 +383,15 @@ pub fn update(config: &config::UpConfig) -> Result<()> {
             continue;
         }
         let task = Task::from(entry.path())?;
+        if let Some(filter) = filter_tasks_set.as_ref() {
+            if !filter.contains(&task.name) {
+                debug!(
+                    "Not running task '{}' as not in tasks filter {:?}",
+                    &task.name, &filter
+                );
+                continue;
+            }
+        }
         tasks.insert(task.name.clone(), task);
     }
 

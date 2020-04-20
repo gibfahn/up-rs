@@ -55,8 +55,13 @@ pub struct Args {
     /// Fallback path inside the git repo to get the config.
     /// The default path assumes your fallback_url points to a dotfiles repo
     /// that is linked into ~.
-    #[structopt(short = "p", default_value = ".config/up/up.toml")]
+    #[structopt(short = "p", default_value = "dotfiles/.config/up/up.toml")]
     pub(crate) fallback_path: String,
+    // TODO(gib): don't include update specific options in the generic options section.
+    /// Optionally pass one or more tasks to run. The default is to run all
+    /// tasks.
+    #[structopt(long)]
+    pub(crate) tasks: Option<Vec<String>>,
     #[structopt(subcommand)]
     pub(crate) cmd: Option<SubCommand>,
 }
