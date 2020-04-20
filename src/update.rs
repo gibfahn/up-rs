@@ -1,3 +1,8 @@
+// TODO(gib): If there's only one task left, stream output directly to the
+// console and run sync.
+
+// TODO(gib): Use https://lib.rs/crates/indicatif for progress bars.
+
 use std::{
     collections::{HashMap, HashSet},
     fs, io,
@@ -7,8 +12,6 @@ use std::{
     thread,
     time::{self, Duration, Instant},
 };
-
-// TODO(gib): Use https://lib.rs/crates/indicatif for progress bars.
 
 use anyhow::{anyhow, bail, Result};
 use displaydoc::Display;
@@ -303,13 +306,7 @@ impl Task {
     }
 }
 
-// TODO(gib): Implement update function:
-// TODO(gib): Need a graph of toml files, each one representing a component.
-// TODO(gib): Need a root file that can set variables (e.g. boolean flags).
-// TODO(gib): Everything has one (or more?) parents (root is the root).
-// TODO(gib): Need a command to show the tree and dependencies.
-// TODO(gib): If fixtures are needed can link to files or scripts.
-// TODO(gib): Should files be stored in ~/.config/up ?
+// TODO(gib): Implement a command to show the tree and dependencies.
 
 #[allow(clippy::clippy::too_many_lines)] // Function is pretty linear right now.
 /// Run a update checks specified in the `up_dir` config files.
@@ -397,6 +394,8 @@ pub fn update(config: &config::UpConfig) -> Result<()> {
 
     while !tasks_to_run.is_empty() {
         // TODO(gib): Remove or make tunable sleep delay.
+        // TODO(gib): Each minute log that we've been running for a minute, and how many
+        // of each task is still running.
         thread::sleep(time::Duration::from_millis(10));
         for name in &tasks_to_run {
             let task = tasks
