@@ -448,10 +448,10 @@ pub fn update(config: &config::UpConfig) -> Result<()> {
         tasks_skipped.len()
     );
     if !tasks_passed.is_empty() {
-        info!("Tasks passed: {:#?}", tasks_passed);
+        info!("Tasks passed: {:?}", tasks_passed);
     }
     if !tasks_skipped.is_empty() {
-        info!("Tasks skipped: {:#?}", tasks_skipped);
+        info!("Tasks skipped: {:?}", tasks_skipped);
     }
 
     if !tasks_failed.is_empty() {
