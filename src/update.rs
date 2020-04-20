@@ -148,9 +148,12 @@ impl Task {
             return Ok(());
         }
 
-        if let Some(cmd) = &self.config.check_cmd {
+        if let Some(mut cmd) = self.config.check_cmd.clone() {
             info!("Running '{}' check command.", &self.name);
-            let check_output = self.run_command(cmd, env)?;
+            for s in &mut cmd {
+                *s = env_fn(s)?;
+            }
+            let check_output = self.run_check_cmd(&cmd, env)?;
             // TODO(gib): Allow choosing how to validate check_cmd output (stdout, zero exit
             // code, non-zero exit code).
             if check_output.status.success() {
@@ -220,11 +223,15 @@ impl Task {
         Ok(())
     }
 
-    fn run_command(&self, cmd: &[String], env: &HashMap<String, String>) -> Result<Output> {
+    fn run_check_cmd(&self, cmd: &[String], env: &HashMap<String, String>) -> Result<Output> {
         let mut command = Self::get_command(cmd, env)?;
 
         let now = Instant::now();
-        let output = command.output()?;
+        let output = command.output().map_err(|e| UpdateError::CheckCmdFailed {
+            name: self.name.clone(),
+            cmd: cmd.into(),
+            source: e,
+        })?;
 
         let elapsed_time = now.elapsed();
         let stdout = String::from_utf8_lossy(&output.stdout);
@@ -469,6 +476,12 @@ pub enum UpdateError {
     },
     /// Task '{name}' had no run command.
     MissingCmd { name: String },
+    /// Task '{name}' check command failed. Command: {cmd:?}.
+    CheckCmdFailed {
+        name: String,
+        source: io::Error,
+        cmd: Vec<String>,
+    },
     /// Unexpectedly empty option found.
     None {},
     /// Invalid toml at '{path}':
