@@ -1,4 +1,4 @@
-workspace(name = "up-rs")
+workspace(name = "up_rs")
 
 load("//cargo:crates.bzl", "raze_fetch_remote_crates")
 

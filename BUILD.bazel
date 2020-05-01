@@ -1,0 +1,37 @@
+load("@io_bazel_rules_rust//rust:rust.bzl", "rust_binary", "rust_library")
+
+rust_binary(
+    name = "up_rs",
+    srcs = ["src/main.rs"],
+    deps = ["//:up_rs_lib"],
+)
+
+rust_library(
+    name = "up_rs_lib",
+    srcs = glob(["src/**/*.rs"], exclude = ["src/main.rs"]),
+    deps = [
+        "//cargo:anyhow",
+        "//cargo:chrono",
+        "//cargo:dirs",
+        "//cargo:displaydoc",
+        "//cargo:envy",
+        "//cargo:git2",
+        "//cargo:ignore",
+        "//cargo:log",
+        "//cargo:serde",
+        "//cargo:serde_derive",
+        "//cargo:serde_json",
+        "//cargo:serde_yaml",
+        "//cargo:shellexpand",
+        "//cargo:slog",
+        "//cargo:slog_async",
+        "//cargo:slog_scope",
+        "//cargo:slog_stdlog",
+        "//cargo:slog_term",
+        "//cargo:structopt",
+        "//cargo:thiserror",
+        "//cargo:toml",
+        "//cargo:walkdir",
+    ],
+)
+

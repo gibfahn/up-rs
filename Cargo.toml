@@ -29,7 +29,7 @@ envy = "0.4.1"
 toml = "0.5.6"
 serde_json = "1.0.48"
 serde_yaml = "0.8.11"
-log = "0.4.8"
+log = {version = "0.4.8", features = ["std"]}
 anyhow = "1.0.27"
 thiserror = "1.0.12"
 chrono = "0.4.11"
@@ -43,7 +43,8 @@ slog-async = "2.5.0"
 displaydoc = "0.1.5"
 
 [dev-dependencies]
-# testutils = { path = "./testutils" }
+# XXX(gib): Have to comment this out to re-run cargo-raze.
+testutils = { path = "./testutils" }
 ignore = "0.4.12"
 
 [features]
@@ -54,4 +55,5 @@ CI = [] # Enabled when running in CI.
 # Don't vendor deps.
 genmode = "Remote"
 # The WORKSPACE relative path to the Cargo.toml working directory.
-workspace_path = "//"
+workspace_path = "//cargo"
+output_buildfile_suffix = "BUILD.bazel"
