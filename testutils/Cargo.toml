@@ -9,3 +9,10 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.26"
 walkdir = "2.3.1"
+
+# cargo-raze config: https://github.com/google/cargo-raze
+[raze]
+# Don't vendor deps.
+genmode = "Remote"
+# The WORKSPACE relative path to the Cargo.toml working directory.
+workspace_path = "//testutils"

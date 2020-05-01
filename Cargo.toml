@@ -43,8 +43,15 @@ slog-async = "2.5.0"
 displaydoc = "0.1.5"
 
 [dev-dependencies]
-testutils = { path = "testutils" }
+# testutils = { path = "./testutils" }
 ignore = "0.4.12"
 
 [features]
 CI = [] # Enabled when running in CI.
+
+# cargo-raze config: https://github.com/google/cargo-raze
+[raze]
+# Don't vendor deps.
+genmode = "Remote"
+# The WORKSPACE relative path to the Cargo.toml working directory.
+workspace_path = "//"
