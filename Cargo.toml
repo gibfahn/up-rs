@@ -11,7 +11,7 @@ documentation = "https://github.com/gibfahn/up-rs"
 homepage = "https://github.com/gibfahn/up-rs"
 repository = "https://github.com/gibfahn/up-rs"
 readme = "README.md"
-keywords = ["cli", "tool", ]
+keywords = ["cli", "tool"]
 categories = ["command-line-utilities", "config"]
 exclude = ["tests/"]
 

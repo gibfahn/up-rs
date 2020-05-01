@@ -177,6 +177,7 @@ fn get_fallback_config_path(fallback_url: String, fallback_path: String) -> Resu
 
 #[cfg(test)]
 mod toml_paths_tests {
+    #[allow(clippy::result_unwrap_used)]
     use super::UpConfig;
 
     use std::env;

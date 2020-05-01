@@ -194,6 +194,7 @@ fn cargo_cmd(current_dir: &Path, fmt: CargoCmdType) -> Output {
             "+nightly",
             "clippy",
             "--color=always",
+            "-Z=unstable-options",
             "--",
             "--deny=warnings",
         ]
@@ -201,10 +202,10 @@ fn cargo_cmd(current_dir: &Path, fmt: CargoCmdType) -> Output {
         #[cfg(not(feature = "CI"))]
         CargoCmdType::ClippyFix => [
             "+nightly",
-            "fix",
-            "--clippy",
-            "-Z",
-            "unstable-options",
+            "clippy",
+            "--color=always",
+            "-Z=unstable-options",
+            "--fix",
             "--allow-staged",
         ]
         .iter(),
