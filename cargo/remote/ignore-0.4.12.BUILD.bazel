@@ -1,0 +1,55 @@
+"""
+cargo-raze crate build file.
+
+DO NOT EDIT! Replaced on runs of cargo-raze
+"""
+package(default_visibility = [
+  # Public for visibility by "@raze__crate__version//" targets.
+  #
+  # Prefer access through "//cargo", which limits external
+  # visibility to explicit Cargo.toml dependencies.
+  "//visibility:public",
+])
+
+licenses([
+  "notice", # "MIT"
+  "unencumbered", # "Unlicense"
+])
+
+load(
+    "@io_bazel_rules_rust//rust:rust.bzl",
+    "rust_library",
+    "rust_binary",
+    "rust_test",
+)
+
+
+# Unsupported target "gitignore_matched_path_or_any_parents_tests" with type "test" omitted
+
+rust_library(
+    name = "ignore",
+    crate_root = "src/lib.rs",
+    crate_type = "lib",
+    edition = "2015",
+    srcs = glob(["**/*.rs"]),
+    deps = [
+        "@raze__crossbeam_channel__0_4_2//:crossbeam_channel",
+        "@raze__crossbeam_utils__0_7_2//:crossbeam_utils",
+        "@raze__globset__0_4_5//:globset",
+        "@raze__lazy_static__1_4_0//:lazy_static",
+        "@raze__log__0_4_8//:log",
+        "@raze__memchr__2_3_3//:memchr",
+        "@raze__regex__1_3_5//:regex",
+        "@raze__same_file__1_0_6//:same_file",
+        "@raze__thread_local__1_0_1//:thread_local",
+        "@raze__walkdir__2_3_1//:walkdir",
+    ],
+    rustc_flags = [
+        "--cap-lints=allow",
+    ],
+    version = "0.4.12",
+    crate_features = [
+    ],
+)
+
+# Unsupported target "walk" with type "example" omitted
