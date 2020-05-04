@@ -34,7 +34,7 @@ rust_library(
     edition = "2018",
     srcs = glob(["**/*.rs"]),
     deps = [
-        "@raze__serde__1_0_105//:serde",
+        "@raze__serde__1_0_106//:serde",
     ],
     rustc_flags = [
         "--cap-lints=allow",

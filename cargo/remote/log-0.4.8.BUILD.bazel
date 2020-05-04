@@ -37,6 +37,7 @@ rust_library(
     ],
     rustc_flags = [
         "--cap-lints=allow",
+        "--cfg=atomic_cas",
     ],
     version = "0.4.8",
     crate_features = [

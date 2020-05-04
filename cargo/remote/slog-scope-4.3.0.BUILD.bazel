@@ -33,7 +33,7 @@ rust_library(
     edition = "2015",
     srcs = glob(["**/*.rs"]),
     deps = [
-        "@raze__arc_swap__0_4_5//:arc_swap",
+        "@raze__arc_swap__0_4_6//:arc_swap",
         "@raze__lazy_static__1_4_0//:lazy_static",
         "@raze__slog__2_5_2//:slog",
     ],

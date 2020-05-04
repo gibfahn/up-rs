@@ -24,6 +24,7 @@ load(
 
 
 # Unsupported target "compiletest" with type "test" omitted
+# Unsupported target "test_deprecated" with type "test" omitted
 # Unsupported target "test_display" with type "test" omitted
 # Unsupported target "test_error" with type "test" omitted
 # Unsupported target "test_expr" with type "test" omitted
@@ -40,12 +41,12 @@ rust_library(
     edition = "2018",
     srcs = glob(["**/*.rs"]),
     deps = [
-        "@raze__thiserror_impl__1_0_12//:thiserror_impl",
+        "@raze__thiserror_impl__1_0_16//:thiserror_impl",
     ],
     rustc_flags = [
         "--cap-lints=allow",
     ],
-    version = "1.0.12",
+    version = "1.0.16",
     crate_features = [
     ],
 )

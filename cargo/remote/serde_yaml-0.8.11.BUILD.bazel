@@ -33,7 +33,7 @@ rust_library(
     deps = [
         "@raze__dtoa__0_4_5//:dtoa",
         "@raze__linked_hash_map__0_5_2//:linked_hash_map",
-        "@raze__serde__1_0_105//:serde",
+        "@raze__serde__1_0_106//:serde",
         "@raze__yaml_rust__0_4_3//:yaml_rust",
     ],
     rustc_flags = [

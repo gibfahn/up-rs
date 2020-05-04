@@ -24,26 +24,32 @@ load(
 )
 
 
-# Unsupported target "bench" with type "bench" omitted
+# Unsupported target "gitignore_matched_path_or_any_parents_tests" with type "test" omitted
 
 rust_library(
-    name = "globset",
+    name = "ignore",
     crate_root = "src/lib.rs",
     crate_type = "lib",
     edition = "2015",
     srcs = glob(["**/*.rs"]),
     deps = [
-        "@raze__aho_corasick__0_7_10//:aho_corasick",
-        "@raze__bstr__0_2_12//:bstr",
-        "@raze__fnv__1_0_6//:fnv",
+        "@raze__crossbeam_channel__0_4_2//:crossbeam_channel",
+        "@raze__crossbeam_utils__0_7_2//:crossbeam_utils",
+        "@raze__globset__0_4_5//:globset",
+        "@raze__lazy_static__1_4_0//:lazy_static",
         "@raze__log__0_4_8//:log",
+        "@raze__memchr__2_3_3//:memchr",
         "@raze__regex__1_3_7//:regex",
+        "@raze__same_file__1_0_6//:same_file",
+        "@raze__thread_local__1_0_1//:thread_local",
+        "@raze__walkdir__2_3_1//:walkdir",
     ],
     rustc_flags = [
         "--cap-lints=allow",
     ],
-    version = "0.4.5",
+    version = "0.4.14",
     crate_features = [
     ],
 )
 
+# Unsupported target "walk" with type "example" omitted

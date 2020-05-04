@@ -48,7 +48,7 @@ rust_library(
     rustc_flags = [
         "--cap-lints=allow",
     ],
-    version = "1.3.5",
+    version = "1.3.7",
     crate_features = [
         "aho-corasick",
         "default",

@@ -23,23 +23,20 @@ load(
 )
 
 
-# Unsupported target "build-script-build" with type "custom-build" omitted
+# Unsupported target "bench" with type "bench" omitted
 
 rust_library(
-    name = "libssh2_sys",
+    name = "smallvec",
     crate_root = "lib.rs",
     crate_type = "lib",
-    edition = "2015",
+    edition = "2018",
     srcs = glob(["**/*.rs"]),
     deps = [
-        "@raze__libc__0_2_68//:libc",
-        "@raze__libz_sys__1_0_25//:libz_sys",
-        "@raze__openssl_sys__0_9_54//:openssl_sys",
     ],
     rustc_flags = [
         "--cap-lints=allow",
     ],
-    version = "0.2.16",
+    version = "1.4.0",
     crate_features = [
     ],
 )

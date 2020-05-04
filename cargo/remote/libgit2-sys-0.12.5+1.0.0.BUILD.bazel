@@ -1,0 +1,105 @@
+"""
+cargo-raze crate build file.
+
+DO NOT EDIT! Replaced on runs of cargo-raze
+"""
+package(default_visibility = [
+  # Public for visibility by "@raze__crate__version//" targets.
+  #
+  # Prefer access through "//cargo", which limits external
+  # visibility to explicit Cargo.toml dependencies.
+  "//visibility:public",
+])
+
+licenses([
+  "notice", # "MIT,Apache-2.0"
+])
+
+load(
+    "@io_bazel_rules_rust//rust:rust.bzl",
+    "rust_library",
+    "rust_binary",
+    "rust_test",
+)
+
+rust_binary(
+    name = "libgit2_sys_build_script",
+    srcs = glob(["**/*.rs"]),
+    crate_root = "build.rs",
+    edition = "2018",
+    deps = [
+        "@raze__cc__1_0_52//:cc",
+        "@raze__pkg_config__0_3_17//:pkg_config",
+    ],
+    rustc_flags = [
+        "--cap-lints=allow",
+    ],
+    crate_features = [
+      "https",
+      "libssh2-sys",
+      "openssl-sys",
+      "ssh",
+      "ssh_key_from_memory",
+    ],
+    data = glob(["*"]),
+    version = "0.12.5+1.0.0",
+    visibility = ["//visibility:private"],
+)
+
+genrule(
+    name = "libgit2_sys_build_script_executor",
+    srcs = glob(["*", "**/*.rs"]),
+    outs = ["libgit2_sys_out_dir_outputs.tar.gz"],
+    tools = [
+      ":libgit2_sys_build_script",
+    ],
+    tags = ["no-sandbox"],
+    cmd = "mkdir -p $$(dirname $@)/libgit2_sys_out_dir_outputs/;"
+        + " (export CARGO_MANIFEST_DIR=\"$$PWD/$$(dirname $(location :Cargo.toml))\";"
+        # TODO(acmcarther): This needs to be revisited as part of the cross compilation story.
+        #                   See also: https://github.com/google/cargo-raze/pull/54
+        + " export TARGET='x86_64-apple-darwin';"
+        + " export RUST_BACKTRACE=1;"
+        + " export CARGO_FEATURE_HTTPS=1;"
+        + " export CARGO_FEATURE_LIBSSH2_SYS=1;"
+        + " export CARGO_FEATURE_OPENSSL_SYS=1;"
+        + " export CARGO_FEATURE_SSH=1;"
+        + " export CARGO_FEATURE_SSH_KEY_FROM_MEMORY=1;"
+        + " export OUT_DIR=$$PWD/$$(dirname $@)/libgit2_sys_out_dir_outputs;"
+        + " export BINARY_PATH=\"$$PWD/$(location :libgit2_sys_build_script)\";"
+        + " export OUT_TAR=$$PWD/$@;"
+        + " export CARGO_CFG_TARGET_POINTER_WIDTH=64;"
+        + " export OPT_LEVEL=0;"
+        + " export HOST=any;"
+        + " cd $$(dirname $(location :Cargo.toml)) && $$BINARY_PATH && tar -czf $$OUT_TAR -C $$OUT_DIR .)"
+)
+
+
+rust_library(
+    name = "libgit2_sys",
+    crate_root = "lib.rs",
+    crate_type = "lib",
+    edition = "2018",
+    srcs = glob(["**/*.rs"]),
+    deps = [
+        "@raze__libc__0_2_69//:libc",
+        "@raze__libssh2_sys__0_2_17//:libssh2_sys",
+        "@raze__libz_sys__1_0_25//:libz_sys",
+        "@raze__openssl_sys__0_9_55//:openssl_sys",
+    ],
+    rustc_flags = [
+        "--cap-lints=allow",
+        "-L libgit2/include",
+    ],
+    out_dir_tar = ":libgit2_sys_build_script_executor",
+    data = glob(["**/*"]),
+    version = "0.12.5+1.0.0",
+    crate_features = [
+        "https",
+        "libssh2-sys",
+        "openssl-sys",
+        "ssh",
+        "ssh_key_from_memory",
+    ],
+)
+

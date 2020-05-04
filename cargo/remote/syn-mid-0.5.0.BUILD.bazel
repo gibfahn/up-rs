@@ -31,9 +31,9 @@ rust_library(
     edition = "2018",
     srcs = glob(["**/*.rs"]),
     deps = [
-        "@raze__proc_macro2__1_0_9//:proc_macro2",
-        "@raze__quote__1_0_3//:quote",
-        "@raze__syn__1_0_17//:syn",
+        "@raze__proc_macro2__1_0_10//:proc_macro2",
+        "@raze__quote__1_0_4//:quote",
+        "@raze__syn__1_0_18//:syn",
     ],
     rustc_flags = [
         "--cap-lints=allow",

@@ -12,7 +12,7 @@ package(default_visibility = [
 ])
 
 licenses([
-  "notice", # "MIT,Apache-2.0"
+  "notice", # "MIT"
 ])
 
 load(
@@ -23,10 +23,10 @@ load(
 )
 
 
-# Unsupported target "build-script-build" with type "custom-build" omitted
+# Unsupported target "build-script-main" with type "custom-build" omitted
 
 rust_library(
-    name = "libz_sys",
+    name = "openssl_sys",
     crate_root = "src/lib.rs",
     crate_type = "lib",
     edition = "2015",
@@ -36,9 +36,26 @@ rust_library(
     ],
     rustc_flags = [
         "--cap-lints=allow",
+        "--cfg=const_fn",
+        "--cfg=osslconf=\"OPENSSL_NO_COMP\"",
+        "--cfg=osslconf=\"OPENSSL_NO_ENGINE\"",
+        "--cfg=osslconf=\"OPENSSL_NO_SSL3_METHOD\"",
+        "--cfg=ossl101",
+        "--cfg=ossl102",
+        "--cfg=ossl102f",
+        "--cfg=ossl102h",
+        "--cfg=ossl110",
+        "--cfg=ossl110f",
+        "--cfg=ossl110g",
+        "--cfg=ossl110h",
+        "--cfg=ossl111",
+        "--cfg=ossl111b",
+        "--cfg=ossl111c",
     ],
-    version = "1.0.25",
+    version = "0.9.55",
     crate_features = [
+        "openssl-src",
+        "vendored",
     ],
 )
 

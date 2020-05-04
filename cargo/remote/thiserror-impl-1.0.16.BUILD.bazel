@@ -12,7 +12,7 @@ package(default_visibility = [
 ])
 
 licenses([
-  "notice", # "MIT"
+  "restricted", # "MIT OR Apache-2.0"
 ])
 
 load(
@@ -23,24 +23,23 @@ load(
 )
 
 
-# Unsupported target "build-script-main" with type "custom-build" omitted
 
 rust_library(
-    name = "openssl_sys",
+    name = "thiserror_impl",
     crate_root = "src/lib.rs",
-    crate_type = "lib",
-    edition = "2015",
+    crate_type = "proc-macro",
+    edition = "2018",
     srcs = glob(["**/*.rs"]),
     deps = [
-        "@raze__libc__0_2_68//:libc",
+        "@raze__proc_macro2__1_0_10//:proc_macro2",
+        "@raze__quote__1_0_4//:quote",
+        "@raze__syn__1_0_18//:syn",
     ],
     rustc_flags = [
         "--cap-lints=allow",
     ],
-    version = "0.9.54",
+    version = "1.0.16",
     crate_features = [
-        "openssl-src",
-        "vendored",
     ],
 )
 

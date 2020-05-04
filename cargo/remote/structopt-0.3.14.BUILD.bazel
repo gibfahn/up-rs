@@ -72,12 +72,12 @@ rust_library(
     deps = [
         "@raze__clap__2_33_0//:clap",
         "@raze__lazy_static__1_4_0//:lazy_static",
-        "@raze__structopt_derive__0_4_5//:structopt_derive",
+        "@raze__structopt_derive__0_4_7//:structopt_derive",
     ],
     rustc_flags = [
         "--cap-lints=allow",
     ],
-    version = "0.3.12",
+    version = "0.3.14",
     crate_features = [
         "default",
     ],

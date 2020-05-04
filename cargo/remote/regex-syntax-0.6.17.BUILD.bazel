@@ -38,6 +38,8 @@ rust_library(
     ],
     version = "0.6.17",
     crate_features = [
+        "default",
+        "unicode",
         "unicode-age",
         "unicode-bool",
         "unicode-case",

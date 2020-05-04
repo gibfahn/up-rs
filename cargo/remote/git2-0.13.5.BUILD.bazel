@@ -38,17 +38,15 @@ rust_library(
     srcs = glob(["**/*.rs"]),
     deps = [
         "@raze__bitflags__1_2_1//:bitflags",
-        "@raze__libc__0_2_68//:libc",
-        "@raze__libgit2_sys__0_12_0_0_99_0//:libgit2_sys",
+        "@raze__libc__0_2_69//:libc",
+        "@raze__libgit2_sys__0_12_5_1_0_0//:libgit2_sys",
         "@raze__log__0_4_8//:log",
-        "@raze__openssl_probe__0_1_2//:openssl_probe",
-        "@raze__openssl_sys__0_9_54//:openssl_sys",
         "@raze__url__2_1_1//:url",
     ],
     rustc_flags = [
         "--cap-lints=allow",
     ],
-    version = "0.13.0",
+    version = "0.13.5",
     crate_features = [
         "default",
         "https",
@@ -63,6 +61,7 @@ rust_library(
 # Unsupported target "init" with type "example" omitted
 # Unsupported target "log" with type "example" omitted
 # Unsupported target "ls-remote" with type "example" omitted
+# Unsupported target "pull" with type "example" omitted
 # Unsupported target "rev-list" with type "example" omitted
 # Unsupported target "rev-parse" with type "example" omitted
 # Unsupported target "status" with type "example" omitted
