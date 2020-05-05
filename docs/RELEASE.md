@@ -10,13 +10,17 @@ The Release process is still somewhat manual, and only works on macOS for now.
 
 1. Ensure all changes are pushed, check that CI on the latest commit was green.
   You can also check this badge: ![Master CI Status](https://github.com/gibfahn/up-rs/workflows/Rust/badge.svg)
-2. Generate the changelog:
+2. Generate and commit the changelog:
   ```shell
   old_version=$(awk -F\" '/^version = /{print $2; exit}' Cargo.toml)
   read "new_version?New version (old version is $old_version): "
   clog -C CHANGELOG.md --from="$old_version" --setversion="$new_version"
+  # Make the header a link pointing to the release.
+  gsed -i "s/^## $new_version (/## [$new_version][] (/"  CHANGELOG.md
+  echo "[$new_version]: https://github.com/gibfahn/up-rs/releases/tag/$new_version" >> CHANGELOG.md
+  git add CHANGELOG.md
+  git commit -m "docs(changelog): update changelog for $new_version"
   ```
-  - Manually update the [CHANGELOG.md][] title to be a link to the release (see existing).
 3. Build Linux (static) and Darwin binaries locally:
   ```shell
   cargo test --release # Builds Darwin
