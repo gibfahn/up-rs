@@ -44,7 +44,7 @@ displaydoc = "0.1.5"
 
 [dev-dependencies]
 # XXX(gib): Have to comment this out to re-run cargo-raze.
-# testutils = { path = "./testutils" }
+testutils = { path = "./testutils" }
 ignore = "0.4.14"
 
 [features]
