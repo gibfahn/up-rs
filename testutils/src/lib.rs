@@ -101,7 +101,8 @@ pub fn fixtures_dir() -> PathBuf {
 pub fn temp_dir(file: &str, test_fn: &str) -> Result<PathBuf> {
     let os_temp_dir = env::temp_dir().canonicalize()?;
     let mut temp_dir = os_temp_dir.clone();
-    temp_dir.push(test_path(file));
+    temp_dir.push("up_rs_tests");
+    temp_dir.push(file);
     temp_dir.push(test_fn);
     assert!(temp_dir.starts_with(os_temp_dir));
     if temp_dir.exists() {
