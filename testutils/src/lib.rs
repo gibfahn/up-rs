@@ -29,10 +29,9 @@ fn up_binary_dir() -> PathBuf {
 
 /// Returns the path to the root of the project (the up-rs/ folder).
 fn up_project_dir() -> PathBuf {
-    let mut project_dir = up_binary_dir();
-    // Pop up to target/ (from target/debug/ or target/release/).
-    assert!(project_dir.pop());
-    // Pop up to up-rs/ (from up-rs/target/).
+    // Directory of the testutils Cargo.toml i.e. up-rs/testutils/
+    let mut project_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    // Pop up to up-rs/ dir.
     assert!(project_dir.pop());
     project_dir
 }
