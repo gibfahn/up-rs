@@ -44,6 +44,7 @@ The Release process is still somewhat manual, and only works on macOS for now.
   ```
 6. Create and push the tag, and create a release:
   ```shell
+  git push
   git tag "$new_version"
   git push up "$new_version"
   # This allows them to be downloaded as `up-$(uname)`.
@@ -51,7 +52,7 @@ The Release process is still somewhat manual, and only works on macOS for now.
   cp target/x86_64-unknown-linux-musl/release/up up-Linux
   hub release create --commitish=master --browse \
     --attach=up-Darwin --attach=up-Linux \
-    -F- <<<"$(clog --from="$old_version" --setversion="$new_version")" \
+    -F- <<<"$new_version"$'\n\n'"$(clog --from="$old_version" --setversion="$new_version")" \
     "$new_version"
   rm up-Darwin up-Linux
   ```
