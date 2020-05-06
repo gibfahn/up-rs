@@ -10,10 +10,13 @@ The Release process is still somewhat manual, and only works on macOS for now.
 
 1. Ensure all changes are pushed, check that CI on the latest commit was green.
   You can also check this badge: ![Master CI Status](https://github.com/gibfahn/up-rs/workflows/Rust/badge.svg)
-2. Generate and commit the changelog:
+2. Work out old and new versions:
   ```shell
   old_version=$(awk -F\" '/^version = /{print $2; exit}' Cargo.toml)
   read "new_version?New version (old version is $old_version): "
+  ```
+2. Generate and commit the changelog:
+  ```shell
   clog -C CHANGELOG.md --from="$old_version" --setversion="$new_version"
   # Make the header a link pointing to the release.
   gsed -i "s/^## $new_version (/## [$new_version][] (/"  CHANGELOG.md
@@ -21,26 +24,28 @@ The Release process is still somewhat manual, and only works on macOS for now.
   git add CHANGELOG.md
   git commit -m "docs(changelog): update changelog for $new_version"
   ```
-3. Build Linux (static) and Darwin binaries locally:
+3. Bump version:
   ```shell
-  cargo test --release # Builds Darwin
+  gsed -i -E "0,/^version = \"$old_version\"\$/s//version = \"$new_version\"/" Cargo.toml
+  cargo check # Bumps version in lockfile too.
+  git add Cargo.toml Cargo.lock
+  git commit -m "docs(version): bump version to $new_version"
+  git show # Check version is correct.
+  ```
+4. Build and test Linux (static) and Darwin binaries locally:
+  ```shell
+  cargo test --release --ignored # Builds Darwin
   bin/cargo-docker # Builds and tests musl static Linux.
   cargo doc # Check the documentation is buildable.
   ```
-4. Commit changes:
-  ```shell
-  git add Cargo.toml Cargo.lock
-  git commit -m "Bump version to $new_version"
-  git add CHANGELOG.md
-  git commit -m "Update changelog for $new_version"
-  git show # Check version is correct.
-  ```
-4. Publish to crates.io:
+5. Publish to crates.io:
   ```shell
   cargo publish
   ```
-5. Create and push the tag, and create a release:
+6. Create and push the tag, and create a release:
   ```shell
+  git tag "$new_version"
+  git push up "$new_version"
   # This allows them to be downloaded as `up-$(uname)`.
   cp target/release/up up-Darwin
   cp target/x86_64-unknown-linux-musl/release/up up-Linux
