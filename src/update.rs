@@ -108,7 +108,7 @@ impl Task {
     where
         F: Fn(&str) -> Result<String>,
     {
-        // XXX(gib): actually check whether we're blocked.
+        // TODO(gib): actually check whether we're blocked.
 
         self.status = TaskStatus::Blocked;
         self.start(env_fn, env)

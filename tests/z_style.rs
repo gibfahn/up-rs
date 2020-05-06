@@ -132,6 +132,8 @@ fn no_todo() {
                 .map_or(false, |file_type| file_type.is_file())
                 // Don't match todos in this file.
                 && !file.path().ends_with(file!())
+                // Changelog has XXX in it.
+                && !file.path().ends_with("CHANGELOG.md")
         })
         // Find anything containing a todo.
         .filter(|file| {

@@ -2,7 +2,7 @@ workspace(name = "up_rs")
 
 load("//cargo:crates.bzl", "raze_fetch_remote_crates")
 
-# XXX(gib): cargo-raze should add the shasums.
+# TODO(gib): cargo-raze should add the shasums.
 # DEBUG: Rule 'raze__anyhow__1_0_28' indicated that a canonical reproducible form can be obtained by modifying arguments sha256 = "d9a60d744a80c30fcb657dfe2c1b22bcb3e814c1a1e3674f32bf5820b570fbff"
 raze_fetch_remote_crates()
 

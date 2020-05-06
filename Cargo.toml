@@ -43,7 +43,7 @@ slog-async = "2.5.0"
 displaydoc = "0.1.5"
 
 [dev-dependencies]
-# XXX(gib): Have to comment this out to re-run cargo-raze.
+# TODO(gib): Have to comment this out to re-run cargo-raze.
 testutils = { path = "./testutils" }
 ignore = "0.4.14"
 
