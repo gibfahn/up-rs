@@ -77,7 +77,10 @@ struct TaskConfig {
 impl Task {
     fn from(path: PathBuf) -> Result<Self> {
         let start_time = Instant::now();
-        let s = fs::read_to_string(&path)?;
+        let s = fs::read_to_string(&path).map_err(|e| UpdateError::ReadFile {
+            path: path.clone(),
+            source: e,
+        })?;
         trace!("Task '{:?}' contents: <<<{}>>>", &path, &s);
         let config = toml::from_str::<TaskConfig>(&s).map_err(|e| UpdateError::InvalidToml {
             path: path.clone(),
@@ -479,8 +482,10 @@ pub fn update(config: &config::UpConfig, filter_tasks: &Option<Vec<String>>) -> 
 #[derive(Error, Debug, Display)]
 /// Errors thrown by this file.
 pub enum UpdateError {
-    /// Error walking directory '{path}':"
+    /// Error walking directory '{path}':
     ReadDir { path: PathBuf, source: io::Error },
+    /// Error reading file '{path}':
+    ReadFile { path: PathBuf, source: io::Error },
     /// Env lookup error, please define '{var}' in your up.toml:"
     EnvLookup {
         var: String,
