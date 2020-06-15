@@ -15,7 +15,7 @@ use std::{
 
 use anyhow::{anyhow, bail, Result};
 use displaydoc::Display;
-use log::{debug, error, info, trace, warn};
+use log::{debug, error, info, log, trace, warn, Level};
 use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -47,6 +47,15 @@ struct Task {
     config: TaskConfig,
     start_time: Instant,
     status: TaskStatus,
+}
+
+/// Shell commands we run.
+#[derive(Debug)]
+enum CommandType {
+    /// check_cmd field in the toml.
+    Check,
+    /// run_cmd field in the toml.
+    Run,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -212,7 +221,7 @@ impl Task {
                 .ok_or_else(|| anyhow!("Missing stderr"))?
                 .read_to_string(&mut stderr)?;
 
-            self.log_command_output(status, &stdout, &stderr, elapsed_time);
+            self.log_command_output(CommandType::Run, status, &stdout, &stderr, elapsed_time);
             if status.success() {
                 self.status = TaskStatus::Passed;
             } else {
@@ -240,7 +249,13 @@ impl Task {
         let stdout = String::from_utf8_lossy(&output.stdout);
         let stderr = String::from_utf8_lossy(&output.stderr);
 
-        self.log_command_output(output.status, &stdout, &stderr, elapsed_time);
+        self.log_command_output(
+            CommandType::Check,
+            output.status,
+            &stdout,
+            &stderr,
+            elapsed_time,
+        );
         Ok(output)
     }
 
@@ -271,47 +286,48 @@ impl Task {
 
     fn log_command_output(
         &self,
+        command_type: CommandType,
         status: ExitStatus,
         stdout: &str,
         stderr: &str,
         elapsed_time: Duration,
     ) {
+        // | Command | Result | Status  | Stdout/Stderr |
+        // | ---     | ---    | ---     | ---           |
+        // | Check   | passes | `debug` | `debug`       |
+        // | Run     | passes | `debug` | `debug`       |
+        // | Check   | fails  | `info`  | `debug`       |
+        // | Run     | fails  | `error` | `error`       |
+        let (level, stdout_stderr_level) = match (command_type, status.success()) {
+            (_, true) => (Level::Debug, Level::Debug),
+            (CommandType::Run, false) => (Level::Error, Level::Error),
+            (CommandType::Check, false) => (Level::Info, Level::Debug),
+        };
+
         // TODO(gib): How do we separate out the task output?
         // TODO(gib): Document error codes.
-        if status.success() {
-            debug!(
-                "Task '{}' command ran in {:?} with status: {}",
-                &self.name, elapsed_time, status
+        log!(
+            level,
+            "Task '{}' command ran in {:?} with status: {}",
+            &self.name,
+            elapsed_time,
+            status
+        );
+        if !stdout.is_empty() {
+            log!(
+                stdout_stderr_level,
+                "Task '{}' command stdout:\n<<<\n{}>>>\n",
+                &self.name,
+                stdout,
             );
-            if !stdout.is_empty() {
-                debug!(
-                    "Task '{}' command stdout:\n<<<\n{}>>>\n",
-                    &self.name, stdout,
-                );
-            }
-            if !stderr.is_empty() {
-                debug!(
-                    "Task '{}' command stderr:\n<<<\n{}>>>\n",
-                    &self.name, stderr
-                );
-            }
-        } else {
-            error!(
-                "Task '{}' command failed in {:?} with status: {}",
-                &self.name, elapsed_time, status
+        }
+        if !stderr.is_empty() {
+            log!(
+                stdout_stderr_level,
+                "Task '{}' command stderr:\n<<<\n{}>>>\n",
+                &self.name,
+                stderr
             );
-            if !stdout.is_empty() {
-                error!(
-                    "Task '{}' command stdout:\n<<<\n{}>>>\n",
-                    &self.name, stdout,
-                );
-            }
-            if !stderr.is_empty() {
-                error!(
-                    "Task '{}' command stderr:\n<<<\n{}>>>\n",
-                    &self.name, stderr,
-                );
-            }
         }
     }
 }
