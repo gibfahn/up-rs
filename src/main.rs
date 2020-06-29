@@ -7,9 +7,6 @@
 //! to use to manage the machines they regularly use.
 
 // TODO(gib): Good rust coverage checker (tarpaulin?)
-// TODO(gib): Set up Travis (including tests, building binaries, and coverage).
-// Run: `cargo test -- --ignored`
-// https://github.com/japaric/trust
 
 // #![feature(external_doc)]
 // #![doc(include = "../README.md")]

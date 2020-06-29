@@ -118,7 +118,7 @@ fn testutils_clippy() {
     );
 }
 
-#[ignore]
+#[cfg(feature = "CI")]
 #[test]
 fn no_todo() {
     let files_with_todos = WalkBuilder::new("./")
