@@ -1,5 +1,5 @@
 // TODO(gib): Use https://lib.rs/crates/indicatif for progress bars and remove this.
-#![allow(clippy::print_stdout, clippy::result_unwrap_used, clippy::option_unwrap_used)]
+#![allow(clippy::print_stdout, clippy::unwrap_used)]
 use std::{borrow::ToOwned, io, io::Write};
 
 use anyhow::{anyhow, Result};

@@ -77,7 +77,7 @@ struct State {
     newline: bool,
 }
 
-#[allow(clippy::result_unwrap_used, clippy::option_unwrap_used)]
+#[allow(clippy::unwrap_used)]
 fn print(state: &mut State) {
     let progress = state.progress.as_ref().unwrap();
     let network_pct = (100 * progress.received_objects()) / progress.total_objects();

@@ -4,7 +4,8 @@
     clippy::restriction,
     clippy::pedantic,
     clippy::nursery,
-    clippy::cargo
+    clippy::cargo,
+    missing_debug_implementations
 )]
 #![allow(
     clippy::module_name_repetitions,
@@ -12,7 +13,6 @@
     clippy::missing_inline_in_public_items,
     clippy::missing_docs_in_private_items
 )]
-
 use anyhow::{bail, Result};
 
 use crate::{
