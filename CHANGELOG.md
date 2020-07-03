@@ -1,3 +1,15 @@
+<a name="0.3.3"></a>
+## [0.3.3][] (2020-07-03)
+
+
+#### Bug Fixes
+
+* **update:**
+  *  better logging for check and run commands ([e7bb79ea](https://github.com/gibfahn/up-rs/commit/e7bb79eae87fe5ef3a7615426265e9ba13c5ee84))
+  *  better error message when we fail to read a task file ([7c6008b4](https://github.com/gibfahn/up-rs/commit/7c6008b4e8383815ce3cb4e1145588109104db48))
+
+
+
 <a name="0.3.1"></a>
 ## [0.3.1][] (2020-04-17)
 
@@ -68,3 +80,4 @@
 [0.2.2]: https://github.com/gibfahn/up-rs/releases/tag/0.2.2
 [0.3.0]: https://github.com/gibfahn/up-rs/releases/tag/0.3.0
 [0.3.1]: https://github.com/gibfahn/up-rs/releases/tag/0.3.1
+[0.3.3]: https://github.com/gibfahn/up-rs/releases/tag/0.3.3
