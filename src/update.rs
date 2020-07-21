@@ -8,6 +8,7 @@ use std::{
     fs, io,
     io::Read,
     path::PathBuf,
+    process,
     process::{Child, Command, ExitStatus, Output, Stdio},
     thread,
     time::{self, Duration, Instant},
@@ -385,6 +386,12 @@ pub fn update(config: &config::UpConfig, filter_tasks: &Option<Vec<String>>) -> 
         debug!("Prompting for superuser privileges with 'sudo -v'");
         Command::new("sudo").arg("-v").output()?;
     }
+
+    // If in macOS, don't let the display sleep until the command exits.
+    #[cfg(target_os = "macos")]
+    Command::new("caffeinate")
+        .args(&["-ds", "-w", &process::id().to_string()])
+        .spawn()?;
 
     // TODO(gib): Handle and filter by constraints.
 
