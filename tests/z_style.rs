@@ -8,8 +8,6 @@ use std::{
     process::{Command, Output},
 };
 
-use ignore::WalkBuilder;
-
 /// Fail if rustfmt (cargo fmt) hasn't been run.
 #[test]
 fn rustfmt() {
@@ -121,7 +119,7 @@ fn testutils_clippy() {
 #[cfg(feature = "CI")]
 #[test]
 fn no_todo() {
-    let files_with_todos = WalkBuilder::new("./")
+    let files_with_todos = ignore::WalkBuilder::new("./")
         // Check hidden files too.
         .hidden(false)
         .build()
