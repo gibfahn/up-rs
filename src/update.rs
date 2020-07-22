@@ -7,7 +7,6 @@ use std::{
     collections::{HashMap, HashSet},
     io,
     path::PathBuf,
-    process,
     process::Command,
     thread, time,
 };
@@ -48,7 +47,7 @@ pub fn update(config: &config::UpConfig, filter_tasks: &Option<Vec<String>>) -> 
     // If in macOS, don't let the display sleep until the command exits.
     #[cfg(target_os = "macos")]
     Command::new("caffeinate")
-        .args(&["-ds", "-w", &process::id().to_string()])
+        .args(&["-ds", "-w", &std::process::id().to_string()])
         .spawn()?;
 
     // TODO(gib): Handle and filter by constraints.
