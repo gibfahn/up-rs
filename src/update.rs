@@ -53,6 +53,13 @@ pub fn update(config: &config::UpConfig, filter_tasks: &Option<Vec<String>>) -> 
 
     // TODO(gib): Handle and filter by constraints.
 
+    let mut bootstrap_tasks = match (config.bootstrap, &config.config_toml.bootstrap_tasks) {
+        (false, _) => Ok(Vec::new()),
+        (true, None) => Err(anyhow!("Bootstrap flag set but no bootstrap_tasks specified in config.")),
+        (true, Some(b_tasks)) => Ok(b_tasks.clone()),
+    }?;
+    bootstrap_tasks.reverse();
+
     let filter_tasks_set: Option<HashSet<String>> =
         filter_tasks.clone().map(|v| v.into_iter().collect());
 
@@ -82,7 +89,7 @@ pub fn update(config: &config::UpConfig, filter_tasks: &Option<Vec<String>>) -> 
     debug!("Task count: {:?}", tasks.len());
     trace!("Task list: {:#?}", tasks);
 
-    run_tasks(tasks, &env)
+    run_tasks(bootstrap_tasks, tasks, &env)
 }
 
 // TODO(gib): add tests for cyclical config values etc.
@@ -187,7 +194,7 @@ fn get_env(
     Ok(env)
 }
 
-fn run_tasks(mut tasks: HashMap<String, task::Task>, env: &HashMap<String, String>) -> Result<()> {
+fn run_tasks(mut bootstrap_tasks: Vec<String>, mut tasks: HashMap<String, task::Task>, env: &HashMap<String, String>) -> Result<()> {
     // TODO(gib): Allow vars to refer to other vars, detect cycles (topologically
     // sort inputs).
     let env_fn = &|s: &str| {
@@ -206,11 +213,19 @@ fn run_tasks(mut tasks: HashMap<String, task::Task>, env: &HashMap<String, Strin
     };
 
     #[allow(clippy::filter_map)]
-    let mut tasks_to_run: HashSet<String> = tasks
+    let post_bootstrap_tasks_to_run: Vec<String> = tasks
         .iter()
         .filter(|(_, task)| task.config.auto_run.unwrap_or(true))
         .map(|(name, _)| name.clone())
         .collect();
+
+    let mut bootstrap = ! bootstrap_tasks.is_empty();
+    let mut tasks_to_run: HashSet<String> = HashSet::new();
+    if let Some(task) = bootstrap_tasks.pop() {
+        tasks_to_run.insert(task);
+    } else {
+        tasks_to_run.extend(post_bootstrap_tasks_to_run.iter().cloned())
+    }
 
     let mut tasks_passed = Vec::new();
     let mut tasks_skipped = Vec::new();
@@ -256,6 +271,16 @@ fn run_tasks(mut tasks: HashMap<String, task::Task>, env: &HashMap<String, Strin
         }
         for name in tasks_to_run_completed.drain(..) {
             tasks_to_run.remove(&name);
+        }
+        if tasks_to_run.is_empty() {
+            if let Some(task) = bootstrap_tasks.pop() {
+                tasks_to_run.insert(task);
+            } else if bootstrap {
+                bootstrap = false;
+                tasks_to_run.extend(post_bootstrap_tasks_to_run.iter().cloned())
+            } else {
+                // We're done.
+            }
         }
     }
 

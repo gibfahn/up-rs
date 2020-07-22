@@ -16,6 +16,7 @@ use crate::{args::Args, git};
 pub struct UpConfig {
     pub up_toml_path: Option<PathBuf>,
     pub config_toml: ConfigToml,
+    pub bootstrap: bool,
 }
 
 // TODO(gib): Work out the data structure for the toml files.
@@ -41,6 +42,8 @@ pub struct ConfigToml {
     /// Set to true to prompt for sudo privileges before running.
     #[serde(default = "default_false")]
     pub needs_sudo: bool,
+    /// List of tasks to run in order in bootstrap mode.
+    pub bootstrap_tasks: Option<Vec<String>>,
 }
 
 const fn default_false() -> bool {
@@ -94,9 +97,12 @@ impl UpConfig {
             None
         };
 
+        let bootstrap = args.bootstrap;
+
         Ok(Self {
             up_toml_path,
             config_toml,
+            bootstrap,
         })
     }
 

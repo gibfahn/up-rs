@@ -62,6 +62,10 @@ pub struct Args {
     /// tasks.
     #[structopt(long)]
     pub(crate) tasks: Option<Vec<String>>,
+    /// Run the bootstrap list of tasks in series first, then run the rest in parallel.
+    /// Designed for first-time setup.
+    #[structopt(long)]
+    pub(crate) bootstrap: bool,
     #[structopt(subcommand)]
     pub(crate) cmd: Option<SubCommand>,
 }
