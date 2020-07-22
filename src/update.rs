@@ -55,7 +55,9 @@ pub fn update(config: &config::UpConfig, filter_tasks: &Option<Vec<String>>) -> 
 
     let mut bootstrap_tasks = match (config.bootstrap, &config.config_toml.bootstrap_tasks) {
         (false, _) => Ok(Vec::new()),
-        (true, None) => Err(anyhow!("Bootstrap flag set but no bootstrap_tasks specified in config.")),
+        (true, None) => Err(anyhow!(
+            "Bootstrap flag set but no bootstrap_tasks specified in config."
+        )),
         (true, Some(b_tasks)) => Ok(b_tasks.clone()),
     }?;
     bootstrap_tasks.reverse();
@@ -194,7 +196,11 @@ fn get_env(
     Ok(env)
 }
 
-fn run_tasks(mut bootstrap_tasks: Vec<String>, mut tasks: HashMap<String, task::Task>, env: &HashMap<String, String>) -> Result<()> {
+fn run_tasks(
+    mut bootstrap_tasks: Vec<String>,
+    mut tasks: HashMap<String, task::Task>,
+    env: &HashMap<String, String>,
+) -> Result<()> {
     // TODO(gib): Allow vars to refer to other vars, detect cycles (topologically
     // sort inputs).
     let env_fn = &|s: &str| {
@@ -219,7 +225,7 @@ fn run_tasks(mut bootstrap_tasks: Vec<String>, mut tasks: HashMap<String, task::
         .map(|(name, _)| name.clone())
         .collect();
 
-    let mut bootstrap = ! bootstrap_tasks.is_empty();
+    let mut bootstrap = !bootstrap_tasks.is_empty();
     let mut tasks_to_run: HashSet<String> = HashSet::new();
     if let Some(task) = bootstrap_tasks.pop() {
         tasks_to_run.insert(task);
