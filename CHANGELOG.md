@@ -1,3 +1,16 @@
+<a name="0.4.0"></a>
+## [0.4.0][] (2020-07-22)
+
+
+#### Features
+
+* **update:**
+  *  add bootstrap and a bootstrap_tasks options ([5f1c685f](https://github.com/gibfahn/up-rs/commit/5f1c685f0312cfab5f4cd379e5117268b03c238c))
+  *  allow inheriting env and referring to existing env vars ([4470854e](https://github.com/gibfahn/up-rs/commit/4470854eada420efb80ff4987db88dee38e7157b))
+  *  run caffeinate on macOS to stay awake while update runs ([d3d431fe](https://github.com/gibfahn/up-rs/commit/d3d431feca8e48de0c4a47869f985f4113c12541))
+
+
+
 <a name="0.3.3"></a>
 ## [0.3.3][] (2020-07-03)
 
@@ -81,3 +94,4 @@
 [0.3.0]: https://github.com/gibfahn/up-rs/releases/tag/0.3.0
 [0.3.1]: https://github.com/gibfahn/up-rs/releases/tag/0.3.1
 [0.3.3]: https://github.com/gibfahn/up-rs/releases/tag/0.3.3
+[0.4.0]: https://github.com/gibfahn/up-rs/releases/tag/0.4.0
