@@ -26,7 +26,6 @@ mod task;
 
 // TODO(gib): Implement a command to show the tree and dependencies.
 
-#[allow(clippy::clippy::too_many_lines)] // Function is pretty linear right now.
 /// Run a update checks specified in the `up_dir` config files.
 pub fn update(config: &config::UpConfig, filter_tasks: &Option<Vec<String>>) -> Result<()> {
     // TODO(gib): Handle missing dir & move into config.
@@ -39,23 +38,6 @@ pub fn update(config: &config::UpConfig, filter_tasks: &Option<Vec<String>>) -> 
     tasks_dir.push("tasks");
 
     let env = get_env(&config.config_toml)?;
-
-    // TODO(gib): Allow vars to refer to other vars, detect cycles (topologically
-    // sort inputs).
-    let env_fn = &|s: &str| {
-        let out = shellexpand::full_with_context(s, dirs::home_dir, |k| {
-            env.get(k)
-                .ok_or_else(|| anyhow!("Value not found"))
-                .map(Some)
-        })
-        .map(std::borrow::Cow::into_owned)
-        .map_err(|e| TaskError::ResolveEnv {
-            var: e.var_name,
-            source: e.cause,
-        })?;
-
-        Ok(out)
-    };
 
     if config.config_toml.needs_sudo {
         // TODO(gib): this only lasts for 5 minutes.
@@ -100,6 +82,70 @@ pub fn update(config: &config::UpConfig, filter_tasks: &Option<Vec<String>>) -> 
     debug!("Task count: {:?}", tasks.len());
     trace!("Task list: {:#?}", tasks);
 
+    run_tasks(tasks, &env)
+}
+
+fn get_env(config_toml: &ConfigToml) -> Result<HashMap<String, String>> {
+    let mut env: HashMap<String, String> = HashMap::new();
+    if let Some(inherited_env) = config_toml.inherit_env.as_ref() {
+        for inherited_var in inherited_env {
+            if let Ok(value) = std::env::var(&inherited_var) {
+                env.insert(inherited_var.clone(), value);
+            }
+        }
+    }
+
+    let mut unresolved_env = Vec::new();
+
+    if let Some(config_env) = config_toml.env.as_ref() {
+        trace!("Unresolved env: {:?}", config_env);
+        for (key, val) in config_env.iter() {
+            env.insert(
+                key.clone(),
+                shellexpand::full_with_context(val, dirs::home_dir, |k| match env.get(k) {
+                    Some(val) => Ok(Some(val)),
+                    None => {
+                        if config_env.contains_key(k) {
+                            unresolved_env.push(k.to_owned());
+                            Ok(None)
+                        } else {
+                            Err(anyhow!(
+                                "Value {} not found in inherited_env or env vars.",
+                                k
+                            ))
+                        }
+                    }
+                })
+                .map_err(|e| UpdateError::EnvLookup {
+                    var: e.var_name,
+                    source: e.cause,
+                })?
+                .into_owned(),
+            );
+        }
+    }
+    debug!("Expanded config env: {:?}", env);
+    Ok(env)
+}
+
+fn run_tasks(mut tasks: HashMap<String, task::Task>, env: &HashMap<String, String>) -> Result<()> {
+    // TODO(gib): Allow vars to refer to other vars, detect cycles (topologically
+    // sort inputs).
+    let env_fn = &|s: &str| {
+        let out = shellexpand::full_with_context(s, dirs::home_dir, |k| {
+            env.get(k)
+                .ok_or_else(|| anyhow!("Value not found"))
+                .map(Some)
+        })
+        .map(std::borrow::Cow::into_owned)
+        .map_err(|e| TaskError::ResolveEnv {
+            var: e.var_name,
+            source: e.cause,
+        })?;
+
+        Ok(out)
+    };
+
     #[allow(clippy::filter_map)]
     let mut tasks_to_run: HashSet<String> = tasks
         .iter()
@@ -126,7 +172,7 @@ pub fn update(config: &config::UpConfig, filter_tasks: &Option<Vec<String>>) -> 
             match task.status {
                 task::TaskStatus::New => {
                     // Start the task or mark it as blocked.
-                    task.try_start(env_fn, &env)?;
+                    task.try_start(env_fn, env)?;
                 }
                 task::TaskStatus::Blocked => {
                     // Check if still blocked, if not start it.
@@ -174,51 +220,7 @@ pub fn update(config: &config::UpConfig, filter_tasks: &Option<Vec<String>>) -> 
         error!("One or more tasks failed, exiting.");
         bail!(anyhow!("One or more tasks failed."))
     }
-
     Ok(())
-}
-
-fn get_env(config_toml: &ConfigToml) -> Result<HashMap<String, String>> {
-    let mut env: HashMap<String, String> = HashMap::new();
-    if let Some(inherited_env) = config_toml.inherit_env.as_ref() {
-        for inherited_var in inherited_env {
-            if let Ok(value) = std::env::var(&inherited_var) {
-                env.insert(inherited_var.clone(), value);
-            }
-        }
-    }
-
-    let mut unresolved_env = Vec::new();
-
-    if let Some(config_env) = config_toml.env.as_ref() {
-        trace!("Unresolved env: {:?}", config_env);
-        for (key, val) in config_env.iter() {
-            env.insert(
-                key.clone(),
-                shellexpand::full_with_context(val, dirs::home_dir, |k| match env.get(k) {
-                    Some(val) => Ok(Some(val)),
-                    None => {
-                        if config_env.contains_key(k) {
-                            unresolved_env.push(k.to_owned());
-                            Ok(None)
-                        } else {
-                            Err(anyhow!(
-                                "Value {} not found in inherited_env or env vars.",
-                                k
-                            ))
-                        }
-                    }
-                })
-                .map_err(|e| UpdateError::EnvLookup {
-                    var: e.var_name,
-                    source: e.cause,
-                })?
-                .into_owned(),
-            );
-        }
-    }
-    debug!("Expanded config env: {:?}", env);
-    Ok(env)
 }
 
 #[derive(Error, Debug, Display)]
