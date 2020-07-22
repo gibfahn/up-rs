@@ -21,7 +21,8 @@ use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::{
-    config, tasks,
+    config::{self, ConfigToml},
+    tasks,
     tasks::{link::LinkConfig, ResolveEnv, TaskError},
 };
 
@@ -347,22 +348,7 @@ pub fn update(config: &config::UpConfig, filter_tasks: &Option<Vec<String>>) -> 
     tasks_dir.pop();
     tasks_dir.push("tasks");
 
-    // Clone if Some(HashMap), new HashMap if None.
-    let mut env = config
-        .config_toml
-        .env
-        .as_ref()
-        .map_or_else(HashMap::new, std::clone::Clone::clone);
-    trace!("Unexpanded config env: {:?}", env);
-    for val in env.values_mut() {
-        *val = shellexpand::full_with_context(val, dirs::home_dir, |k| std::env::var(k).map(Some))
-            .map_err(|e| UpdateError::EnvLookup {
-                var: e.var_name,
-                source: e.cause,
-            })?
-            .into_owned();
-    }
-    debug!("Expanded config env: {:?}", env);
+    let env = get_env(&config.config_toml)?;
 
     // TODO(gib): Allow vars to refer to other vars, detect cycles (topologically
     // sort inputs).
@@ -502,6 +488,49 @@ pub fn update(config: &config::UpConfig, filter_tasks: &Option<Vec<String>>) -> 
     Ok(())
 }
 
+fn get_env(config_toml: &ConfigToml) -> Result<HashMap<String, String>> {
+    let mut env: HashMap<String, String> = HashMap::new();
+    if let Some(inherited_env) = config_toml.inherit_env.as_ref() {
+        for inherited_var in inherited_env {
+            if let Ok(value) = std::env::var(&inherited_var) {
+                env.insert(inherited_var.clone(), value);
+            }
+        }
+    }
+
+    let mut unresolved_env = Vec::new();
+
+    if let Some(config_env) = config_toml.env.as_ref() {
+        trace!("Unresolved env: {:?}", config_env);
+        for (key, val) in config_env.iter() {
+            env.insert(
+                key.clone(),
+                shellexpand::full_with_context(val, dirs::home_dir, |k| match env.get(k) {
+                    Some(val) => Ok(Some(val)),
+                    None => {
+                        if config_env.contains_key(k) {
+                            unresolved_env.push(k.to_owned());
+                            Ok(None)
+                        } else {
+                            Err(anyhow!(
+                                "Value {} not found in inherited_env or env vars.",
+                                k
+                            ))
+                        }
+                    }
+                })
+                .map_err(|e| UpdateError::EnvLookup {
+                    var: e.var_name,
+                    source: e.cause,
+                })?
+                .into_owned(),
+            );
+        }
+    }
+    debug!("Expanded config env: {:?}", env);
+    Ok(env)
+}
+
 #[derive(Error, Debug, Display)]
 /// Errors thrown by this file.
 pub enum UpdateError {
@@ -510,10 +539,7 @@ pub enum UpdateError {
     /// Error reading file '{path}':
     ReadFile { path: PathBuf, source: io::Error },
     /// Env lookup error, please define '{var}' in your up.toml:"
-    EnvLookup {
-        var: String,
-        source: std::env::VarError,
-    },
+    EnvLookup { var: String, source: anyhow::Error },
     /// Task '{name}' had no run command.
     MissingCmd { name: String },
     /// Task '{name}' check command failed. Command: {cmd:?}.

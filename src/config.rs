@@ -34,6 +34,9 @@ pub struct ConfigToml {
     tasks_path: Option<String>,
     /// Environment variables to pass to scripts.
     pub env: Option<HashMap<String, String>>,
+    /// Environment variables to inherit from running env, doesn't error if not
+    /// defined.
+    pub inherit_env: Option<Vec<String>>,
     // TODO(gib): handle sudo requirements more granularly.
     /// Set to true to prompt for sudo privileges before running.
     #[serde(default = "default_false")]
