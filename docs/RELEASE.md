@@ -17,28 +17,33 @@ The Release process is still somewhat manual, and only works on macOS for now.
   ```
 2. Generate and commit the changelog:
   ```shell
-  clog -C CHANGELOG.md --from="$old_version" --setversion="$new_version"
+  clog -C CHANGELOG.md --from="$old_version" --setversion="$new_version" &&
   # Make the header a link pointing to the release.
-  gsed -i "s/^## $new_version (/## [$new_version][] (/"  CHANGELOG.md
-  echo "[$new_version]: https://github.com/gibfahn/up-rs/releases/tag/$new_version" >> CHANGELOG.md
-  git add CHANGELOG.md
+  gsed -i "s/^## $new_version (/## [$new_version][] (/"  CHANGELOG.md &&
+  echo "[$new_version]: https://github.com/gibfahn/up-rs/releases/tag/$new_version" >> CHANGELOG.md &&
+  git add CHANGELOG.md &&
   git commit -m "docs(changelog): update changelog for $new_version"
   ```
 3. Bump version:
   ```shell
-  gsed -i -E "0,/^version = \"$old_version\"\$/s//version = \"$new_version\"/" Cargo.toml
+  gsed -i -E "0,/^version = \"$old_version\"\$/s//version = \"$new_version\"/" Cargo.toml &&
   cargo check # Bumps version in lockfile too.
-  git add Cargo.toml Cargo.lock
-  git commit -m "docs(version): bump version to $new_version"
+  git add Cargo.toml Cargo.lock &&
+  git commit -m "docs(version): bump version to $new_version" &&
   git show # Check version is correct.
   ```
 4. Build and test Linux (static) and Darwin binaries locally:
   ```shell
-  cargo doc # Check the documentation is buildable.
-  cargo build --release # Builds Darwin
-  cargo test --release --features=CI # Tests Darwin.
-  bin/cargo-docker build --release # Builds musl static Linux.
-  bin/cargo-docker # Tests musl static Linux.
+  # Check the documentation is buildable.
+  cargo doc &&
+  # Build darwin.
+  cargo build --release &&
+  # Test Darwin
+  cargo test --release --features=CI &&
+  # Builds musl static Linux binaries.
+  bin/cargo-docker build --release &&
+  # Tests musl static Linux binaries.
+  bin/cargo-docker
   ```
 5. Publish to crates.io:
   ```shell
@@ -46,16 +51,16 @@ The Release process is still somewhat manual, and only works on macOS for now.
   ```
 6. Create and push the tag, and create a release:
   ```shell
-  git push
-  git tag "$new_version"
-  git push up "$new_version"
+  git push &&
+  git tag "$new_version" &&
+  git push up "$new_version" &&
   # This allows them to be downloaded as `up-$(uname)`.
-  cp target/release/up up-Darwin
-  cp target/x86_64-unknown-linux-musl/release/up up-Linux
+  cp target/release/up up-Darwin &&
+  cp target/x86_64-unknown-linux-musl/release/up up-Linux &&
   hub release create --commitish=master --browse \
     --attach=up-Darwin --attach=up-Linux \
     -F- <<<"$new_version"$'\n\n'"$(clog --from="$old_version" --setversion="$new_version")" \
-    "$new_version"
+    "$new_version" &&
   rm up-Darwin up-Linux
   ```
 6. Go to the [GitHub Releases][] page and check everything is working properly.
