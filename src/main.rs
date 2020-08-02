@@ -152,8 +152,8 @@ fn get_log_path_file(log_dir: Option<&PathBuf>) -> Result<LogPaths> {
     let mut log_path = log_dir;
     log_path.push(format!("up-rs_{}.log", Utc::now().to_rfc3339()));
 
-    // Delete symlink if it exists.
-    if log_path_link.exists() {
+    // Delete symlink if it exists, or is a broken symlink.
+    if log_path_link.exists() || log_path_link.symlink_metadata().is_ok() {
         let log_path_link_file_type = log_path_link.symlink_metadata()?.file_type();
         if log_path_link_file_type.is_symlink() {
             fs::remove_file(&log_path_link).map_err(|e| MainError::DeleteError {
