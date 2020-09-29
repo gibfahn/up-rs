@@ -1,5 +1,9 @@
 // TODO(gib): Use https://lib.rs/crates/indicatif for progress bars and remove this.
-#![allow(clippy::print_stdout, clippy::integer_division, clippy::integer_arithmetic)]
+#![allow(
+    clippy::print_stdout,
+    clippy::integer_division,
+    clippy::integer_arithmetic
+)]
 
 use std::{
     cell::RefCell,
