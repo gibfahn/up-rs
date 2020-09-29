@@ -169,12 +169,15 @@ fn get_fallback_config_path(fallback_url: String, fallback_path: String) -> Resu
         .with_context(|| format!("Failed to create {:?}", fallback_repo_path))?;
 
     let fallback_config_path = fallback_repo_path.join(fallback_path);
-    git::clone_or_update(git::GitConfig {
-        git_url: fallback_url,
-        git_path: fallback_repo_path,
-        remote: git::DEFAULT_REMOTE_NAME.to_owned(),
-        ..git::GitConfig::default()
-    })?;
+    git::update::update(
+        git::GitArgs {
+            git_url: fallback_url,
+            git_path: fallback_repo_path.to_string_lossy().to_string(),
+            remote: git::DEFAULT_REMOTE_NAME.to_owned(),
+            ..git::GitArgs::default()
+        }
+        .into(),
+    )?;
 
     ensure!(
         fallback_config_path.exists(),

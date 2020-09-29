@@ -10,7 +10,7 @@ use structopt::{
     StructOpt,
 };
 
-use crate::tasks::git::GitConfig;
+use crate::tasks::git::GitArgs;
 
 /// Builds the Args struct from CLI input and from environment variable input.
 #[must_use]
@@ -104,8 +104,8 @@ pub(crate) enum SubCommand {
         #[structopt(short = "b", long = "backup", default_value = "~/backup")]
         backup_dir: String,
     },
-    /// Symlink your dotfiles from a git repo to your home directory.
-    Git(GitConfig),
+    /// Clone or update a repo at a path.
+    Git(GitArgs),
     // TODO(gib): Implement this.
     /// Set macOS defaults in plist files.
     Defaults {},

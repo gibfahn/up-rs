@@ -9,7 +9,7 @@ fn empty_toml() {
     fs::create_dir(temp_dir.join("tasks")).unwrap();
     let mut cmd = testutils::up_cmd(&temp_dir);
     cmd.args(["-c", temp_dir.join("up.toml").to_str().unwrap()].iter());
-    let cmd_output = testutils::run_cmd(cmd);
+    let cmd_output = testutils::run_cmd(&mut cmd);
     assert_eq!(
         cmd_output.status.success(),
         true,
@@ -23,7 +23,7 @@ fn basic_toml() {
     let temp_dir = testutils::temp_dir(file!(), "basic_toml").unwrap();
     let mut cmd = testutils::up_cmd(&temp_dir);
     cmd.args(["-c", fixtures_dir.join("up.toml").to_str().unwrap()].iter());
-    let cmd_output = testutils::run_cmd(cmd);
+    let cmd_output = testutils::run_cmd(&mut cmd);
     // TODO(gib): Why is this test passing with unknown keys in the up.toml?
     assert_eq!(
         cmd_output.status.success(),

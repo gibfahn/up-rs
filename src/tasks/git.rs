@@ -1,25 +1,23 @@
-use std::{fs, io, path::PathBuf};
+use std::convert::From;
 
 use anyhow::Result;
-use displaydoc::Display;
-use git2::{ErrorCode, Repository};
-use log::debug;
+use serde_derive::{Deserialize, Serialize};
 use structopt::StructOpt;
-use thiserror::Error;
 
-mod clone;
-mod update;
+use crate::tasks::ResolveEnv;
+
+pub mod update;
 
 pub const DEFAULT_REMOTE_NAME: &str = "origin";
 
 #[derive(Debug, Default, StructOpt)]
-pub struct GitConfig {
+pub struct GitArgs {
     /// URL of git repo to download.
     #[structopt(long)]
     pub git_url: String,
     /// Path to download git repo to.
-    #[structopt(long, parse(from_os_str))]
-    pub git_path: PathBuf,
+    #[structopt(long)]
+    pub git_path: String,
     /// Remote to set/update.
     #[structopt(long, default_value = DEFAULT_REMOTE_NAME)]
     pub remote: String,
@@ -29,30 +27,64 @@ pub struct GitConfig {
     pub branch: Option<String>,
 }
 
-pub fn clone_or_update(git_config: GitConfig) -> Result<()> {
-    if !git_config.git_path.is_dir() {
-        debug!("Dir doesn't exist, creating...");
-        fs::create_dir_all(&git_config.git_path).map_err(|e| GitError::CreateDirError {
-            path: git_config.git_path.to_path_buf(),
-            source: e,
-        })?;
-    }
-    match Repository::open(&git_config.git_path) {
-        Ok(repo) => update::update(git_config, &repo),
-        Err(e) => {
-            if let ErrorCode::NotFound = e.code() {
-                clone::clone(git_config)
-            } else {
-                debug!("Failed to open repository: {:?}\n  {}", e.code(), e);
-                Err(e.into())
-            }
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct GitConfig {
+    /// Path to download git repo to.
+    pub path: String,
+    /// Remote to set/update.
+    pub remotes: Vec<GitRemote>,
+    /// Branch to checkout when cloning/updating. Defaults to the current branch
+    /// when updating, or the default branch of the first remote for
+    /// cloning.
+    pub branch: Option<String>,
+}
+
+pub fn run(configs: Vec<GitConfig>) -> Result<()> {
+    // TODO(gib): run them in parallel.
+    // TODO(gib): continue even if one errors.
+    configs
+        .into_iter()
+        .map(update::update)
+        .collect::<Result<_>>()
+}
+
+impl From<GitArgs> for GitConfig {
+    fn from(item: GitArgs) -> Self {
+        Self {
+            path: item.git_path,
+            remotes: vec![GitRemote {
+                name: item.remote,
+                push_url: item.git_url.clone(),
+                fetch_url: item.git_url,
+            }],
+            branch: item.branch,
         }
     }
 }
 
-#[derive(Error, Debug, Display)]
-/// Errors thrown by this file.
-pub enum GitError {
-    /// Failed to create directory '{path}'
-    CreateDirError { path: PathBuf, source: io::Error },
+impl ResolveEnv for Vec<GitConfig> {
+    fn resolve_env<F>(&mut self, env_fn: F) -> Result<()>
+    where
+        F: Fn(&str) -> Result<String>,
+    {
+        for config in self.iter_mut() {
+            if let Some(branch) = config.branch.as_ref() {
+                config.branch = Some(env_fn(branch)?);
+            }
+            config.path = env_fn(&config.path)?;
+            for remote in &mut config.remotes {
+                remote.name = env_fn(&remote.name)?;
+                remote.push_url = env_fn(&remote.push_url)?;
+                remote.fetch_url = env_fn(&remote.fetch_url)?;
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Default, StructOpt, Serialize, Deserialize)]
+pub struct GitRemote {
+    pub name: String,
+    pub push_url: String,
+    pub fetch_url: String,
 }

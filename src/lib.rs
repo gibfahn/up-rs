@@ -51,8 +51,8 @@ pub fn run(args: Args) -> Result<()> {
             })?;
         }
         // TODO(gib): Implement this.
-        Some(SubCommand::Git(git_config)) => {
-            git::clone_or_update(git_config)?;
+        Some(SubCommand::Git(git_args)) => {
+            git::update::update(git_args.into())?;
         }
         Some(SubCommand::Defaults {}) => {
             bail!("Not yet implemented.");

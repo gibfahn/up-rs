@@ -202,7 +202,6 @@ fn cargo_cmd(current_dir: &Path, fmt: CargoCmdType) -> Output {
             #[cfg(not(debug_assertions))]
             "--release",
             "--color=always",
-            "-Z=unstable-options",
             "--",
             "--deny=warnings",
         ]

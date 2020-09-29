@@ -13,7 +13,7 @@ use serde_derive::{Deserialize, Serialize};
 
 use crate::{
     tasks,
-    tasks::{link::LinkConfig, ResolveEnv},
+    tasks::{git::GitConfig, link::LinkConfig, ResolveEnv},
     update::UpdateError,
 };
 
@@ -140,6 +140,18 @@ impl Task {
                     data.resolve_env(env_fn)?;
                     // TODO(gib): Continue on error, saving status as for run commands.
                     tasks::link::run(data)?;
+                }
+                "git" => {
+                    let mut data = self
+                        .config
+                        .data
+                        .as_ref()
+                        .ok_or_else(|| anyhow!("Task '{}' data had no value.", &self.name))?
+                        .clone()
+                        .try_into::<Vec<GitConfig>>()?;
+                    data.resolve_env(env_fn)?;
+                    // TODO(gib): Continue on error, saving status as for run commands.
+                    tasks::git::run(data)?;
                 }
                 // TODO(gib): Implement this.
                 "defaults" => {

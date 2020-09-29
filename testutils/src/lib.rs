@@ -62,7 +62,7 @@ pub fn up_cmd(temp_dir: &Path) -> Command {
 /// Runs a command and prints out the stdout/stderr nicely.
 /// Returns the command output.
 #[must_use]
-pub fn run_cmd(mut cmd: Command) -> Output {
+pub fn run_cmd(cmd: &mut Command) -> Output {
     println!("Running command '{:?}'.", cmd);
     let cmd_output = cmd.output().unwrap();
     println!("  status: {}", cmd_output.status);

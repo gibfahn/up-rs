@@ -293,7 +293,7 @@ fn run_link_cmd(
         .iter(),
     );
 
-    let cmd_output = testutils::run_cmd(cmd);
+    let cmd_output = testutils::run_cmd(&mut cmd);
     assert_eq!(
         cmd_output.status.success(),
         result.to_bool(),
