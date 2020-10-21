@@ -71,7 +71,7 @@ pub struct Args {
 }
 
 fn from_level(level: &str) -> Result<Level> {
-    Level::from_str(level).map_err(|_| anyhow!("Failed to parse level {}", level))
+    Level::from_str(level).map_err(|()| anyhow!("Failed to parse level {}", level))
 }
 
 arg_enum! {

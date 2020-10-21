@@ -28,7 +28,7 @@ pub fn update(config: &config::UpConfig, filter_tasks: &Option<Vec<String>>) -> 
     let mut tasks_dir = config
         .up_toml_path
         .as_ref()
-        .ok_or_else(|| UpdateError::None {})?
+        .ok_or(UpdateError::None {})?
         .clone();
     tasks_dir.pop();
     tasks_dir.push("tasks");

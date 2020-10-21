@@ -34,7 +34,7 @@ pub(super) fn update(git_config: GitConfig, repo: &Repository) -> Result<()> {
             .map_err(|e| GitUpdateError::GetHeadError { source: e })?;
         head.shorthand()
             .map(ToOwned::to_owned)
-            .ok_or_else(|| GitUpdateError::InvalidBranchError)?
+            .ok_or(GitUpdateError::InvalidBranchError)?
     };
 
     let needs_checkout = match repo.head().map_err(|e| e.into()).and_then(|h| {

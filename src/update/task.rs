@@ -94,7 +94,7 @@ impl Task {
                 .file_stem()
                 .ok_or_else(|| anyhow!("Task had no path."))?
                 .to_str()
-                .ok_or_else(|| UpdateError::None {})?
+                .ok_or(UpdateError::None {})?
                 .to_owned(),
         };
         let status = TaskStatus::New;

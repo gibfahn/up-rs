@@ -12,13 +12,7 @@
 // #![doc(include = "../README.md")]
 
 // Max clippy pedanticness.
-#![warn(
-    clippy::all,
-    clippy::restriction,
-    clippy::pedantic,
-    clippy::nursery,
-    clippy::cargo
-)]
+#![warn(clippy::all, clippy::pedantic, clippy::nursery, clippy::cargo)]
 #![allow(clippy::implicit_return, clippy::missing_docs_in_private_items)]
 
 use std::{
@@ -94,6 +88,7 @@ fn main() -> Result<()> {
        })
     );
 
+    #[allow(clippy::option_if_let_else)]
     let root_logger = if let Some(file_drain) = file_drain {
         Logger::root(
             Duplicate::new(stderr_level_filter, file_drain).fuse(),
