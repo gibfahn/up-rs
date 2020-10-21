@@ -22,29 +22,29 @@ path = "src/main.rs"
 [dependencies]
 walkdir = "2.3.1"
 shellexpand = "2.0.0"
-structopt = "0.3.14"
-serde = "1.0.106"
-serde_derive = "1.0.106"
+structopt = "0.3.20"
+serde = "1.0.117"
+serde_derive = "1.0.117"
 envy = "0.4.1"
-toml = "0.5.6"
-serde_json = "1.0.52"
-serde_yaml = "0.8.11"
-log = "0.4.8"
-anyhow = "1.0.28"
-thiserror = "1.0.16"
-chrono = "0.4.11"
-git2 = { version = "0.13.5", features = ["vendored-openssl"] }
-dirs = "2.0.2"
+toml = "0.5.7"
+serde_json = "1.0.59"
+serde_yaml = "0.8.13"
+log = "0.4.11"
+anyhow = "1.0.33"
+thiserror = "1.0.21"
+chrono = "0.4.19"
+git2 = { version = "0.13.12", features = ["vendored-openssl"] }
+dirs = "3.0.1"
 slog = "2.5.2"
 slog-stdlog = "4.0.0"
-slog-term = "2.5.0"
+slog-term = "2.6.0"
 slog-scope = "4.3.0"
 slog-async = "2.5.0"
-displaydoc = "0.1.5"
+displaydoc = "0.1.7"
 
 [dev-dependencies]
 testutils = { path = "./testutils" }
-ignore = "0.4.14"
+ignore = "0.4.16"
 
 [features]
 CI = [] # Enabled when running in CI.
