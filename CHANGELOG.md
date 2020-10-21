@@ -1,3 +1,13 @@
+<a name="0.4.1"></a>
+## [0.4.1][] (2020-10-21)
+
+
+#### Bug Fixes
+
+* **logging:**  handle existing broken symlinks for log path link ([2d3ee577](https://github.com/gibfahn/up-rs/commit/2d3ee577d5981b227ff5e7b0538c825ae1116ee3))
+
+
+
 <a name="0.4.0"></a>
 ## [0.4.0][] (2020-07-22)
 
@@ -95,3 +105,4 @@
 [0.3.1]: https://github.com/gibfahn/up-rs/releases/tag/0.3.1
 [0.3.3]: https://github.com/gibfahn/up-rs/releases/tag/0.3.3
 [0.4.0]: https://github.com/gibfahn/up-rs/releases/tag/0.4.0
+[0.4.1]: https://github.com/gibfahn/up-rs/releases/tag/0.4.1
