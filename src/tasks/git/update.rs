@@ -5,8 +5,8 @@ use std::{borrow::ToOwned, fs, io, path::PathBuf};
 use anyhow::{anyhow, bail, ensure, Context, Result};
 use displaydoc::Display;
 use git2::{
-    build::CheckoutBuilder, BranchType, Cred, Direction, ErrorClass, ErrorCode, FetchOptions,
-    Reference, Remote, RemoteCallbacks, Repository,
+    build::CheckoutBuilder, BranchType, Cred, CredentialType, Direction, ErrorClass, ErrorCode,
+    FetchOptions, Reference, Remote, RemoteCallbacks, Repository,
 };
 use itertools::Itertools;
 use log::{debug, info, trace, warn};
@@ -112,14 +112,16 @@ fn set_up_remote(repo: &Repository, remote_config: &GitRemote) -> Result<()> {
         repo.remote_set_pushurl(remote_name, Some(push_url))?;
     }
     let fetch_refspecs: [&str; 0] = [];
-    let mut count = 0;
-    remote
-        .fetch(
-            &fetch_refspecs,
-            Some(FetchOptions::new().remote_callbacks(remote_callbacks(&mut count)?)),
-            Some("up-rs automated fetch"),
-        )
-        .with_context(|| anyhow!("Fetch failed for remote '{}'", remote_name))?;
+    {
+        let mut count = 0;
+        remote
+            .fetch(
+                &fetch_refspecs,
+                Some(FetchOptions::new().remote_callbacks(remote_callbacks(&mut count)?)),
+                Some("up-rs automated fetch"),
+            )
+            .with_context(|| anyhow!("Fetch failed for remote '{}'", remote_name))?;
+    }
     trace!(
         "Remote refs available for {:?}: {:?}",
         remote.name(),
@@ -129,7 +131,10 @@ fn set_up_remote(repo: &Repository, remote_config: &GitRemote) -> Result<()> {
             .map(git2::RemoteHead::name)
             .collect::<Vec<_>>()
     );
-    remote.connect(Direction::Fetch)?;
+    {
+        let mut count = 0;
+        remote.connect_auth(Direction::Fetch, Some(remote_callbacks(&mut count)?), None)?;
+    }
     let default_branch = remote
         .default_branch()?
         .as_str()
@@ -345,25 +350,43 @@ fn checkout_head(repo: &Repository) -> Result<(), git2::Error> {
 }
 
 /// Prepare the remote authentication callbacks for fetching.
+///
+/// Refs: <https://github.com/rust-lang/cargo/blob/2f115a76e5a1e5eb11cd29e95f972ed107267847/src/cargo/sources/git/utils.rs#L588>
 fn remote_callbacks(count: &mut usize) -> Result<RemoteCallbacks> {
     let mut remote_callbacks = RemoteCallbacks::new();
     remote_callbacks.credentials(move |url, username_from_url, allowed_types| {
         *count += 1;
         if *count > AUTH_RETRY_COUNT {
-            let message = format!("Authentication failure while trying to fetch repository. url:
-                {url}, username_from_url: {username_from_url:?}, allowed_types: {allowed_types:?}",
+            let ssh = if allowed_types.contains(CredentialType::SSH_KEY) {
+                format!("\nIf 'git clone {}' works, you probably need to add your ssh keys to the ssh-agent. Try running 'ssh-add -A'. ", url)
+            } else {String::new()};
+            let message = format!("Authentication failure while trying to fetch git repository.{ssh}\n\
+            url: {url}, username_from_url: {username_from_url:?}, allowed_types: {allowed_types:?}",
+                ssh = ssh,
                 url = url,
                 username_from_url = username_from_url,
                 allowed_types= allowed_types);
             return Err(git2::Error::new(ErrorCode::Auth, ErrorClass::Ssh, message));
         }
-        warn!(
-            "Fetching credentials, url: {url}, username_from_url: {username_from_url:?}, count: {count}",
+        debug!("SSH_AUTH_SOCK: {:?}", std::env::var("SSH_AUTH_SOCK"));
+        debug!(
+            "Fetching credentials, url: {url}, username_from_url: {username_from_url:?}, count: {count}, allowed_types: {allowed_types:?}",
             url = &url,
             username_from_url = &username_from_url,
             count = count,
+            allowed_types= allowed_types,
         );
-        Cred::ssh_key_from_agent(username_from_url.unwrap_or("git"))
+        let username = username_from_url.unwrap_or("git");
+        if allowed_types.contains(CredentialType::USERNAME) {
+            Cred::username(username)
+        } else if allowed_types.contains(CredentialType::SSH_KEY) {
+            Cred::ssh_key_from_agent(username)
+        } else if allowed_types.contains(CredentialType::USER_PASS_PLAINTEXT) {
+            let git_config = git2::Config::open_default()?;
+            git2::Cred::credential_helper(&git_config, url, username_from_url)
+        } else {
+            Cred::default()
+        }
     });
     Ok(remote_callbacks)
 }
