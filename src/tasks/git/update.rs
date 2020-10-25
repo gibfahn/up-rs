@@ -5,7 +5,8 @@ use std::{borrow::ToOwned, fs, io, path::PathBuf};
 use anyhow::{anyhow, bail, ensure, Context, Result};
 use displaydoc::Display;
 use git2::{
-    build::CheckoutBuilder, BranchType, Direction, ErrorCode, Reference, Remote, Repository,
+    build::CheckoutBuilder, BranchType, Cred, Direction, ErrorClass, ErrorCode, FetchOptions,
+    Reference, Remote, RemoteCallbacks, Repository,
 };
 use itertools::Itertools;
 use log::{debug, info, trace, warn};
@@ -13,7 +14,12 @@ use thiserror::Error;
 
 use crate::tasks::git::GitConfig;
 
-pub fn update(git_config: GitConfig) -> Result<()> {
+use super::GitRemote;
+
+/// Number of times to try authenticating when fetching.
+const AUTH_RETRY_COUNT: usize = 5;
+
+pub(crate) fn update(git_config: GitConfig) -> Result<()> {
     // Create dir if it doesn't exist.
     let git_path = PathBuf::from(git_config.path);
     if !git_path.is_dir() {
@@ -40,36 +46,7 @@ pub fn update(git_config: GitConfig) -> Result<()> {
     // Set up remotes.
     ensure!(!git_config.remotes.is_empty(), GitError::NoRemotes);
     for remote_config in &git_config.remotes {
-        let remote_name = &remote_config.name;
-
-        // TODO(gib): Check remote URL matches, else delete and recreate.
-        let mut remote = repo.find_remote(remote_name).or_else(|e| {
-            debug!(
-                "Finding requested remote failed, creating it (error was: {})",
-                e
-            );
-            repo.remote(remote_name, &remote_config.fetch_url)
-        })?;
-        repo.remote_set_pushurl(remote_name, Some(&remote_config.push_url))?;
-        let fetch_refspecs: [&str; 0] = [];
-        remote.fetch(&fetch_refspecs, None, None)?;
-        trace!(
-            "Remote refs available for {:?}: {:?}",
-            remote.name(),
-            remote
-                .list()?
-                .iter()
-                .map(git2::RemoteHead::name)
-                .collect::<Vec<_>>()
-        );
-        remote.connect(Direction::Fetch)?;
-        let default_branch = remote
-            .default_branch()?
-            .as_str()
-            .map(ToOwned::to_owned)
-            .ok_or(GitError::InvalidBranchError)?;
-        remote.disconnect()?;
-        set_remote_head(&repo, &remote, &default_branch)?;
+        set_up_remote(&repo, remote_config)?;
     }
     debug!(
         "Created remotes: {:?}",
@@ -117,6 +94,49 @@ pub fn update(git_config: GitConfig) -> Result<()> {
             return Err(e.into());
         }
     }
+    Ok(())
+}
+
+fn set_up_remote(repo: &Repository, remote_config: &GitRemote) -> Result<()> {
+    let remote_name = &remote_config.name;
+
+    // TODO(gib): Check remote URL matches, else delete and recreate.
+    let mut remote = repo.find_remote(remote_name).or_else(|e| {
+        debug!(
+            "Finding requested remote failed, creating it (error was: {})",
+            e
+        );
+        repo.remote(remote_name, &remote_config.fetch_url)
+    })?;
+    if let Some(push_url) = &remote_config.push_url {
+        repo.remote_set_pushurl(remote_name, Some(push_url))?;
+    }
+    let fetch_refspecs: [&str; 0] = [];
+    let mut count = 0;
+    remote
+        .fetch(
+            &fetch_refspecs,
+            Some(FetchOptions::new().remote_callbacks(remote_callbacks(&mut count)?)),
+            Some("up-rs automated fetch"),
+        )
+        .with_context(|| anyhow!("Fetch failed for remote '{}'", remote_name))?;
+    trace!(
+        "Remote refs available for {:?}: {:?}",
+        remote.name(),
+        remote
+            .list()?
+            .iter()
+            .map(git2::RemoteHead::name)
+            .collect::<Vec<_>>()
+    );
+    remote.connect(Direction::Fetch)?;
+    let default_branch = remote
+        .default_branch()?
+        .as_str()
+        .map(ToOwned::to_owned)
+        .ok_or(GitError::InvalidBranchError)?;
+    remote.disconnect()?;
+    set_remote_head(repo, &remote, &default_branch)?;
     Ok(())
 }
 
@@ -310,6 +330,10 @@ fn do_merge<'a>(
     Ok(())
 }
 
+/// Updates files in the index and the working tree to match the content of
+/// the commit pointed at by HEAD.
+/// Wraps git2's function with a different set of checkout options to the
+/// default.
 fn checkout_head(repo: &Repository) -> Result<(), git2::Error> {
     repo.checkout_head(Some(
         CheckoutBuilder::new()
@@ -318,6 +342,30 @@ fn checkout_head(repo: &Repository) -> Result<(), git2::Error> {
             .recreate_missing(true)
             .conflict_style_merge(true),
     ))
+}
+
+/// Prepare the remote authentication callbacks for fetching.
+fn remote_callbacks(count: &mut usize) -> Result<RemoteCallbacks> {
+    let mut remote_callbacks = RemoteCallbacks::new();
+    remote_callbacks.credentials(move |url, username_from_url, allowed_types| {
+        *count += 1;
+        if *count > AUTH_RETRY_COUNT {
+            let message = format!("Authentication failure while trying to fetch repository. url:
+                {url}, username_from_url: {username_from_url:?}, allowed_types: {allowed_types:?}",
+                url = url,
+                username_from_url = username_from_url,
+                allowed_types= allowed_types);
+            return Err(git2::Error::new(ErrorCode::Auth, ErrorClass::Ssh, message));
+        }
+        warn!(
+            "Fetching credentials, url: {url}, username_from_url: {username_from_url:?}, count: {count}",
+            url = &url,
+            username_from_url = &username_from_url,
+            count = count,
+        );
+        Cred::ssh_key_from_agent(username_from_url.unwrap_or("git"))
+    });
+    Ok(remote_callbacks)
 }
 
 #[derive(Error, Debug, Display)]

@@ -18,7 +18,7 @@ use thiserror::Error;
 
 use crate::{config, tasks::TaskError};
 
-mod task;
+pub mod task;
 
 // TODO(gib): Implement a command to show the tree and dependencies.
 
@@ -74,7 +74,7 @@ pub fn update(config: &config::UpConfig, filter_tasks: &Option<Vec<String>>) -> 
         if entry.file_type()?.is_dir() {
             continue;
         }
-        let task = task::Task::from(entry.path())?;
+        let task = task::Task::from(&entry.path())?;
         if let Some(filter) = filter_tasks_set.as_ref() {
             if !filter.contains(&task.name) {
                 debug!(

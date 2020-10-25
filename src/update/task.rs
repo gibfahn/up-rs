@@ -2,7 +2,7 @@ use std::{
     collections::HashMap,
     fs,
     io::Read,
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::{Child, Command, ExitStatus, Output, Stdio},
     time::{Duration, Instant},
 };
@@ -77,15 +77,15 @@ pub enum CommandType {
 }
 
 impl Task {
-    pub fn from(path: PathBuf) -> Result<Self> {
+    pub fn from(path: &Path) -> Result<Self> {
         let start_time = Instant::now();
         let s = fs::read_to_string(&path).map_err(|e| UpdateError::ReadFile {
-            path: path.clone(),
+            path: path.to_owned(),
             source: e,
         })?;
         trace!("Task '{:?}' contents: <<<{}>>>", &path, &s);
         let config = toml::from_str::<TaskConfig>(&s).map_err(|e| UpdateError::InvalidToml {
-            path: path.clone(),
+            path: path.to_owned(),
             source: e,
         })?;
         let name = match &config.name {
@@ -100,7 +100,7 @@ impl Task {
         let status = TaskStatus::New;
         let task = Self {
             name,
-            path,
+            path: path.to_owned(),
             config,
             status,
             start_time,

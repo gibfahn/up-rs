@@ -42,7 +42,7 @@ impl ResolveEnv for LinkConfig {
 /// example) you just edit ~/.bashrc, and as it's a symlink it'll actually edit
 /// ~/code/dotfiles/.bashrc. Then you can add and commit that change in ~/code/
 /// dotfiles.
-pub fn run(config: LinkConfig) -> Result<()> {
+pub(crate) fn run(config: LinkConfig) -> Result<()> {
     let now: DateTime<Utc> = Utc::now();
     debug!("UTC time is: {}", now);
 

@@ -109,4 +109,30 @@ pub(crate) enum SubCommand {
     // TODO(gib): Implement this.
     /// Set macOS defaults in plist files.
     Defaults {},
+    /// Generate up config from current system state.
+    Generate(GenerateOptions),
+}
+
+#[derive(Debug, StructOpt)]
+pub(crate) struct GenerateOptions {
+    /// Lib to generate.
+    #[structopt(subcommand)]
+    pub(crate) lib: GenerateLib,
+}
+
+/// Library to generate.
+#[derive(Debug, StructOpt)]
+pub(crate) enum GenerateLib {
+    /// Generate a git repo.
+    Git(GenerateGitOptions),
+}
+
+#[derive(Debug, StructOpt)]
+pub struct GenerateGitOptions {
+    /// Path to toml file to update.
+    #[structopt(long, parse(from_str))]
+    pub(crate) path: PathBuf,
+    /// Path to toml file to update.
+    #[structopt(long, parse(from_str), default_value = "~")]
+    pub(crate) search_paths: Vec<PathBuf>,
 }

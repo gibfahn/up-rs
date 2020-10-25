@@ -1,9 +1,13 @@
 use std::convert::From;
 
 use anyhow::Result;
+use displaydoc::Display;
+use git2::Remote;
 use serde_derive::{Deserialize, Serialize};
 use structopt::StructOpt;
+use thiserror::Error;
 
+use self::GitTaskError as E;
 use crate::tasks::ResolveEnv;
 
 pub mod update;
@@ -39,7 +43,7 @@ pub struct GitConfig {
     pub branch: Option<String>,
 }
 
-pub fn run(configs: Vec<GitConfig>) -> Result<()> {
+pub(crate) fn run(configs: Vec<GitConfig>) -> Result<()> {
     // TODO(gib): run them in parallel.
     // TODO(gib): continue even if one errors.
     configs
@@ -54,7 +58,7 @@ impl From<GitArgs> for GitConfig {
             path: item.git_path,
             remotes: vec![GitRemote {
                 name: item.remote,
-                push_url: item.git_url.clone(),
+                push_url: None,
                 fetch_url: item.git_url,
             }],
             branch: item.branch,
@@ -74,7 +78,11 @@ impl ResolveEnv for Vec<GitConfig> {
             config.path = env_fn(&config.path)?;
             for remote in &mut config.remotes {
                 remote.name = env_fn(&remote.name)?;
-                remote.push_url = env_fn(&remote.push_url)?;
+                remote.push_url = if let Some(push_url) = &remote.push_url {
+                    Some(env_fn(push_url)?)
+                } else {
+                    None
+                };
                 remote.fetch_url = env_fn(&remote.fetch_url)?;
             }
         }
@@ -84,7 +92,34 @@ impl ResolveEnv for Vec<GitConfig> {
 
 #[derive(Debug, Default, StructOpt, Serialize, Deserialize)]
 pub struct GitRemote {
+    /// Name of the remote to set in git.
     pub name: String,
-    pub push_url: String,
+    /// URL to fetch from. Also used for pushing if `push_url` unset.
     pub fetch_url: String,
+    /// URL to push to, defaults to fetch URL.
+    pub push_url: Option<String>,
+}
+
+impl GitRemote {
+    pub(crate) fn from(remote: &Remote) -> Result<Self> {
+        let fetch_url = remote.url().ok_or(E::InvalidRemote)?.to_owned();
+
+        let push_url = match remote.pushurl() {
+            Some(url) if url != fetch_url => Some(url.to_owned()),
+            _ => None,
+        };
+
+        Ok(Self {
+            name: remote.name().ok_or(E::InvalidRemote)?.to_owned(),
+            fetch_url,
+            push_url,
+        })
+    }
+}
+
+#[derive(Error, Debug, Display)]
+/// Errors thrown by this file.
+pub enum GitTaskError {
+    /// Remote un-named, or invalid UTF-8 name.
+    InvalidRemote,
 }

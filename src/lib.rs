@@ -12,7 +12,8 @@
     clippy::missing_inline_in_public_items,
     clippy::missing_docs_in_private_items
 )]
-use anyhow::{bail, Result};
+use anyhow::Result;
+use args::GenerateLib;
 
 use crate::{
     args::{Args, SubCommand},
@@ -22,7 +23,8 @@ use crate::{
 
 pub mod args;
 mod config;
-mod tasks;
+mod generate;
+pub mod tasks;
 mod update;
 
 /// Run `up_rs` with provided [Args][] struct.
@@ -55,8 +57,13 @@ pub fn run(args: Args) -> Result<()> {
             git::update::update(git_args.into())?;
         }
         Some(SubCommand::Defaults {}) => {
-            bail!("Not yet implemented.");
+            todo!("Not yet implemented.");
         }
+        Some(SubCommand::Generate(opts)) => match opts.lib {
+            GenerateLib::Git(git_opts) => {
+                generate::git::generate_git(&git_opts)?;
+            }
+        },
         None => {
             let tasks = args.tasks.clone();
             // TODO(gib): Store and fetch config in config module.
