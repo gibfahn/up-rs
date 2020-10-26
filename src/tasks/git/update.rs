@@ -11,10 +11,11 @@ use git2::{
 use itertools::Itertools;
 use log::{debug, info, trace, warn};
 use thiserror::Error;
+use url::Url;
 
-use crate::tasks::git::GitConfig;
-
+use self::GitError as E;
 use super::GitRemote;
+use crate::tasks::git::GitConfig;
 
 /// Number of times to try authenticating when fetching.
 const AUTH_RETRY_COUNT: usize = 5;
@@ -121,7 +122,43 @@ fn set_up_remote(repo: &Repository, remote_config: &GitRemote) -> Result<()> {
                 Some(FetchOptions::new().remote_callbacks(remote_callbacks(&mut count)?)),
                 Some("up-rs automated fetch"),
             )
-            .with_context(|| anyhow!("Fetch failed for remote '{}'", remote_name))?;
+            .map_err(|e| {
+                let extra_info = if e.to_string()
+                    == "failed to acquire username/password from local configuration"
+                {
+                    let parsed_result = Url::parse(&remote_config.fetch_url);
+                    let mut protocol = "parse error".to_owned();
+                    let mut host = "parse error".to_owned();
+                    let mut path = "parse error".to_owned();
+                    if let Ok(parsed) = parsed_result {
+                        protocol = parsed.scheme().to_owned();
+                        if let Some(host_str) = parsed.host_str() {
+                            host = host_str.to_owned();
+                        }
+                        path = parsed.path().trim_matches('/').to_owned();
+                    }
+
+                    #[cfg(target_os = "macos")]
+                    let base = format!("\n\n  - Check that this command returns 'osxkeychain':\n      \
+                    git config credential.helper\n    \
+                    If so, set the token with this command (passing in your username and password):\n      \
+                    echo -e \"protocol={protocol}\\nhost={host}\\nusername=${{username?}}\\npassword=${{password?}}\" | git credential-osxkeychain store", host=host, protocol=protocol);
+                    #[cfg(not(target_os = "macos"))]
+                    let base = "";
+
+                    format!("\n  - Check that this command returns a valid username and password (access token):\n      \
+                        git credential fill <<< $'protocol={protocol}\\nhost={host}\\npath={path}'\n    \
+                        If not see <https://docs.github.com/en/free-pro-team@latest/github/using-git/caching-your-github-credentials-in-git>{base}",
+                        base=base, path=path, host=host, protocol=protocol)
+                } else {
+                    String::new()
+                };
+                E::FetchFailed {
+                    remote: remote_name.to_owned(),
+                    extra_info,
+                    source: e,
+                }
+            })?;
     }
     trace!(
         "Remote refs available for {:?}: {:?}",
@@ -190,7 +227,10 @@ fn calculate_head(repo: &Repository) -> Result<String> {
             let mut remote =
                 repo.find_remote(repo.remotes()?.get(0).ok_or(GitError::NoRemotes)?)?;
             // TODO(
-            remote.connect(Direction::Fetch)?;
+            {
+                let mut count = 0;
+                remote.connect_auth(Direction::Fetch, Some(remote_callbacks(&mut count)?), None)?;
+            }
             let default_branch = remote
                 .default_branch()?
                 .as_str()
@@ -358,12 +398,14 @@ fn remote_callbacks(count: &mut usize) -> Result<RemoteCallbacks> {
     remote_callbacks.credentials(move |url, username_from_url, allowed_types| {
         *count += 1;
         if *count > AUTH_RETRY_COUNT {
-            let ssh = if allowed_types.contains(CredentialType::SSH_KEY) {
+            let extra = if allowed_types.contains(CredentialType::SSH_KEY) {
                 format!("\nIf 'git clone {}' works, you probably need to add your ssh keys to the ssh-agent. Try running 'ssh-add -A'. ", url)
-            } else {String::new()};
-            let message = format!("Authentication failure while trying to fetch git repository.{ssh}\n\
+            } else {
+                String::new()
+            };
+            let message = format!("Authentication failure while trying to fetch git repository.{extra}\n\
             url: {url}, username_from_url: {username_from_url:?}, allowed_types: {allowed_types:?}",
-                ssh = ssh,
+                extra = extra,
                 url = url,
                 username_from_url = username_from_url,
                 allowed_types= allowed_types);
@@ -384,7 +426,7 @@ fn remote_callbacks(count: &mut usize) -> Result<RemoteCallbacks> {
             Cred::ssh_key_from_agent(username)
         } else if allowed_types.contains(CredentialType::USER_PASS_PLAINTEXT) {
             let git_config = git2::Config::open_default()?;
-            git2::Cred::credential_helper(&git_config, url, username_from_url)
+            git2::Cred::credential_helper(&git_config, url, None)
         } else {
             Cred::default()
         }
@@ -405,4 +447,10 @@ pub enum GitError {
     NoHeadSet,
     /// Remote name unset.
     RemoteNameMissing,
+    /// Fetch failed for remote '{remote}'.{extra_info}
+    FetchFailed {
+        remote: String,
+        source: git2::Error,
+        extra_info: String,
+    },
 }
