@@ -10,7 +10,8 @@
     clippy::module_name_repetitions,
     clippy::implicit_return,
     clippy::missing_inline_in_public_items,
-    clippy::missing_docs_in_private_items
+    clippy::missing_docs_in_private_items,
+    clippy::missing_errors_doc
 )]
 use anyhow::Result;
 use args::GenerateLib;
