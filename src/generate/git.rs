@@ -73,6 +73,8 @@ pub fn run_single(generate_git_config: &GenerateGitConfig) -> Result<()> {
     Ok(())
 }
 
+// False-positives on Vec::new(), see https://github.com/rust-lang/rust-clippy/issues/3410
+#[allow(clippy::use_self)]
 impl ResolveEnv for Vec<GenerateGitConfig> {
     fn resolve_env<F>(&mut self, env_fn: F) -> Result<()>
     where

@@ -59,7 +59,8 @@ pub fn run(args: Args) -> Result<()> {
             git::update::update(&git_args.into())?;
         }
         Some(SubCommand::Defaults {}) => {
-            todo!("Not yet implemented.");
+            // TODO(gib): implement defaults setting.
+            unimplemented!("Not yet implemented.");
         }
         Some(SubCommand::Generate(ref opts)) => match opts.lib {
             Some(GenerateLib::Git(ref git_opts)) => {
@@ -67,7 +68,8 @@ pub fn run(args: Args) -> Result<()> {
             }
             Some(GenerateLib::Defaults(ref defaults_opts)) => {
                 trace!("Options: {:?}", defaults_opts);
-                todo!("Allow generating defaults toml.");
+                // TODO(gib): implement defaults generation.
+                unimplemented!("Allow generating defaults toml.");
             }
             None => {
                 let tasks = args.tasks.clone();

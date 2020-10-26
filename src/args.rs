@@ -108,7 +108,7 @@ pub(crate) enum SubCommand {
     /// Clone or update a repo at a path.
     Git(GitArgs),
     // TODO(gib): Implement this.
-    /// Set macOS defaults in plist files.
+    /// Set macOS defaults in plist files (not yet implemented).
     Defaults {},
     /// Generate up config from current system state.
     Generate(GenerateOptions),
@@ -126,7 +126,7 @@ pub(crate) struct GenerateOptions {
 pub(crate) enum GenerateLib {
     /// Generate a git repo.
     Git(GenerateGitConfig),
-    /// Generate macOS defaults commands.
+    /// Generate macOS defaults commands (not yet implemented).
     Defaults(GenerateDefaultsConfig),
 }
 
