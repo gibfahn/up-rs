@@ -20,9 +20,9 @@ use crate::tasks::git::GitConfig;
 /// Number of times to try authenticating when fetching.
 const AUTH_RETRY_COUNT: usize = 5;
 
-pub(crate) fn update(git_config: GitConfig) -> Result<()> {
+pub(crate) fn update(git_config: &GitConfig) -> Result<()> {
     // Create dir if it doesn't exist.
-    let git_path = PathBuf::from(git_config.path);
+    let git_path = PathBuf::from(git_config.path.to_owned());
     info!("Updating git repo '{}'", git_path.display());
     if !git_path.is_dir() {
         debug!("Dir doesn't exist, creating...");
@@ -62,8 +62,8 @@ pub(crate) fn update(git_config: GitConfig) -> Result<()> {
             .collect::<Vec<_>>()
     );
 
-    let branch_name: String = if let Some(branch_name) = git_config.branch {
-        branch_name
+    let branch_name: String = if let Some(branch_name) = &git_config.branch {
+        branch_name.to_owned()
     } else {
         calculate_head(&repo)?
     };

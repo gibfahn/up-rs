@@ -6,7 +6,8 @@ use std::{
 use anyhow::{Context, Result};
 use displaydoc::Display;
 use git2::Repository;
-use log::{debug, info, trace};
+use log::{debug, error, info, trace};
+use rayon::prelude::*;
 use thiserror::Error;
 use walkdir::WalkDir;
 
@@ -23,10 +24,20 @@ use crate::{
 use super::GENERATED_PRELUDE_COMMENT;
 
 pub fn run(generate_git_configs: Vec<GenerateGitConfig>) -> Result<()> {
-    for config in generate_git_configs {
-        run_single(&config)?;
+    let errors: Vec<_> = generate_git_configs
+        .par_iter()
+        .map(|config| run_single(&config))
+        .filter_map(Result::err)
+        .collect();
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        for error in &errors {
+            error!("{:?}", error);
+        }
+        let first_error = errors.into_iter().next().ok_or(E::UnexpectedNone)?;
+        Err(first_error)
     }
-    Ok(())
 }
 
 pub fn run_single(generate_git_config: &GenerateGitConfig) -> Result<()> {
@@ -147,4 +158,6 @@ pub enum GenerateGitError {
     InvalidUTF8,
     /// Invalid remote '{name}'.
     InvalidRemote { name: String },
+    /// Unexpected None in option.
+    UnexpectedNone,
 }

@@ -3,6 +3,8 @@ use std::convert::From;
 use anyhow::Result;
 use displaydoc::Display;
 use git2::Remote;
+use log::error;
+use rayon::prelude::*;
 use serde_derive::{Deserialize, Serialize};
 use structopt::StructOpt;
 use thiserror::Error;
@@ -46,10 +48,20 @@ pub struct GitConfig {
 pub(crate) fn run(configs: Vec<GitConfig>) -> Result<()> {
     // TODO(gib): run them in parallel.
     // TODO(gib): continue even if one errors.
-    configs
-        .into_iter()
-        .map(update::update)
-        .collect::<Result<_>>()
+    let errors: Vec<_> = configs
+        .par_iter()
+        .map(|c| update::update(c))
+        .filter_map(Result::err)
+        .collect();
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        for error in &errors {
+            error!("{:?}", error);
+        }
+        let first_error = errors.into_iter().next().ok_or(E::UnexpectedNone)?;
+        Err(first_error)
+    }
 }
 
 impl From<GitArgs> for GitConfig {
@@ -122,4 +134,6 @@ impl GitRemote {
 pub enum GitTaskError {
     /// Remote un-named, or invalid UTF-8 name.
     InvalidRemote,
+    /// Unexpected None in option.
+    UnexpectedNone,
 }

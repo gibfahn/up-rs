@@ -54,9 +54,8 @@ pub fn run(args: Args) -> Result<()> {
                 backup_dir: shellexpand::tilde(&backup_dir).into_owned(),
             })?;
         }
-        // TODO(gib): Implement this.
         Some(SubCommand::Git(git_args)) => {
-            git::update::update(git_args.into())?;
+            git::update::update(&git_args.into())?;
         }
         Some(SubCommand::Defaults {}) => {
             todo!("Not yet implemented.");

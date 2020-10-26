@@ -170,7 +170,7 @@ fn get_fallback_config_path(fallback_url: String, fallback_path: String) -> Resu
 
     let fallback_config_path = fallback_repo_path.join(fallback_path);
     git::update::update(
-        git::GitArgs {
+        &git::GitArgs {
             git_url: fallback_url,
             git_path: fallback_repo_path.to_string_lossy().to_string(),
             remote: git::DEFAULT_REMOTE_NAME.to_owned(),
