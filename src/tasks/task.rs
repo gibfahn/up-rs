@@ -12,9 +12,9 @@ use log::{debug, info, log, trace, warn, Level};
 use serde_derive::{Deserialize, Serialize};
 
 use crate::{
-    tasks,
-    tasks::{git::GitConfig, link::LinkConfig, ResolveEnv},
-    update::UpdateError,
+    args::GenerateGitConfig,
+    generate, tasks,
+    tasks::{git::GitConfig, link::LinkConfig, ResolveEnv, TasksError},
 };
 
 #[derive(Debug)]
@@ -79,12 +79,12 @@ pub enum CommandType {
 impl Task {
     pub fn from(path: &Path) -> Result<Self> {
         let start_time = Instant::now();
-        let s = fs::read_to_string(&path).map_err(|e| UpdateError::ReadFile {
+        let s = fs::read_to_string(&path).map_err(|e| TasksError::ReadFile {
             path: path.to_owned(),
             source: e,
         })?;
         trace!("Task '{:?}' contents: <<<{}>>>", &path, &s);
-        let config = toml::from_str::<TaskConfig>(&s).map_err(|e| UpdateError::InvalidToml {
+        let config = toml::from_str::<TaskConfig>(&s).map_err(|e| TasksError::InvalidToml {
             path: path.to_owned(),
             source: e,
         })?;
@@ -94,7 +94,7 @@ impl Task {
                 .file_stem()
                 .ok_or_else(|| anyhow!("Task had no path."))?
                 .to_str()
-                .ok_or(UpdateError::None {})?
+                .ok_or(TasksError::None {})?
                 .to_owned(),
         };
         let status = TaskStatus::New;
@@ -153,6 +153,18 @@ impl Task {
                     // TODO(gib): Continue on error, saving status as for run commands.
                     tasks::git::run(data)?;
                 }
+                "generate_git" => {
+                    let mut data = self
+                        .config
+                        .data
+                        .as_ref()
+                        .ok_or_else(|| anyhow!("Task '{}' data had no value.", &self.name))?
+                        .clone()
+                        .try_into::<Vec<GenerateGitConfig>>()?;
+                    data.resolve_env(env_fn)?;
+                    // TODO(gib): Continue on error, saving status as for run commands.
+                    generate::git::run(data)?;
+                }
                 // TODO(gib): Implement this.
                 "defaults" => {
                     bail!("Defaults code isn't yet implemented.");
@@ -196,7 +208,7 @@ impl Task {
             return Ok(());
         }
 
-        bail!(UpdateError::MissingCmd {
+        bail!(TasksError::MissingCmd {
             name: self.name.clone()
         });
     }
@@ -244,7 +256,7 @@ impl Task {
         let mut command = Self::get_command(cmd, env)?;
 
         let now = Instant::now();
-        let output = command.output().map_err(|e| UpdateError::CheckCmdFailed {
+        let output = command.output().map_err(|e| TasksError::CheckCmdFailed {
             name: self.name.clone(),
             cmd: cmd.into(),
             source: e,

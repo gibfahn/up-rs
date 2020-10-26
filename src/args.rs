@@ -4,6 +4,7 @@ use std::{path::PathBuf, str::FromStr};
 // https://github.com/TeXitoi/structopt/blob/d1a50bf204970bccd55a0351a114fc8e05c854ce/examples/gen_completions.rs
 
 use anyhow::{anyhow, Result};
+use serde_derive::{Deserialize, Serialize};
 use slog::Level;
 use structopt::{
     clap::{arg_enum, AppSettings},
@@ -117,22 +118,27 @@ pub(crate) enum SubCommand {
 pub(crate) struct GenerateOptions {
     /// Lib to generate.
     #[structopt(subcommand)]
-    pub(crate) lib: GenerateLib,
+    pub(crate) lib: Option<GenerateLib>,
 }
 
 /// Library to generate.
 #[derive(Debug, StructOpt)]
 pub(crate) enum GenerateLib {
     /// Generate a git repo.
-    Git(GenerateGitOptions),
+    Git(GenerateGitConfig),
 }
 
-#[derive(Debug, StructOpt)]
-pub struct GenerateGitOptions {
+#[derive(Debug, StructOpt, Serialize, Deserialize)]
+pub struct GenerateGitConfig {
     /// Path to toml file to update.
     #[structopt(long, parse(from_str))]
     pub(crate) path: PathBuf,
-    /// Path to toml file to update.
+    /// Paths to search within.
     #[structopt(long, parse(from_str), default_value = "~")]
     pub(crate) search_paths: Vec<PathBuf>,
+    /// Exclude paths containing this value. e.g. '/tmp/' to exclude anything in
+    /// a tmp dir.
+    #[structopt(long)]
+    pub(crate) excludes: Option<Vec<String>>,
+    // TODO(gib): add a check option that errors if not up to date.
 }

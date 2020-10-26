@@ -23,6 +23,7 @@ use crate::{
 
 pub mod args;
 mod config;
+mod env;
 mod generate;
 pub mod tasks;
 mod update;
@@ -59,9 +60,14 @@ pub fn run(args: Args) -> Result<()> {
         Some(SubCommand::Defaults {}) => {
             todo!("Not yet implemented.");
         }
-        Some(SubCommand::Generate(opts)) => match opts.lib {
-            GenerateLib::Git(git_opts) => {
-                generate::git::generate_git(&git_opts)?;
+        Some(SubCommand::Generate(ref opts)) => match opts.lib {
+            Some(GenerateLib::Git(ref git_opts)) => {
+                generate::git::run_single(git_opts)?;
+            }
+            None => {
+                let tasks = args.tasks.clone();
+                let config = UpConfig::from(args)?;
+                generate::run(&config, &tasks)?;
             }
         },
         None => {

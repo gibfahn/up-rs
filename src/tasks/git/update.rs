@@ -22,6 +22,7 @@ const AUTH_RETRY_COUNT: usize = 5;
 pub(crate) fn update(git_config: GitConfig) -> Result<()> {
     // Create dir if it doesn't exist.
     let git_path = PathBuf::from(git_config.path);
+    info!("Updating git repo '{}'", git_path.display());
     if !git_path.is_dir() {
         debug!("Dir doesn't exist, creating...");
         fs::create_dir_all(&git_path).map_err(|e| GitError::CreateDirError {
@@ -70,7 +71,7 @@ pub(crate) fn update(git_config: GitConfig) -> Result<()> {
     let branch_name = format!("refs/heads/{}", short_branch);
 
     if needs_checkout(&repo, &branch_name)? {
-        info!("Checking out branch: {}", branch_name);
+        debug!("Checking out branch: {}", short_branch);
         checkout_branch(
             &repo,
             &branch_name,
@@ -310,7 +311,7 @@ fn do_merge<'a>(
 
     // Do the merge
     if analysis.0.is_fast_forward() {
-        info!("Doing a fast forward");
+        debug!("Doing a fast forward");
         // do a fast forward
         if let Ok(mut r) = repo.find_reference(branch_name) {
             fast_forward(repo, &mut r, fetch_commit)?;
@@ -328,7 +329,7 @@ fn do_merge<'a>(
             checkout_head(repo)?;
         }
     } else if analysis.0.is_up_to_date() {
-        info!("Skipping fast-forward merge as already up-to-date.");
+        debug!("Skipping fast-forward merge as already up-to-date.");
     } else {
         bail!("Failed to do a fast-forward merge.");
     }
