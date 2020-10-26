@@ -15,6 +15,7 @@
 )]
 use anyhow::Result;
 use args::GenerateLib;
+use log::trace;
 
 use crate::{
     args::{Args, SubCommand},
@@ -63,6 +64,10 @@ pub fn run(args: Args) -> Result<()> {
         Some(SubCommand::Generate(ref opts)) => match opts.lib {
             Some(GenerateLib::Git(ref git_opts)) => {
                 generate::git::run_single(git_opts)?;
+            }
+            Some(GenerateLib::Defaults(ref defaults_opts)) => {
+                trace!("Options: {:?}", defaults_opts);
+                todo!("Allow generating defaults toml.");
             }
             None => {
                 let tasks = args.tasks.clone();

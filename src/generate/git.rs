@@ -23,10 +23,10 @@ use crate::{
 
 use super::GENERATED_PRELUDE_COMMENT;
 
-pub fn run(generate_git_configs: Vec<GenerateGitConfig>) -> Result<()> {
+pub fn run(generate_git_configs: &[GenerateGitConfig]) -> Result<()> {
     let errors: Vec<_> = generate_git_configs
         .par_iter()
-        .map(|config| run_single(&config))
+        .map(|config| run_single(config))
         .filter_map(Result::err)
         .collect();
     if errors.is_empty() {
@@ -90,7 +90,7 @@ impl ResolveEnv for Vec<GenerateGitConfig> {
             if let Some(excludes) = config.excludes.as_ref() {
                 let mut new_excludes = Vec::new();
                 for exclude in excludes {
-                    new_excludes.push(env_fn(&exclude)?);
+                    new_excludes.push(env_fn(exclude)?);
                 }
                 config.excludes = Some(new_excludes);
             }

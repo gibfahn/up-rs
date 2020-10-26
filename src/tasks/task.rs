@@ -163,7 +163,7 @@ impl Task {
                         .try_into::<Vec<GenerateGitConfig>>()?;
                     data.resolve_env(env_fn)?;
                     // TODO(gib): Continue on error, saving status as for run commands.
-                    generate::git::run(data)?;
+                    generate::git::run(&data)?;
                 }
                 // TODO(gib): Implement this.
                 "defaults" => {

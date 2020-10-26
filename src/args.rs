@@ -126,6 +126,8 @@ pub(crate) struct GenerateOptions {
 pub(crate) enum GenerateLib {
     /// Generate a git repo.
     Git(GenerateGitConfig),
+    /// Generate macOS defaults commands.
+    Defaults(GenerateDefaultsConfig),
 }
 
 #[derive(Debug, StructOpt, Serialize, Deserialize)]
@@ -141,4 +143,11 @@ pub struct GenerateGitConfig {
     #[structopt(long)]
     pub(crate) excludes: Option<Vec<String>>,
     // TODO(gib): add a check option that errors if not up to date.
+}
+
+#[derive(Debug, StructOpt, Serialize, Deserialize)]
+pub struct GenerateDefaultsConfig {
+    /// Path to toml file to update.
+    #[structopt(long, parse(from_str))]
+    pub(crate) path: PathBuf,
 }

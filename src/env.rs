@@ -8,7 +8,7 @@ use thiserror::Error;
 use self::EnvError as E;
 
 // TODO(gib): add tests for cyclical config values etc.
-pub(crate) fn get_env(
+pub fn get_env(
     inherit_env: Option<&Vec<String>>,
     input_env: Option<&HashMap<String, String>>,
 ) -> Result<HashMap<String, String>> {
