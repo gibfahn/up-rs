@@ -36,14 +36,14 @@ The Release process is still somewhat manual, and only works on macOS for now.
   ```shell
   # Check the documentation is buildable.
   cargo doc &&
-  # Build darwin.
-  cargo build --release &&
   # Test Darwin
   cargo test --release --features=CI &&
-  # Builds musl static Linux binaries.
-  bin/cargo-docker build --release &&
+  # Build Darwin (without the CI feature).
+  cargo build --release &&
   # Tests musl static Linux binaries.
-  bin/cargo-docker
+  bin/cargo-docker &&
+  # Builds musl static Linux binaries.
+  bin/cargo-docker build --release
   ```
 5. Publish to crates.io:
   ```shell
