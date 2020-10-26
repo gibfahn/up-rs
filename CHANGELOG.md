@@ -1,3 +1,26 @@
+<a name="0.5.0"></a>
+## [0.5.0][] (2020-10-26)
+
+
+#### Bug Fixes
+
+* **git:**
+  *  better error message for https auth failure ([bc2225d4](https://github.com/gibfahn/up-rs/commit/bc2225d4160c9d728441a2e83874debc73546253))
+  *  add more auth for git fetching ([3df06eac](https://github.com/gibfahn/up-rs/commit/3df06eac0b3467bd20ac2763cc3f2552cd095004))
+
+#### Performance
+
+* **git:**  run git updates in parallel ([77b8d37b](https://github.com/gibfahn/up-rs/commit/77b8d37bee5247b02b8faf5004326b2f3ffd4945))
+
+#### Features
+
+* **generate:**
+  *  allow running `up generate` to generate configured tasks ([afef08f7](https://github.com/gibfahn/up-rs/commit/afef08f7ab6250e9372415deb90b20a5780539f8))
+  *  add an `up generate git` option to generate configs ([969fc757](https://github.com/gibfahn/up-rs/commit/969fc757379edf92d673fa03a1a670e1e121e98b))
+* **git:**  add support for git repo initalization and updates ([e06575a7](https://github.com/gibfahn/up-rs/commit/e06575a766d0e9a57fddcf76d344abcc158946dc))
+
+
+
 <a name="0.4.1"></a>
 ## [0.4.1][] (2020-10-21)
 
@@ -106,3 +129,4 @@
 [0.3.3]: https://github.com/gibfahn/up-rs/releases/tag/0.3.3
 [0.4.0]: https://github.com/gibfahn/up-rs/releases/tag/0.4.0
 [0.4.1]: https://github.com/gibfahn/up-rs/releases/tag/0.4.1
+[0.5.0]: https://github.com/gibfahn/up-rs/releases/tag/0.5.0
