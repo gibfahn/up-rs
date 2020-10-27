@@ -103,7 +103,7 @@ fn check_repo(git_path: &str, head_commit: &str, head_branch: &str, head_upstrea
         head_commit
     );
     assert_eq!(
-        run_git_cmd(git_path, &["branch", "--show-current"]).trim(),
+        run_git_cmd(git_path, &["rev-parse", "--abbrev-ref", "HEAD"]).trim(),
         head_branch
     );
     assert_eq!(
