@@ -44,6 +44,8 @@ displaydoc = "0.1.7"
 itertools = "0.9.0"
 url = "2.1.1"
 rayon = "1.5.0"
+reqwest = { version = "0.10.8", features = ["blocking"] }
+semver = "0.11.0"
 
 [dev-dependencies]
 testutils = { path = "./testutils" }

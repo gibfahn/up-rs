@@ -13,6 +13,11 @@ use structopt::{
 
 use crate::tasks::git::GitArgs;
 
+#[cfg(target_os = "linux")]
+const SELF_UPDATE_URL: &str = "https://github.com/gibfahn/up-rs/releases/latest/download/up-linux";
+#[cfg(target_os = "macos")]
+const SELF_UPDATE_URL: &str = "https://github.com/gibfahn/up-rs/releases/latest/download/up-darwin";
+
 /// Builds the Args struct from CLI input and from environment variable input.
 #[must_use]
 pub fn parse() -> Args {
@@ -88,7 +93,7 @@ arg_enum! {
     }
 }
 
-// Optional subcommand (e.g. the "update" in "up update").
+// Optional subcommand (e.g. the "link" in "up link").
 #[derive(Debug, StructOpt)]
 pub(crate) enum SubCommand {
     // TODO(gib): Work out how to do clap's help and long_help in structopt.
@@ -112,6 +117,9 @@ pub(crate) enum SubCommand {
     Defaults {},
     /// Generate up config from current system state.
     Generate(GenerateOptions),
+    // TODO(gib): add an option to update self (and a run_lib for it).
+    /// Update the up CLI itself.
+    Self_(UpdateSelfOptions),
 }
 
 #[derive(Debug, StructOpt)]
@@ -119,6 +127,13 @@ pub(crate) struct GenerateOptions {
     /// Lib to generate.
     #[structopt(subcommand)]
     pub(crate) lib: Option<GenerateLib>,
+}
+
+#[derive(Debug, StructOpt)]
+pub(crate) struct UpdateSelfOptions {
+    /// URL to download update from.
+    #[structopt(long, default_value = SELF_UPDATE_URL)]
+    pub(crate) url: String,
 }
 
 /// Library to generate.

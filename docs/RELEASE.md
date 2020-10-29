@@ -11,11 +11,13 @@ The Release process is still somewhat manual, and only works on macOS for now.
 1. Ensure all changes are pushed, check that CI on the latest commit was green.
   You can also check this badge: ![Master CI Status](https://github.com/gibfahn/up-rs/workflows/Rust/badge.svg)
 2. Work out old and new versions:
+  <!-- TODO(gib): automatically calculate new version from conventional commit messages. -->
   ```shell
   old_version=$(awk -F\" '/^version = /{print $2; exit}' Cargo.toml)
   read "new_version?New version (old version is ${old_version?}): "
   ```
 2. Generate and commit the changelog:
+  <!-- TODO(gib): make this follow (and link to in CHANGELOG.md) https://keepachangelog.com/en/1.0.0/ -->
   ```shell
   clog -C CHANGELOG.md --from="${old_version?}" --setversion="${new_version?}" &&
   # Make the header a link pointing to the release.

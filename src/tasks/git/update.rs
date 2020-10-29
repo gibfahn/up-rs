@@ -26,7 +26,7 @@ pub(crate) fn update(git_config: &GitConfig) -> Result<()> {
     info!("Updating git repo '{}'", git_path.display());
     if !git_path.is_dir() {
         debug!("Dir doesn't exist, creating...");
-        fs::create_dir_all(&git_path).map_err(|e| GitError::CreateDirError {
+        fs::create_dir_all(&git_path).map_err(|e| E::CreateDirError {
             path: git_path.to_path_buf(),
             source: e,
         })?;
@@ -46,7 +46,7 @@ pub(crate) fn update(git_config: &GitConfig) -> Result<()> {
     };
 
     // Set up remotes.
-    ensure!(!git_config.remotes.is_empty(), GitError::NoRemotes);
+    ensure!(!git_config.remotes.is_empty(), E::NoRemotes);
     for remote_config in &git_config.remotes {
         set_up_remote(&repo, remote_config)?;
     }
@@ -177,7 +177,7 @@ fn set_up_remote(repo: &Repository, remote_config: &GitRemote) -> Result<()> {
         .default_branch()?
         .as_str()
         .map(ToOwned::to_owned)
-        .ok_or(GitError::InvalidBranchError)?;
+        .ok_or(E::InvalidBranchError)?;
     remote.disconnect()?;
     set_remote_head(repo, &remote, &default_branch)?;
     Ok(())
@@ -222,10 +222,9 @@ fn calculate_head(repo: &Repository) -> Result<String> {
         Ok(head) => head
             .shorthand()
             .map(ToOwned::to_owned)
-            .ok_or(GitError::InvalidBranchError)?,
+            .ok_or(E::InvalidBranchError)?,
         Err(head_err) if head_err.code() == ErrorCode::UnbornBranch => {
-            let mut remote =
-                repo.find_remote(repo.remotes()?.get(0).ok_or(GitError::NoRemotes)?)?;
+            let mut remote = repo.find_remote(repo.remotes()?.get(0).ok_or(E::NoRemotes)?)?;
             // TODO(
             {
                 let mut count = 0;
@@ -235,11 +234,11 @@ fn calculate_head(repo: &Repository) -> Result<String> {
                 .default_branch()?
                 .as_str()
                 .map(ToOwned::to_owned)
-                .ok_or(GitError::InvalidBranchError)?;
+                .ok_or(E::InvalidBranchError)?;
             remote.disconnect()?;
             default_branch
         }
-        Err(head_err) => Err(head_err).context(GitError::NoHeadSet)?,
+        Err(head_err) => Err(head_err).context(E::NoHeadSet)?,
     })
 }
 
@@ -247,7 +246,7 @@ fn calculate_head(repo: &Repository) -> Result<String> {
 /// Find remote HEAD, then set the symbolic-ref refs/remotes/<remote>/HEAD to
 /// refs/remotes/<remote>/<branch>
 fn set_remote_head(repo: &Repository, remote: &Remote, default_branch: &str) -> Result<()> {
-    let remote_name = remote.name().ok_or(GitError::RemoteNameMissing)?;
+    let remote_name = remote.name().ok_or(E::RemoteNameMissing)?;
     let remote_ref = format!("refs/remotes/{remote_name}/HEAD", remote_name = remote_name);
     let short_branch = shorten_branch_ref(default_branch);
     let remote_head = format!(

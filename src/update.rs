@@ -7,6 +7,8 @@ use anyhow::Result;
 
 use crate::{config, tasks};
 
+pub mod update_self;
+
 // TODO(gib): Implement a command to show the tree and dependencies.
 
 /// Run update checks specified in the `up_dir` config files.

@@ -16,6 +16,7 @@
 use anyhow::Result;
 use args::GenerateLib;
 use log::trace;
+use update::update_self::update_self;
 
 use crate::{
     args::{Args, SubCommand},
@@ -28,7 +29,7 @@ mod config;
 mod env;
 mod generate;
 pub mod tasks;
-mod update;
+pub mod update;
 
 /// Run `up_rs` with provided [Args][] struct.
 ///
@@ -61,6 +62,9 @@ pub fn run(args: Args) -> Result<()> {
         Some(SubCommand::Defaults {}) => {
             // TODO(gib): implement defaults setting.
             unimplemented!("Not yet implemented.");
+        }
+        Some(SubCommand::Self_(opts)) => {
+            update_self(&opts)?;
         }
         Some(SubCommand::Generate(ref opts)) => match opts.lib {
             Some(GenerateLib::Git(ref git_opts)) => {
