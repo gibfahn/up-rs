@@ -5,8 +5,9 @@ use std::{borrow::ToOwned, fs, io, path::PathBuf};
 use anyhow::{anyhow, bail, ensure, Context, Result};
 use displaydoc::Display;
 use git2::{
-    build::CheckoutBuilder, BranchType, Cred, CredentialType, Direction, ErrorClass, ErrorCode,
-    FetchOptions, Reference, Remote, RemoteCallbacks, Repository,
+    build::CheckoutBuilder, Branch, BranchType, Cred, CredentialType, Direction, ErrorClass,
+    ErrorCode, FetchOptions, MergeAnalysis, MergePreference, Reference, Remote, RemoteCallbacks,
+    Repository,
 };
 use itertools::Itertools;
 use log::{debug, info, trace, warn};
@@ -21,6 +22,12 @@ use crate::tasks::git::GitConfig;
 const AUTH_RETRY_COUNT: usize = 5;
 
 pub(crate) fn update(git_config: &GitConfig) -> Result<()> {
+    real_update(git_config).with_context(|| E::GitUpdate {
+        path: PathBuf::from(git_config.path.to_owned()),
+    })
+}
+
+pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
     // Create dir if it doesn't exist.
     let git_path = PathBuf::from(git_config.path.to_owned());
     info!("Updating git repo '{}'", git_path.display());
@@ -37,13 +44,15 @@ pub(crate) fn update(git_config: &GitConfig) -> Result<()> {
         Ok(repo) => repo,
         Err(e) => {
             if let ErrorCode::NotFound = e.code() {
-                Repository::init(git_path)?
+                Repository::init(&git_path)?
             } else {
                 debug!("Failed to open repository: {:?}\n  {}", e.code(), e);
                 bail!(e);
             }
         }
     };
+
+    let user_git_config = git2::Config::open_default()?;
 
     // Set up remotes.
     ensure!(!git_config.remotes.is_empty(), E::NoRemotes);
@@ -81,19 +90,46 @@ pub(crate) fn update(git_config: &GitConfig) -> Result<()> {
         )?;
     }
 
-    match repo
-        .find_branch(short_branch, BranchType::Local)?
-        .upstream()
-    {
-        Ok(upstream_branch) => {
-            let upstream_commit = repo.reference_to_annotated_commit(upstream_branch.get())?;
-            do_merge(&repo, &branch_name, &upstream_commit)?;
-        }
-        Err(e) if e.code() == ErrorCode::NotFound => {
-            debug!("Skipping update to remote ref as branch doesn't have an upstream.");
-        }
-        Err(e) => {
-            return Err(e.into());
+    // TODO(gib): use `repo.revparse_ext(&push_revision)?.1` when available.
+    // Refs: https://github.com/libgit2/libgit2/issues/5689
+    if let Some(push_branch) = get_push_branch(&repo, short_branch, &user_git_config)? {
+        debug!("Checking for a @{{push}} branch.");
+        let push_revision = format!("{}@{{push}}", short_branch);
+        let merge_commit = repo.reference_to_annotated_commit(push_branch.get())?;
+        do_merge(&repo, &branch_name, &merge_commit).with_context(|| E::Merge {
+            branch: branch_name,
+            merge_rev: push_revision,
+            merge_ref: push_branch
+                .name()
+                .unwrap_or(Some("Err"))
+                .unwrap_or("None")
+                .to_owned(),
+        })?;
+    } else {
+        debug!("Branch doesn't have an @{{push}} branch, checking @{{upstream}} instead.");
+        let up_revision = format!("{}@{{upstream}}", short_branch);
+        match repo
+            .find_branch(short_branch, BranchType::Local)?
+            .upstream()
+        {
+            Ok(upstream_branch) => {
+                let upstream_commit = repo.reference_to_annotated_commit(upstream_branch.get())?;
+                do_merge(&repo, &branch_name, &upstream_commit).with_context(|| E::Merge {
+                    branch: branch_name,
+                    merge_rev: up_revision,
+                    merge_ref: upstream_branch
+                        .name()
+                        .unwrap_or(Some("Err"))
+                        .unwrap_or("None")
+                        .to_owned(),
+                })?;
+            }
+            Err(e) if e.code() == ErrorCode::NotFound => {
+                debug!("Skipping update to remote ref as branch doesn't have an upstream.");
+            }
+            Err(e) => {
+                return Err(e.into());
+            }
         }
     }
     Ok(())
@@ -370,9 +406,75 @@ fn do_merge<'a>(
     } else if analysis.0.is_up_to_date() {
         debug!("Skipping fast-forward merge as already up-to-date.");
     } else {
-        bail!("Failed to do a fast-forward merge.");
+        bail!(E::CannotFastForwardMerge {
+            analysis: analysis.0,
+            preference: analysis.1
+        });
     }
     Ok(())
+}
+
+/// Get the @{push} branch if it exists.
+///
+/// Work around lack of this function in libgit2, upstream issue
+/// [libgit2#5689](https://github.com/libgit2/libgit2/issues/5689).
+fn get_push_branch<'a>(
+    repo: &'a Repository,
+    branch: &str,
+    config: &git2::Config,
+) -> Result<Option<Branch<'a>>> {
+    debug!("Getting push branch for {}", branch);
+
+    match get_push_remote(branch, config)? {
+        Some(remote) => {
+            let remote_ref = format!("{}/{}", remote, branch);
+            trace!("Checking push remote for matching branch {}", &remote_ref);
+            match repo.find_branch(&remote_ref, BranchType::Remote) {
+                Ok(branch) => Ok(Some(branch)),
+                Err(e) if e.code() == ErrorCode::NotFound => Ok(None),
+                Err(e) => Err(e.into()),
+            }
+        }
+        None => Ok(None),
+    }
+}
+
+/// Get the push remote if it exists.
+fn get_push_remote(branch: &str, config: &git2::Config) -> Result<Option<String>> {
+    debug!("Getting push remote for {}", branch);
+
+    // If git config branch.<branch>.pushRemote exists return that.
+    if let Some(val) = get_config_value(config, &format!("branch.{}.pushRemote", branch))? {
+        return Ok(Some(val));
+    }
+
+    // If git config remote.pushDefault exists return that.
+    if let Some(val) = get_config_value(config, "remote.pushDefault")? {
+        return Ok(Some(val));
+    }
+
+    // Else return None.
+    Ok(None)
+}
+
+/// Get a string from a config object if defined.
+/// Returns Ok(None) if the key was not defined.
+fn get_config_value(config: &git2::Config, key: &str) -> Result<Option<String>> {
+    match config.get_entry(key) {
+        Ok(push_remote_entry) if push_remote_entry.has_value() => {
+            let val = push_remote_entry.value().ok_or(E::InvalidBranchError)?;
+            trace!("Config value for {} was {}", key, val);
+            Ok(Some(val.to_owned()))
+        }
+        Err(e) if e.code() != ErrorCode::NotFound => {
+            // Any error except NotFound is unexpected.
+            Err(e.into())
+        }
+        _ => {
+            // Returned not found error, or entry didn't have a value.
+            Ok(None)
+        }
+    }
 }
 
 /// Updates files in the index and the working tree to match the content of
@@ -436,6 +538,8 @@ fn remote_callbacks(count: &mut usize) -> Result<RemoteCallbacks> {
 #[derive(Error, Debug, Display)]
 /// Errors thrown by this file.
 pub enum GitError {
+    /// Failed to update git repo at '{path}'.
+    GitUpdate { path: PathBuf },
     /// Failed to create directory '{path}'
     CreateDirError { path: PathBuf, source: io::Error },
     /// Must specify at least one remote.
@@ -451,5 +555,16 @@ pub enum GitError {
         remote: String,
         source: git2::Error,
         extra_info: String,
+    },
+    /// Failed to merge {merge_rev} ({merge_ref}) into {branch}.
+    Merge {
+        branch: String,
+        merge_ref: String,
+        merge_rev: String,
+    },
+    /// Fast-forward merge failed. Analysis: {analysis:?}
+    CannotFastForwardMerge {
+        analysis: MergeAnalysis,
+        preference: MergePreference,
     },
 }
