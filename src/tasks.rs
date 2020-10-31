@@ -6,7 +6,7 @@ use std::{
     thread, time,
 };
 
-use anyhow::{anyhow, bail, Result};
+use anyhow::{anyhow, Context, Result};
 use displaydoc::Display;
 use log::{debug, error, info, trace};
 use thiserror::Error;
@@ -147,6 +147,7 @@ fn run_tasks(
     let mut tasks_passed = Vec::new();
     let mut tasks_skipped = Vec::new();
     let mut tasks_failed = Vec::new();
+    let mut task_errors: Vec<anyhow::Error> = Vec::new();
 
     let mut tasks_to_run_completed = Vec::new();
 
@@ -172,9 +173,11 @@ fn run_tasks(
                     // Check if finished, if so gather status.
                     task.try_finish()?;
                 }
-                task::TaskStatus::Failed => {
+                task::TaskStatus::Failed(ref mut e) => {
                     tasks_to_run_completed.push(name.clone());
                     tasks_failed.push(name.clone());
+                    let extracted_error = std::mem::replace(e, anyhow!(""));
+                    task_errors.push(extracted_error);
                 }
                 task::TaskStatus::Passed => {
                     tasks_to_run_completed.push(name.clone());
@@ -219,7 +222,8 @@ fn run_tasks(
         // Error out.
         error!("Tasks failed: {:#?}", tasks_failed);
         error!("One or more tasks failed, exiting.");
-        bail!(anyhow!("One or more tasks failed."))
+        return Err(anyhow!("Tasks errored."))
+            .with_context(|| anyhow!("Task errors: {:?}", task_errors));
     }
     Ok(())
 }

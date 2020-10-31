@@ -1,6 +1,6 @@
 use std::convert::From;
 
-use anyhow::Result;
+use anyhow::{anyhow, Context, Result};
 use displaydoc::Display;
 use git2::Remote;
 use log::error;
@@ -61,8 +61,9 @@ pub(crate) fn run(configs: Vec<GitConfig>) -> Result<()> {
         for error in &errors {
             error!("{:?}", error);
         }
-        let first_error = errors.into_iter().next().ok_or(E::UnexpectedNone)?;
-        Err(first_error)
+        let mut errors_iter = errors.into_iter();
+        Err(errors_iter.next().ok_or(E::UnexpectedNone)?)
+            .with_context(|| anyhow!("{:?}", errors_iter.collect::<Vec<_>>()))
     }
 }
 

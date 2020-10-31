@@ -30,7 +30,7 @@ pub enum TaskStatus {
     /// Completed successfully.
     Passed,
     /// Completed unsuccessfully.
-    Failed,
+    Failed(anyhow::Error),
 }
 
 #[derive(Debug)]
@@ -128,7 +128,7 @@ impl Task {
         self.status = TaskStatus::Passed;
 
         if let Some(lib) = &self.config.run_lib {
-            match lib.as_str() {
+            let run_lib_result = match lib.as_str() {
                 "link" => {
                     let mut data = self
                         .config
@@ -139,7 +139,7 @@ impl Task {
                         .try_into::<LinkConfig>()?;
                     data.resolve_env(env_fn)?;
                     // TODO(gib): Continue on error, saving status as for run commands.
-                    tasks::link::run(data)?;
+                    tasks::link::run(data)
                 }
                 "git" => {
                     let mut data = self
@@ -151,7 +151,7 @@ impl Task {
                         .try_into::<Vec<GitConfig>>()?;
                     data.resolve_env(env_fn)?;
                     // TODO(gib): Continue on error, saving status as for run commands.
-                    tasks::git::run(data)?;
+                    tasks::git::run(data)
                 }
                 "generate_git" => {
                     let mut data = self
@@ -163,17 +163,17 @@ impl Task {
                         .try_into::<Vec<GenerateGitConfig>>()?;
                     data.resolve_env(env_fn)?;
                     // TODO(gib): Continue on error, saving status as for run commands.
-                    generate::git::run(&data)?;
+                    generate::git::run(&data)
                 }
                 // TODO(gib): Implement this.
-                "defaults" => {
-                    bail!("Defaults code isn't yet implemented.");
-                }
-                _ => {
-                    bail!("This code isn't yet implemented.");
-                }
+                "defaults" => Err(anyhow!("Defaults code isn't yet implemented.")),
+                _ => Err(anyhow!("This code isn't yet implemented.")),
+            };
+            if let Err(e) = run_lib_result {
+                self.status = TaskStatus::Failed(e);
+            } else {
+                self.status = TaskStatus::Passed;
             }
-            self.status = TaskStatus::Passed;
             return Ok(());
         }
 
@@ -242,7 +242,8 @@ impl Task {
             if status.success() {
                 self.status = TaskStatus::Passed;
             } else {
-                self.status = TaskStatus::Failed;
+                // TODO(gib): Error should include an easy way to see the task logs.
+                self.status = TaskStatus::Failed(anyhow!("Task {} failed.", self.name));
             }
         } else {
             // Still running.
