@@ -1,3 +1,14 @@
+<a name="0.5.1"></a>
+## [0.5.1][] (2020-10-31)
+
+
+#### Features
+
+* **git:**  check @{push} before @{upstream} to ensure up-to-date-ness ([5539d50e](https://github.com/gibfahn/up-rs/commit/5539d50e864c73d3d9e056f914c754bbccc5acbf))
+* **self_update:**  allow updating self with `up self` ([699b9087](https://github.com/gibfahn/up-rs/commit/699b9087583eaeadecdc3018f1438202aa0b29bd))
+
+
+
 <a name="0.5.0"></a>
 ## [0.5.0][] (2020-10-26)
 
@@ -130,3 +141,4 @@
 [0.4.0]: https://github.com/gibfahn/up-rs/releases/tag/0.4.0
 [0.4.1]: https://github.com/gibfahn/up-rs/releases/tag/0.4.1
 [0.5.0]: https://github.com/gibfahn/up-rs/releases/tag/0.5.0
+[0.5.1]: https://github.com/gibfahn/up-rs/releases/tag/0.5.1
