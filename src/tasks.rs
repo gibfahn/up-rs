@@ -222,8 +222,12 @@ fn run_tasks(
         // Error out.
         error!("Tasks failed: {:#?}", tasks_failed);
         error!("One or more tasks failed, exiting.");
-        return Err(anyhow!("Tasks errored."))
-            .with_context(|| anyhow!("Task errors: {:?}", task_errors));
+        return Err(anyhow!("")).with_context(|| {
+            let task_errors_string = task_errors
+                .into_iter()
+                .fold(String::new(), |acc, e| acc + &format!("\n- {:?}", e));
+            anyhow!("Task errors: {}", task_errors_string)
+        });
     }
     Ok(())
 }

@@ -487,6 +487,7 @@ fn checkout_head(repo: &Repository) -> Result<(), git2::Error> {
             .safe()
             .allow_conflicts(true)
             .recreate_missing(true)
+            .conflict_style_diff3(true)
             .conflict_style_merge(true),
     ))
 }
