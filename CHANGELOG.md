@@ -1,3 +1,13 @@
+<a name="0.5.2"></a>
+## [0.5.2][] (2020-11-06)
+
+
+#### Bug Fixes
+
+* **update:**  don't fail immediately on git or link errors ([15f59918](https://github.com/gibfahn/up-rs/commit/15f599184086cd51d3638b0a6a5696341e3d3b6b))
+
+
+
 <a name="0.5.1"></a>
 ## [0.5.1][] (2020-10-31)
 
@@ -142,3 +152,4 @@
 [0.4.1]: https://github.com/gibfahn/up-rs/releases/tag/0.4.1
 [0.5.0]: https://github.com/gibfahn/up-rs/releases/tag/0.5.0
 [0.5.1]: https://github.com/gibfahn/up-rs/releases/tag/0.5.1
+[0.5.2]: https://github.com/gibfahn/up-rs/releases/tag/0.5.2
