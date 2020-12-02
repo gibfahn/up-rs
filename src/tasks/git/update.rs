@@ -174,13 +174,10 @@ fn set_up_remote(repo: &Repository, remote_config: &GitRemote) -> Result<()> {
                         path = parsed.path().trim_matches('/').to_owned();
                     }
 
-                    #[cfg(target_os = "macos")]
-                    let base = format!("\n\n  - Check that this command returns 'osxkeychain':\n      \
+                    let base = if cfg!(target_os = "macos") { format!("\n\n  - Check that this command returns 'osxkeychain':\n      \
                     git config credential.helper\n    \
                     If so, set the token with this command (passing in your username and password):\n      \
-                    echo -e \"protocol={protocol}\\nhost={host}\\nusername=${{username?}}\\npassword=${{password?}}\" | git credential-osxkeychain store", host=host, protocol=protocol);
-                    #[cfg(not(target_os = "macos"))]
-                    let base = "";
+                    echo -e \"protocol={protocol}\\nhost={host}\\nusername=${{username?}}\\npassword=${{password?}}\" | git credential-osxkeychain store", host=host, protocol=protocol) } else { String::new() };
 
                     format!("\n  - Check that this command returns a valid username and password (access token):\n      \
                         git credential fill <<< $'protocol={protocol}\\nhost={host}\\npath={path}'\n    \
@@ -501,7 +498,14 @@ fn remote_callbacks(count: &mut usize) -> Result<RemoteCallbacks> {
         *count += 1;
         if *count > AUTH_RETRY_COUNT {
             let extra = if allowed_types.contains(CredentialType::SSH_KEY) {
-                format!("\nIf 'git clone {}' works, you probably need to add your ssh keys to the ssh-agent. Try running 'ssh-add -A'. ", url)
+                // On macOS ssh-add takes a -K argument to automatically add the ssh key's password
+                // to the system keychain. This argument isn't present on other platforms.
+                let ssh_add_keychain = if cfg!(target_os = "macos") { "-K " } else { "" };
+                format!(
+                    "\nIf 'git clone {url}' works, you probably need to add your ssh keys to the ssh-agent. \
+                    Try running 'ssh-add {ssh_add_keychain}-A' or 'ssh-add {ssh_add_keychain}~/.ssh/*id_{{rsa,ed25519}}'.",
+                    url=url, ssh_add_keychain=ssh_add_keychain
+                 )
             } else {
                 String::new()
             };
