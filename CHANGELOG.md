@@ -1,3 +1,16 @@
+<a name="0.5.3"></a>
+## [0.5.3][] (2020-12-05)
+
+
+#### Bug Fixes
+
+* **git:**
+  *  make branch update fully update working tree ([303630b1](https://github.com/gibfahn/up-rs/commit/303630b1fbb5b35924aa1167e19b8aabac4af509))
+  *  note the -K flag in macOS ssh-add to add to keychain ([9247980c](https://github.com/gibfahn/up-rs/commit/9247980c7bb23c7622f8d282b7cb6c6fc0c63ab3))
+* **self_update:**  typo in version check for new versions ([12bc6d0e](https://github.com/gibfahn/up-rs/commit/12bc6d0eb7ef3aece90e30240def9a6ec04d545b))
+
+
+
 <a name="0.5.2"></a>
 ## [0.5.2][] (2020-11-06)
 
@@ -153,3 +166,4 @@
 [0.5.0]: https://github.com/gibfahn/up-rs/releases/tag/0.5.0
 [0.5.1]: https://github.com/gibfahn/up-rs/releases/tag/0.5.1
 [0.5.2]: https://github.com/gibfahn/up-rs/releases/tag/0.5.2
+[0.5.3]: https://github.com/gibfahn/up-rs/releases/tag/0.5.3
