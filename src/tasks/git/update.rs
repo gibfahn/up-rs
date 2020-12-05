@@ -71,6 +71,8 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
             .collect::<Vec<_>>()
     );
 
+    ensure!(repo_is_clean(&repo)?, E::UncommittedChanges);
+
     let branch_name: String = if let Some(branch_name) = &git_config.branch {
         branch_name.to_owned()
     } else {
@@ -245,8 +247,15 @@ fn checkout_branch(
         "Checking out HEAD ({short_branch})",
         short_branch = short_branch
     );
-    checkout_head(repo)?;
+    checkout_head_force(repo)?;
     Ok(())
+}
+
+/// Returns `Ok(true)` if the repo has no changes (i.e. `git status` would print
+/// `nothing to commit, working tree clean`. Returns `Ok(false)` if the repo has
+/// uncommitted changes. Returns an error if getting the repo status errors.
+fn repo_is_clean(repo: &Repository) -> Result<bool> {
+    Ok(repo.statuses(None)?.is_empty())
 }
 
 fn calculate_head(repo: &Repository) -> Result<String> {
@@ -367,7 +376,7 @@ fn fast_forward(repo: &Repository, lb: &mut Reference, rc: &git2::AnnotatedCommi
     debug!("{}", msg);
     lb.set_target(rc.id(), &msg)?;
     repo.set_head(&name)?;
-    checkout_head(repo)?;
+    checkout_head_force(repo)?;
     Ok(())
 }
 
@@ -398,7 +407,7 @@ fn do_merge<'a>(
                 &format!("Setting {} to {}", branch_name, fetch_commit.id()),
             )?;
             repo.set_head(branch_name)?;
-            checkout_head(repo)?;
+            checkout_head_force(repo)?;
         }
     } else if analysis.0.is_up_to_date() {
         debug!("Skipping fast-forward merge as already up-to-date.");
@@ -478,10 +487,15 @@ fn get_config_value(config: &git2::Config, key: &str) -> Result<Option<String>> 
 /// the commit pointed at by HEAD.
 /// Wraps git2's function with a different set of checkout options to the
 /// default.
-fn checkout_head(repo: &Repository) -> Result<(), git2::Error> {
+/// Note that this function force-overwrites the current working tree and index,
+/// so before calling this function ensure that the repository doesn't have
+/// uncommitted changes (e.g. by erroring if `repo_is_clean()` returns false),
+/// or work could be lost.
+fn checkout_head_force(repo: &Repository) -> Result<(), git2::Error> {
+    debug!("Force checking out HEAD.");
     repo.checkout_head(Some(
         CheckoutBuilder::new()
-            .safe()
+            .force()
             .allow_conflicts(true)
             .recreate_missing(true)
             .conflict_style_diff3(true)
@@ -555,6 +569,8 @@ pub enum GitError {
     NoHeadSet,
     /// Remote name unset.
     RemoteNameMissing,
+    /// Repo has uncommitted changes, refusing to update.
+    UncommittedChanges,
     /// Fetch failed for remote '{remote}'.{extra_info}
     FetchFailed {
         remote: String,
