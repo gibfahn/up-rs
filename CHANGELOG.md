@@ -1,3 +1,13 @@
+<a name="0.5.4"></a>
+## [0.5.4][] (2020-12-05)
+
+
+#### Bug Fixes
+
+* **git:**  ignore gitignored files, include git status in error ([d1018d3f](https://github.com/gibfahn/up-rs/commit/d1018d3f9e273677519e556ba4cc0ac5be8e8a37))
+
+
+
 <a name="0.5.3"></a>
 ## [0.5.3][] (2020-12-05)
 
@@ -167,3 +177,4 @@
 [0.5.1]: https://github.com/gibfahn/up-rs/releases/tag/0.5.1
 [0.5.2]: https://github.com/gibfahn/up-rs/releases/tag/0.5.2
 [0.5.3]: https://github.com/gibfahn/up-rs/releases/tag/0.5.3
+[0.5.4]: https://github.com/gibfahn/up-rs/releases/tag/0.5.4
