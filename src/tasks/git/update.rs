@@ -1,13 +1,13 @@
 // TODO(gib): Use https://lib.rs/crates/indicatif for progress bars and remove this.
 #![allow(clippy::print_stdout, clippy::unwrap_used)]
-use std::{borrow::ToOwned, fs, io, path::PathBuf};
+use std::{borrow::ToOwned, fs, io, path::PathBuf, str};
 
 use anyhow::{anyhow, bail, ensure, Context, Result};
 use displaydoc::Display;
 use git2::{
     build::CheckoutBuilder, Branch, BranchType, Cred, CredentialType, Direction, ErrorClass,
     ErrorCode, FetchOptions, MergeAnalysis, MergePreference, Reference, Remote, RemoteCallbacks,
-    Repository,
+    Repository, StatusOptions, SubmoduleIgnore,
 };
 use itertools::Itertools;
 use log::{debug, info, trace, warn};
@@ -71,7 +71,7 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
             .collect::<Vec<_>>()
     );
 
-    ensure!(repo_is_clean(&repo)?, E::UncommittedChanges);
+    ensure_clean(&repo)?;
 
     let branch_name: String = if let Some(branch_name) = &git_config.branch {
         branch_name.to_owned()
@@ -254,8 +254,17 @@ fn checkout_branch(
 /// Returns `Ok(true)` if the repo has no changes (i.e. `git status` would print
 /// `nothing to commit, working tree clean`. Returns `Ok(false)` if the repo has
 /// uncommitted changes. Returns an error if getting the repo status errors.
-fn repo_is_clean(repo: &Repository) -> Result<bool> {
-    Ok(repo.statuses(None)?.is_empty())
+fn ensure_clean(repo: &Repository) -> Result<()> {
+    let mut status_options = StatusOptions::new();
+    // Ignored files don't count as dirty, so don't include them.
+    status_options.include_ignored(false);
+    let statuses = repo.statuses(Some(&mut status_options))?;
+    if !statuses.is_empty() {
+        bail!(E::UncommittedChanges {
+            status: status_short(repo, &statuses)
+        })
+    }
+    Ok(())
 }
 
 fn calculate_head(repo: &Repository) -> Result<String> {
@@ -489,7 +498,7 @@ fn get_config_value(config: &git2::Config, key: &str) -> Result<Option<String>> 
 /// default.
 /// Note that this function force-overwrites the current working tree and index,
 /// so before calling this function ensure that the repository doesn't have
-/// uncommitted changes (e.g. by erroring if `repo_is_clean()` returns false),
+/// uncommitted changes (e.g. by erroring if `ensure_clean()` returns false),
 /// or work could be lost.
 fn checkout_head_force(repo: &Repository) -> Result<(), git2::Error> {
     debug!("Force checking out HEAD.");
@@ -554,6 +563,133 @@ fn remote_callbacks(count: &mut usize) -> RemoteCallbacks {
     remote_callbacks
 }
 
+/// Taken from the status example in git2-rs.
+/// This version of the output prefixes each path with two status columns and
+/// shows submodule status information.
+#[allow(clippy::too_many_lines, clippy::useless_let_if_seq)]
+fn status_short(repo: &Repository, statuses: &git2::Statuses) -> String {
+    let mut output = String::new();
+    for entry in statuses
+        .iter()
+        .filter(|e| e.status() != git2::Status::CURRENT)
+    {
+        let mut index_status = match entry.status() {
+            s if s.contains(git2::Status::INDEX_NEW) => 'A',
+            s if s.contains(git2::Status::INDEX_MODIFIED) => 'M',
+            s if s.contains(git2::Status::INDEX_DELETED) => 'D',
+            s if s.contains(git2::Status::INDEX_RENAMED) => 'R',
+            s if s.contains(git2::Status::INDEX_TYPECHANGE) => 'T',
+            _ => ' ',
+        };
+        let mut worktree_status = match entry.status() {
+            s if s.contains(git2::Status::WT_NEW) => {
+                if index_status == ' ' {
+                    index_status = '?';
+                }
+                '?'
+            }
+            s if s.contains(git2::Status::WT_MODIFIED) => 'M',
+            s if s.contains(git2::Status::WT_DELETED) => 'D',
+            s if s.contains(git2::Status::WT_RENAMED) => 'R',
+            s if s.contains(git2::Status::WT_TYPECHANGE) => 'T',
+            _ => ' ',
+        };
+
+        if entry.status().contains(git2::Status::IGNORED) {
+            index_status = '!';
+            worktree_status = '!';
+        }
+        if index_status == '?' && worktree_status == '?' {
+            continue;
+        }
+        let mut extra = "";
+
+        // A commit in a tree is how submodules are stored, so let's go take a
+        // look at its status.
+        //
+        // TODO: check for GIT_FILEMODE_COMMIT
+        let status = entry.index_to_workdir().and_then(|diff| {
+            let ignore = SubmoduleIgnore::Unspecified;
+            diff.new_file()
+                .path_bytes()
+                .and_then(|s| str::from_utf8(s).ok())
+                .and_then(|name| repo.submodule_status(name, ignore).ok())
+        });
+        if let Some(status) = status {
+            if status.contains(git2::SubmoduleStatus::WD_MODIFIED) {
+                extra = " (new commits)";
+            } else if status.contains(git2::SubmoduleStatus::WD_INDEX_MODIFIED)
+                || status.contains(git2::SubmoduleStatus::WD_WD_MODIFIED)
+            {
+                extra = " (modified content)";
+            } else if status.contains(git2::SubmoduleStatus::WD_UNTRACKED) {
+                extra = " (untracked content)";
+            }
+        }
+
+        let (mut a, mut b, mut c) = (None, None, None);
+        if let Some(diff) = entry.head_to_index() {
+            a = diff.old_file().path();
+            b = diff.new_file().path();
+        }
+        if let Some(diff) = entry.index_to_workdir() {
+            a = a.or_else(|| diff.old_file().path());
+            b = b.or_else(|| diff.old_file().path());
+            c = diff.new_file().path();
+        }
+
+        output += &match (index_status, worktree_status) {
+            ('R', 'R') => format!(
+                "RR {} {} {}{}\n",
+                a.unwrap().display(),
+                b.unwrap().display(),
+                c.unwrap().display(),
+                extra
+            ),
+            ('R', worktree_status) => format!(
+                "R{} {} {}{}\n",
+                worktree_status,
+                a.unwrap().display(),
+                b.unwrap().display(),
+                extra
+            ),
+            (index_status, 'R') => format!(
+                "{}R {} {}{}\n",
+                index_status,
+                a.unwrap().display(),
+                c.unwrap().display(),
+                extra
+            ),
+            (index_status, worktree_status) => {
+                format!(
+                    "{}{} {}{}\n",
+                    index_status,
+                    worktree_status,
+                    a.unwrap().display(),
+                    extra
+                )
+            }
+        }
+    }
+
+    for entry in statuses
+        .iter()
+        .filter(|e| e.status() == git2::Status::WT_NEW)
+    {
+        output += &format!(
+            "?? {}\n",
+            entry
+                .index_to_workdir()
+                .unwrap()
+                .old_file()
+                .path()
+                .unwrap()
+                .display()
+        );
+    }
+    output
+}
+
 #[derive(Error, Debug, Display)]
 /// Errors thrown by this file.
 pub enum GitError {
@@ -569,8 +705,10 @@ pub enum GitError {
     NoHeadSet,
     /// Remote name unset.
     RemoteNameMissing,
-    /// Repo has uncommitted changes, refusing to update.
-    UncommittedChanges,
+    /** Repo has uncommitted changes, refusing to update. Status:
+     * {status}
+     */
+    UncommittedChanges { status: String },
     /// Fetch failed for remote '{remote}'.{extra_info}
     FetchFailed {
         remote: String,
