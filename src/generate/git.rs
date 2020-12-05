@@ -51,7 +51,7 @@ pub fn run_single(generate_git_config: &GenerateGitConfig) -> Result<()> {
     for path in find_repos(
         &generate_git_config.search_paths,
         generate_git_config.excludes.as_ref(),
-    )? {
+    ) {
         git_configs.push(parse_git_config(&path)?);
     }
     // TODO(gib): keep old branch names.
@@ -101,7 +101,7 @@ impl ResolveEnv for Vec<GenerateGitConfig> {
     }
 }
 
-fn find_repos(search_paths: &[PathBuf], excludes: Option<&Vec<String>>) -> Result<Vec<PathBuf>> {
+fn find_repos(search_paths: &[PathBuf], excludes: Option<&Vec<String>>) -> Vec<PathBuf> {
     let mut repo_paths = Vec::new();
     for path in search_paths {
         trace!("Searching in '{}'", &path.display());
@@ -130,7 +130,7 @@ fn find_repos(search_paths: &[PathBuf], excludes: Option<&Vec<String>>) -> Resul
         }
     }
     debug!("Found repo paths: {:?}", repo_paths);
-    Ok(repo_paths)
+    repo_paths
 }
 
 fn parse_git_config(path: &Path) -> Result<GitConfig> {

@@ -82,7 +82,7 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
     // TODO(gib): Find better way to make branch_name long and short_branch short.
     let branch_name = format!("refs/heads/{}", short_branch);
 
-    if needs_checkout(&repo, &branch_name)? {
+    if needs_checkout(&repo, &branch_name) {
         debug!("Checking out branch: {}", short_branch);
         checkout_branch(
             &repo,
@@ -157,7 +157,7 @@ fn set_up_remote(repo: &Repository, remote_config: &GitRemote) -> Result<()> {
         remote
             .fetch(
                 &fetch_refspecs,
-                Some(FetchOptions::new().remote_callbacks(remote_callbacks(&mut count)?)),
+                Some(FetchOptions::new().remote_callbacks(remote_callbacks(&mut count))),
                 Some("up-rs automated fetch"),
             )
             .map_err(|e| {
@@ -206,7 +206,7 @@ fn set_up_remote(repo: &Repository, remote_config: &GitRemote) -> Result<()> {
     );
     {
         let mut count = 0;
-        remote.connect_auth(Direction::Fetch, Some(remote_callbacks(&mut count)?), None)?;
+        remote.connect_auth(Direction::Fetch, Some(remote_callbacks(&mut count)), None)?;
     }
     let default_branch = remote
         .default_branch()?
@@ -270,7 +270,7 @@ fn calculate_head(repo: &Repository) -> Result<String> {
             // TODO(
             {
                 let mut count = 0;
-                remote.connect_auth(Direction::Fetch, Some(remote_callbacks(&mut count)?), None)?;
+                remote.connect_auth(Direction::Fetch, Some(remote_callbacks(&mut count)), None)?;
             }
             let default_branch = remote
                 .default_branch()?
@@ -346,7 +346,7 @@ fn shorten_branch_ref(branch: &str) -> &str {
     short_branch
 }
 
-fn needs_checkout(repo: &Repository, branch_name: &str) -> Result<bool> {
+fn needs_checkout(repo: &Repository, branch_name: &str) -> bool {
     match repo.head().map_err(|e| e.into()).and_then(|h| {
         h.shorthand()
             .map(ToOwned::to_owned)
@@ -354,15 +354,15 @@ fn needs_checkout(repo: &Repository, branch_name: &str) -> Result<bool> {
     }) {
         Ok(current_branch) if current_branch == branch_name => {
             debug!("Already on branch: '{}'", branch_name);
-            Ok(false)
+            false
         }
         Ok(current_branch) => {
             debug!("Current branch: {}", current_branch);
-            Ok(true)
+            true
         }
         Err(e) => {
             debug!("Current branch errored: {}", e);
-            Ok(true)
+            true
         }
     }
 }
@@ -506,7 +506,7 @@ fn checkout_head_force(repo: &Repository) -> Result<(), git2::Error> {
 /// Prepare the remote authentication callbacks for fetching.
 ///
 /// Refs: <https://github.com/rust-lang/cargo/blob/2f115a76e5a1e5eb11cd29e95f972ed107267847/src/cargo/sources/git/utils.rs#L588>
-fn remote_callbacks(count: &mut usize) -> Result<RemoteCallbacks> {
+fn remote_callbacks(count: &mut usize) -> RemoteCallbacks {
     let mut remote_callbacks = RemoteCallbacks::new();
     remote_callbacks.credentials(move |url, username_from_url, allowed_types| {
         *count += 1;
@@ -551,7 +551,7 @@ fn remote_callbacks(count: &mut usize) -> Result<RemoteCallbacks> {
             Cred::default()
         }
     });
-    Ok(remote_callbacks)
+    remote_callbacks
 }
 
 #[derive(Error, Debug, Display)]
