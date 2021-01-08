@@ -22,11 +22,10 @@ fi
 # Default target is set in Dockerfile ~/.cargo/config as x86_64-unknown-linux-musl
 set -x
 docker run --rm -it                                                                       \
-    -v "${XDG_CACHE_HOME:-$HOME/.cache}"/docker/cargo/registry:/home/rust/.cargo/registry \
-    -v "${XDG_CACHE_HOME:-$HOME/.cache}"/docker/cargo/git:/home/rust/.cargo/git           \
+    -v "${XDG_CACHE_HOME:-$HOME/.cache}"/docker/cargo/registry:/opt/rust/cargo/registry   \
+    -v "${XDG_CACHE_HOME:-$HOME/.cache}"/docker/cargo/git:/opt/rust/cargo/git             \
     -v "$project_root":/workspace                                                         \
-    -e CARGO_HOME=/home/rust/.cargo                                                       \
-    -e RUSTUP_HOME=/home/rust/.rustup                                                     \
+    -e CARGO_HOME=/opt/rust/cargo                                                         \
     -u root -w /workspace                                                                 \
     ekidd/rust-musl-builder                                                               \
     "${build_args[@]}"
