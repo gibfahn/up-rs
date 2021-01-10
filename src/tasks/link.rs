@@ -207,18 +207,17 @@ fn link_path(
                             to_path, existing_link
                         );
                         return Ok(());
-                    } else {
-                        warn!(
-                            "Link at {:?} points to {:?}, changing to {:?}.",
-                            to_path,
-                            existing_link,
-                            from_path.path()
-                        );
-                        fs::remove_file(&to_path).map_err(|e| LinkError::DeleteError {
-                            path: to_path.to_path_buf(),
-                            source: e,
-                        })?;
                     }
+                    warn!(
+                        "Link at {:?} points to {:?}, changing to {:?}.",
+                        to_path,
+                        existing_link,
+                        from_path.path()
+                    );
+                    fs::remove_file(&to_path).map_err(|e| LinkError::DeleteError {
+                        path: to_path.to_path_buf(),
+                        source: e,
+                    })?;
                 }
                 Err(e) => {
                     bail!("read_link returned error {:?} for {:?}", e, to_path);

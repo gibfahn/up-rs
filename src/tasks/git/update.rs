@@ -1,22 +1,19 @@
 // TODO(gib): Use https://lib.rs/crates/indicatif for progress bars and remove this.
 #![allow(clippy::print_stdout, clippy::unwrap_used)]
-use std::{borrow::ToOwned, fs, io, path::PathBuf, str};
+use std::{borrow::ToOwned, fs, path::PathBuf, str};
 
 use anyhow::{anyhow, bail, ensure, Context, Result};
-use displaydoc::Display;
 use git2::{
     build::CheckoutBuilder, Branch, BranchType, Cred, CredentialType, Direction, ErrorClass,
-    ErrorCode, FetchOptions, MergeAnalysis, MergePreference, Reference, Remote, RemoteCallbacks,
-    Repository, StatusOptions, SubmoduleIgnore,
+    ErrorCode, FetchOptions, Reference, Remote, RemoteCallbacks, Repository, StatusOptions,
+    SubmoduleIgnore,
 };
 use itertools::Itertools;
 use log::{debug, info, trace, warn};
-use thiserror::Error;
 use url::Url;
 
-use self::GitError as E;
 use super::GitRemote;
-use crate::tasks::git::GitConfig;
+use crate::{git::errors::GitError as E, tasks::git::GitConfig};
 
 /// Number of times to try authenticating when fetching.
 const AUTH_RETRY_COUNT: usize = 5;
@@ -688,42 +685,4 @@ fn status_short(repo: &Repository, statuses: &git2::Statuses) -> String {
         );
     }
     output
-}
-
-#[derive(Error, Debug, Display)]
-/// Errors thrown by this file.
-pub enum GitError {
-    /// Failed to update git repo at '{path}'.
-    GitUpdate { path: PathBuf },
-    /// Failed to create directory '{path}'
-    CreateDirError { path: PathBuf, source: io::Error },
-    /// Must specify at least one remote.
-    NoRemotes,
-    /// Current branch is not valid UTF-8
-    InvalidBranchError,
-    /// No default head branch set, and couldn't calculate one.
-    NoHeadSet,
-    /// Remote name unset.
-    RemoteNameMissing,
-    /** Repo has uncommitted changes, refusing to update. Status:
-     * {status}
-     */
-    UncommittedChanges { status: String },
-    /// Fetch failed for remote '{remote}'.{extra_info}
-    FetchFailed {
-        remote: String,
-        source: git2::Error,
-        extra_info: String,
-    },
-    /// Failed to merge {merge_rev} ({merge_ref}) into {branch}.
-    Merge {
-        branch: String,
-        merge_ref: String,
-        merge_rev: String,
-    },
-    /// Fast-forward merge failed. Analysis: {analysis:?}
-    CannotFastForwardMerge {
-        analysis: MergeAnalysis,
-        preference: MergePreference,
-    },
 }

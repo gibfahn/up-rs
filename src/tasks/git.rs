@@ -12,6 +12,7 @@ use thiserror::Error;
 use self::GitTaskError as E;
 use crate::tasks::ResolveEnv;
 
+pub mod errors;
 pub mod update;
 
 pub const DEFAULT_REMOTE_NAME: &str = "origin";
