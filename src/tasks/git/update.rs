@@ -2,18 +2,24 @@
 #![allow(clippy::print_stdout, clippy::unwrap_used)]
 use std::{borrow::ToOwned, fs, path::PathBuf, str};
 
-use anyhow::{anyhow, bail, ensure, Context, Result};
+use anyhow::{bail, ensure, Context, Result};
 use git2::{
-    build::CheckoutBuilder, Branch, BranchType, Cred, CredentialType, Direction, ErrorClass,
-    ErrorCode, FetchOptions, Reference, Remote, RemoteCallbacks, Repository, StatusOptions,
-    SubmoduleIgnore,
+    Branch, BranchType, Cred, CredentialType, Direction, ErrorClass, ErrorCode, FetchOptions,
+    Remote, RemoteCallbacks, Repository, StatusOptions, SubmoduleIgnore,
 };
 use itertools::Itertools;
 use log::{debug, info, trace, warn};
 use url::Url;
 
-use super::GitRemote;
-use crate::{git::errors::GitError as E, tasks::git::GitConfig};
+use crate::{
+    git::{
+        checkout::{checkout_branch, needs_checkout},
+        errors::GitError as E,
+        merge::do_merge,
+        GitRemote,
+    },
+    tasks::git::GitConfig,
+};
 
 /// Number of times to try authenticating when fetching.
 const AUTH_RETRY_COUNT: usize = 5;
@@ -215,39 +221,6 @@ fn set_up_remote(repo: &Repository, remote_config: &GitRemote) -> Result<()> {
     Ok(())
 }
 
-fn checkout_branch(
-    repo: &Repository,
-    branch_name: &str,
-    short_branch: &str,
-    upstream_remote: &str,
-) -> Result<()> {
-    match repo.find_branch(short_branch, BranchType::Local) {
-        Ok(_) => (),
-        Err(e) if e.code() == ErrorCode::NotFound => {
-            debug!(
-                "Branch {short_branch} doesn't exist, creating it...",
-                short_branch = short_branch,
-            );
-            let branch_target = format!("{}/{}", upstream_remote, short_branch);
-            let branch_commit = repo
-                .find_branch(&branch_target, BranchType::Remote)?
-                .get()
-                .peel_to_commit()?;
-            let mut branch = repo.branch(short_branch, &branch_commit, false)?;
-            branch.set_upstream(Some(&branch_target))?;
-        }
-        Err(e) => return Err(e.into()),
-    };
-    debug!("Setting head to {branch_name}", branch_name = branch_name);
-    repo.set_head(branch_name)?;
-    debug!(
-        "Checking out HEAD ({short_branch})",
-        short_branch = short_branch
-    );
-    checkout_head_force(repo)?;
-    Ok(())
-}
-
 /// Returns `Ok(true)` if the repo has no changes (i.e. `git status` would print
 /// `nothing to commit, working tree clean`. Returns `Ok(false)` if the repo has
 /// uncommitted changes. Returns an error if getting the repo status errors.
@@ -273,7 +246,7 @@ fn calculate_head(repo: &Repository) -> Result<String> {
             .ok_or(E::InvalidBranchError)?,
         Err(head_err) if head_err.code() == ErrorCode::UnbornBranch => {
             let mut remote = repo.find_remote(repo.remotes()?.get(0).ok_or(E::NoRemotes)?)?;
-            // TODO(
+            // TODO(gib): avoid fetching again here.
             {
                 let mut count = 0;
                 remote.connect_auth(Direction::Fetch, Some(remote_callbacks(&mut count)), None)?;
@@ -352,80 +325,6 @@ fn shorten_branch_ref(branch: &str) -> &str {
     short_branch
 }
 
-fn needs_checkout(repo: &Repository, branch_name: &str) -> bool {
-    match repo.head().map_err(|e| e.into()).and_then(|h| {
-        h.shorthand()
-            .map(ToOwned::to_owned)
-            .ok_or_else(|| anyhow!("Current branch is not valid UTF-8"))
-    }) {
-        Ok(current_branch) if current_branch == branch_name => {
-            debug!("Already on branch: '{}'", branch_name);
-            false
-        }
-        Ok(current_branch) => {
-            debug!("Current branch: {}", current_branch);
-            true
-        }
-        Err(e) => {
-            debug!("Current branch errored: {}", e);
-            true
-        }
-    }
-}
-
-fn fast_forward(repo: &Repository, lb: &mut Reference, rc: &git2::AnnotatedCommit) -> Result<()> {
-    let name = match lb.name() {
-        Some(s) => s.to_string(),
-        None => String::from_utf8_lossy(lb.name_bytes()).to_string(),
-    };
-    let msg = format!("Fast-Forward: Setting {} to id: {}", name, rc.id());
-    debug!("{}", msg);
-    lb.set_target(rc.id(), &msg)?;
-    repo.set_head(&name)?;
-    checkout_head_force(repo)?;
-    Ok(())
-}
-
-fn do_merge<'a>(
-    repo: &'a Repository,
-    branch_name: &str,
-    fetch_commit: &git2::AnnotatedCommit<'a>,
-) -> Result<()> {
-    // Do merge analysis
-    let analysis = repo.merge_analysis(&[fetch_commit])?;
-
-    debug!("Merge analysis: {:?}", &analysis);
-
-    // Do the merge
-    if analysis.0.is_fast_forward() {
-        debug!("Doing a fast forward");
-        // do a fast forward
-        if let Ok(mut r) = repo.find_reference(branch_name) {
-            fast_forward(repo, &mut r, fetch_commit)?;
-        } else {
-            // The branch doesn't exist so just set the reference to the
-            // commit directly. Usually this is because you are pulling
-            // into an empty repository.
-            repo.reference(
-                branch_name,
-                fetch_commit.id(),
-                true,
-                &format!("Setting {} to {}", branch_name, fetch_commit.id()),
-            )?;
-            repo.set_head(branch_name)?;
-            checkout_head_force(repo)?;
-        }
-    } else if analysis.0.is_up_to_date() {
-        debug!("Skipping fast-forward merge as already up-to-date.");
-    } else {
-        bail!(E::CannotFastForwardMerge {
-            analysis: analysis.0,
-            preference: analysis.1
-        });
-    }
-    Ok(())
-}
-
 /// Get the @{push} branch if it exists.
 ///
 /// Work around lack of this function in libgit2, upstream issue
@@ -487,26 +386,6 @@ fn get_config_value(config: &git2::Config, key: &str) -> Result<Option<String>> 
             Ok(None)
         }
     }
-}
-
-/// Updates files in the index and the working tree to match the content of
-/// the commit pointed at by HEAD.
-/// Wraps git2's function with a different set of checkout options to the
-/// default.
-/// Note that this function force-overwrites the current working tree and index,
-/// so before calling this function ensure that the repository doesn't have
-/// uncommitted changes (e.g. by erroring if `ensure_clean()` returns false),
-/// or work could be lost.
-fn checkout_head_force(repo: &Repository) -> Result<(), git2::Error> {
-    debug!("Force checking out HEAD.");
-    repo.checkout_head(Some(
-        CheckoutBuilder::new()
-            .force()
-            .allow_conflicts(true)
-            .recreate_missing(true)
-            .conflict_style_diff3(true)
-            .conflict_style_merge(true),
-    ))
 }
 
 /// Prepare the remote authentication callbacks for fetching.
