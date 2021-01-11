@@ -12,9 +12,12 @@ use thiserror::Error;
 use self::GitTaskError as E;
 use crate::tasks::ResolveEnv;
 
+pub mod branch;
 pub mod checkout;
 pub mod errors;
+pub mod fetch;
 pub mod merge;
+pub mod prune;
 pub mod update;
 
 pub const DEFAULT_REMOTE_NAME: &str = "origin";
@@ -34,6 +37,11 @@ pub struct GitArgs {
     /// cloning, and current branch for updating.
     #[structopt(long)]
     pub branch: Option<String>,
+    /// Prune merged PR branches. Deletes local branches where the push branch
+    /// has been merged into the upstream branch, and the push branch has now
+    /// been deleted.
+    #[structopt(long)]
+    pub prune: bool,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -46,6 +54,8 @@ pub struct GitConfig {
     /// when updating, or the default branch of the first remote for
     /// cloning.
     pub branch: Option<String>,
+    /// Prune local branches whose changes have already been merged upstream.
+    pub prune: bool,
 }
 
 // TODO(gib): Pass by reference instead.
@@ -80,6 +90,7 @@ impl From<GitArgs> for GitConfig {
                 fetch_url: item.git_url,
             }],
             branch: item.branch,
+            prune: item.prune,
         }
     }
 }

@@ -52,7 +52,7 @@ pub fn run_single(generate_git_config: &GenerateGitConfig) -> Result<()> {
         &generate_git_config.search_paths,
         generate_git_config.excludes.as_ref(),
     ) {
-        git_configs.push(parse_git_config(&path)?);
+        git_configs.push(parse_git_config(&path, generate_git_config.prune)?);
     }
     // TODO(gib): keep old branch names.
     git_configs.sort_unstable_by(|c1, c2| c1.path.cmp(&c2.path));
@@ -133,7 +133,7 @@ fn find_repos(search_paths: &[PathBuf], excludes: Option<&Vec<String>>) -> Vec<P
     repo_paths
 }
 
-fn parse_git_config(path: &Path) -> Result<GitConfig> {
+fn parse_git_config(path: &Path, prune: bool) -> Result<GitConfig> {
     let repo = Repository::open(&path)?;
     let mut remotes = Vec::new();
     for opt_name in &repo.remotes()? {
@@ -148,6 +148,7 @@ fn parse_git_config(path: &Path) -> Result<GitConfig> {
         path: path.to_string_lossy().to_string(),
         branch: None,
         remotes,
+        prune,
     };
     trace!("Parsed GitConfig: {:?}", &config);
     Ok(config)

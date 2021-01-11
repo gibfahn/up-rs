@@ -160,6 +160,10 @@ pub struct GenerateGitConfig {
     /// a tmp dir.
     #[structopt(long)]
     pub(crate) excludes: Option<Vec<String>>,
+    /// Prune all repos for branches that have already been merged and deleted
+    /// upstream.
+    #[structopt(long)]
+    pub(crate) prune: bool,
     // TODO(gib): add a check option that errors if not up to date.
 }
 

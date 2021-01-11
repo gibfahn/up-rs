@@ -6,7 +6,7 @@ use log::debug;
 
 use crate::git::{checkout::checkout_head_force, errors::GitError as E};
 
-pub(crate) fn do_merge<'a>(
+pub(super) fn do_merge<'a>(
     repo: &'a Repository,
     branch_name: &str,
     fetch_commit: &git2::AnnotatedCommit<'a>,

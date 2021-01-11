@@ -4,7 +4,7 @@ use std::{io, path::PathBuf};
 use thiserror::Error;
 
 #[derive(Error, Debug, Display)]
-/// Errors thrown by this file.
+/// Errors thrown by the Git task.
 pub enum GitError {
     /// Failed to update git repo at '{path}'.
     GitUpdate { path: PathBuf },
