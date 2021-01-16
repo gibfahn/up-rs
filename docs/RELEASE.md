@@ -59,10 +59,10 @@ The Release process is still somewhat manual, and only works on macOS for now.
   # This allows them to be downloaded as `up-$(uname)`.
   cp target/release/up up-Darwin &&
   cp target/x86_64-unknown-linux-musl/release/up up-Linux &&
-  hub release create --commitish=master --browse \
-    --attach=up-Darwin --attach=up-Linux \
-    -F- <<<"${new_version?}"$'\n\n'"$(clog --from="${old_version?}" --setversion="${new_version?}")" \
-    "${new_version?}" &&
+  gh release create "${new_version?}" --target=master \
+    --notes="${new_version?}"$'\n\n'"$(clog --from="${old_version?}" --setversion="${new_version?}")" \
+    up-Darwin up-Linux \
+    &&
   rm up-Darwin up-Linux
   ```
 6. Go to the [GitHub Releases][] page and check everything is working properly.
