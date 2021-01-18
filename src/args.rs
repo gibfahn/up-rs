@@ -37,7 +37,6 @@ pub fn parse() -> Args {
 /// There are also a number of libraries built into up, that can be accessed
 /// directly, e.g. `up link` to link dotfiles.
 #[derive(Debug, StructOpt)]
-#[structopt(rename_all = "kebab-case")]
 #[structopt(global_settings = &[AppSettings::ColoredHelp])]
 pub struct Args {
     // TODO(gib): Improve help text to cover env_logger setup.
