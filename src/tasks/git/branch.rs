@@ -1,17 +1,26 @@
 use anyhow::{Context, Result};
 use git2::{Branch, BranchType, Direction, ErrorCode, Repository};
-use log::{debug, trace};
+use log::{debug, trace, warn};
 
 use crate::tasks::git::{errors::GitError as E, fetch::remote_callbacks, update::get_config_value};
 
-pub(in crate::tasks::git) fn delete_branch(repo: &Repository, branch: &String) -> Result<()> {
-    todo!()
+pub(in crate::tasks::git) fn delete_branch(repo: &Repository, branch: &mut Branch) -> Result<()> {
+    warn!(
+        "Deleting '{}' branch '{}', was at '{}'",
+        repo.workdir().ok_or(E::NoGitDirFound)?.display(),
+        branch_name(branch)?,
+        branch.get().peel_to_commit()?.id().to_string(),
+    );
+
+    branch.delete()?;
+    Ok(())
 }
 
 /// Remove the leading `refs/heads/` from a branch,
 /// e.g. `refs/heads/master` -> `master`.
 pub(super) fn shorten_branch_ref(branch: &str) -> &str {
     let short_branch = branch.trim_start_matches("refs/heads/");
+    let short_branch = short_branch.trim_start_matches("refs/remotes/");
     trace!(
         "Shortened branch: {branch} -> {short_branch}",
         branch = branch,
@@ -87,4 +96,9 @@ pub(super) fn calculate_head(repo: &Repository) -> Result<String> {
         }
         Err(head_err) => Err(head_err).context(E::NoHeadSet)?,
     })
+}
+
+/// Convert a git branch to a String name.
+pub(super) fn branch_name(branch: &Branch) -> Result<String> {
+    Ok(branch.name()?.ok_or(E::InvalidBranchError)?.to_owned())
 }

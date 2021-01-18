@@ -1,75 +1,91 @@
 use anyhow::Result;
-use git2::Repository;
-use log::debug;
+use git2::{Branch, BranchType, Repository};
+use log::{debug, trace};
 
-use crate::git::{branch::delete_branch, checkout::checkout_branch, errors::GitError as E};
+use crate::git::{
+    branch::{branch_name, delete_branch},
+    cherry::unmerged_commits,
+};
+
+use crate::tasks::git::{
+    branch::shorten_branch_ref, checkout::checkout_branch_force, errors::GitError as E,
+};
 
 /// Prune merged PR branches. Deletes local branches where the push branch
 /// has been merged into the upstream branch, and the push branch has now
 /// been deleted.
-/**
- * XXX(gib): remove me.
-```sh
-current_branch=$(git branch --show-current)
-if (( ${branches_to_prune[(I)$current_branch]} )); then
-  # Go back to up HEAD branch.
-  git update-index --refresh
-  # If there are no uncommitted changes:
-  if git diff-index --quiet HEAD --; then
-    # Take the first up or pub remote we find.
-    up_remote=$(git remote | grep -x 'up\|pub' | sort -r | head -1)
-    default_branch=$(git default-branch "$up_remote" 2>/dev/null)
-    if git rev-parse "$default_branch" &>/dev/null; then
-      git checkout --quiet "$default_branch"
-    else
-      git checkout --quiet -b "$default_branch" "$up_remote/$default_branch"
-    fi
-  else
-    log "Can't delete current branch '$current_branch' as it has uncommitted changes."
-  fi
-fi
-
-git branch -D "${branches_to_prune[@]}"
-```
-*/
-pub(super) fn prune_merged_branches(repo: &Repository) -> Result<()> {
+pub(super) fn prune_merged_branches(repo: &Repository, remote_name: &str) -> Result<()> {
     let branches_to_prune = branches_to_prune(repo)?;
     if branches_to_prune.is_empty() {
         debug!("Nothing to prune.");
         return Ok(());
     }
-    todo!("Get current branch name.");
-    let current_branch = "";
-    for branch in &branches_to_prune {
-        if branch == current_branch {
-            todo!("Go to HEAD branch of first listed remote in git config.");
-            checkout_branch(
-                &repo,
-                branch,
-                todo!("short_branch"),
-                todo!("upstream_remote"),
-            )?;
+    debug!(
+        "Pruning branches in '{}': {:?}",
+        repo.workdir().ok_or(E::NoGitDirFound)?.display(),
+        &branches_to_prune
+            .iter()
+            .map(|b| branch_name(b))
+            .collect::<Result<Vec<String>>>()?,
+    );
+    for mut branch in branches_to_prune {
+        debug!("Pruning branch: {}", branch_name(&branch)?);
+        if branch.is_head() {
+            let remote_ref_name =
+                format!("refs/remotes/{remote_name}/HEAD", remote_name = remote_name);
+            let remote_ref = repo.find_reference(&remote_ref_name)?;
+            let remote_head = remote_ref.symbolic_target().ok_or(E::NoHeadSet)?;
+            let short_branch = shorten_branch_ref(remote_head);
+            let short_branch = short_branch.trim_start_matches(&format!("{}/", remote_name));
+            // TODO(gib): Find better way to make branch_name long and short_branch short.
+            let branch_name = format!("refs/heads/{}", short_branch);
+            checkout_branch_force(repo, &branch_name, short_branch, remote_name)?;
         }
-        delete_branch(repo, branch)?;
+        delete_branch(repo, &mut branch)?;
     }
     Ok(())
 }
 
-/**
-```sh
-while read branch up_branch; do
-  # If no remote-tracking branch with the same name in any remote,
-  if [[ -z $(for remote in $(git remote); do git rev-parse --verify --quiet "$remote/$branch" ; done) ]] &&
-    # and upstream branch exists,
-    [[ -n "$up_branch" ]] &&
-    # and upstream branch contains all the commits in fork branch.
-    ! git cherry -v "$up_branch" "$branch" | grep -q '^+'; then
-    # then we should delete the branch.
-    branches_to_prune+=("$branch")
-  fi
-done <<<"$(git for-each-ref refs/heads --format='%(refname:short) %(upstream:short)')"
-```
-*/
-fn branches_to_prune(repo: &Repository) -> Result<Vec<String>> {
-    todo!()
+/// Work out branches that we can prune.
+/// These should be PR branches that have already been merged into their
+/// upstream branches.
+fn branches_to_prune(repo: &Repository) -> Result<Vec<Branch>> {
+    let mut branches_to_prune = Vec::new();
+
+    let mut remote_branches = Vec::new();
+    for branch in repo.branches(Some(BranchType::Remote))? {
+        remote_branches.push(branch_name(&branch?.0)?);
+    }
+
+    debug!("Remote branches: {:?}", remote_branches);
+    for branch in repo.branches(Some(BranchType::Local))? {
+        let branch = branch?.0;
+        let branch_name = branch_name(&branch)?;
+
+        // If no remote-tracking branch with the same name exists in any remote.
+        let branch_suffix = format!("/{}", branch_name);
+        if remote_branches.iter().any(|b| b.ends_with(&branch_suffix)) {
+            trace!(
+                "Not pruning {} as it has a matching remote-tracking branch.",
+                &branch_name
+            );
+            continue;
+        }
+
+        // If upstream branch is set.
+        if let Ok(upstream_branch) = branch.upstream() {
+            // If upstream branch contains all the commits in HEAD.
+            if unmerged_commits(repo, &upstream_branch, &branch)? {
+                trace!("Not pruning {} as it has unmerged commits.", &branch_name);
+                continue;
+            }
+        } else {
+            trace!("Not pruning {} as it has no upstream branch.", &branch_name);
+            continue;
+        }
+
+        // Then we should prune this branch.
+        branches_to_prune.push(branch);
+    }
+    Ok(branches_to_prune)
 }

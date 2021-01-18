@@ -5,7 +5,13 @@ use git2::{build::CheckoutBuilder, BranchType, ErrorCode, Repository};
 
 use log::debug;
 
-pub(super) fn checkout_branch(
+/// Force-checkout a branch.
+///
+/// Note that this function force-overwrites the current working tree and index,
+/// so before calling this function ensure that the repository doesn't have
+/// uncommitted changes (e.g. by erroring if `ensure_clean()` returns false),
+/// or work could be lost.
+pub(super) fn checkout_branch_force(
     repo: &Repository,
     branch_name: &str,
     short_branch: &str,
@@ -39,8 +45,10 @@ pub(super) fn checkout_branch(
 }
 /// Updates files in the index and the working tree to match the content of
 /// the commit pointed at by HEAD.
+///
 /// Wraps git2's function with a different set of checkout options to the
 /// default.
+///
 /// Note that this function force-overwrites the current working tree and index,
 /// so before calling this function ensure that the repository doesn't have
 /// uncommitted changes (e.g. by erroring if `ensure_clean()` returns false),
@@ -49,6 +57,7 @@ pub(super) fn checkout_head_force(repo: &Repository) -> Result<(), git2::Error> 
     debug!("Force checking out HEAD.");
     repo.checkout_head(Some(
         CheckoutBuilder::new()
+            // TODO(gib): What submodule options do we want to set?
             .force()
             .allow_conflicts(true)
             .recreate_missing(true)

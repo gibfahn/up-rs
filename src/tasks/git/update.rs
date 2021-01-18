@@ -7,11 +7,11 @@ use git2::{
     BranchType, Direction, ErrorCode, FetchOptions, Repository, StatusOptions, SubmoduleIgnore,
 };
 use itertools::Itertools;
-use log::{debug, info, trace};
+use log::{debug, trace};
 use url::Url;
 
 use crate::tasks::git::{
-    checkout::{checkout_branch, needs_checkout},
+    checkout::{checkout_branch_force, needs_checkout},
     errors::GitError as E,
     merge::do_merge,
     prune::prune_merged_branches,
@@ -32,7 +32,7 @@ pub(crate) fn update(git_config: &GitConfig) -> Result<()> {
 pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
     // Create dir if it doesn't exist.
     let git_path = PathBuf::from(git_config.path.to_owned());
-    info!("Updating git repo '{}'", git_path.display());
+    debug!("Updating git repo '{}'", git_path.display());
     if !git_path.is_dir() {
         debug!("Dir doesn't exist, creating...");
         fs::create_dir_all(&git_path).map_err(|e| E::CreateDirError {
@@ -75,7 +75,7 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
 
     ensure_clean(&repo)?;
     if git_config.prune {
-        prune_merged_branches(&repo)?;
+        prune_merged_branches(&repo, &git_config.remotes.get(0).ok_or(E::NoRemotes)?.name)?;
     }
 
     let branch_name: String = if let Some(branch_name) = &git_config.branch {
@@ -89,7 +89,7 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
 
     if needs_checkout(&repo, &branch_name) {
         debug!("Checking out branch: {}", short_branch);
-        checkout_branch(
+        checkout_branch_force(
             &repo,
             &branch_name,
             short_branch,

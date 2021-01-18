@@ -14,6 +14,7 @@ use crate::tasks::ResolveEnv;
 
 pub mod branch;
 pub mod checkout;
+pub mod cherry;
 pub mod errors;
 pub mod fetch;
 pub mod merge;

@@ -14,6 +14,8 @@ pub enum GitError {
     NoRemotes,
     /// Current branch is not valid UTF-8
     InvalidBranchError,
+    /// Branch list error
+    BranchError { source: git2::Error },
     /// No default head branch set, and couldn't calculate one.
     NoHeadSet,
     /// Remote name unset.
@@ -28,6 +30,10 @@ pub enum GitError {
         source: git2::Error,
         extra_info: String,
     },
+    /// Couldn't find oid for branch '{branch_name}'.
+    NoOidFound { branch_name: String },
+    /// Couldn't convert oid '{oid}' into a commit.
+    NoCommitFound { oid: String, source: git2::Error },
     /// Failed to merge {merge_rev} ({merge_ref}) into {branch}.
     Merge {
         branch: String,
@@ -39,4 +45,6 @@ pub enum GitError {
         analysis: MergeAnalysis,
         preference: MergePreference,
     },
+    /// Failed to find current git directory.
+    NoGitDirFound,
 }
