@@ -66,7 +66,7 @@ pub(crate) fn run(config: LinkConfig) -> Result<()> {
     }
     let backup_dir = resolve_directory(backup_dir, "Backup")?;
 
-    info!(
+    debug!(
         "Linking from {:?} to {:?} (backup dir {:?}).",
         from_dir, to_dir, backup_dir
     );
@@ -93,7 +93,7 @@ pub(crate) fn run(config: LinkConfig) -> Result<()> {
 
     // Remove backup dir if not empty.
     if let Err(err) = fs::remove_dir(&backup_dir) {
-        info!("Backup dir non-empty, check contents: {:?}", err);
+        warn!("Backup dir non-empty, check contents: {:?}", err);
     }
 
     debug!(

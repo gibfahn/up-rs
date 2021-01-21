@@ -211,6 +211,7 @@ fn set_up_remote(repo: &Repository, remote_config: &GitRemote) -> Result<()> {
     );
     {
         let mut count = 0;
+        // TODO(gib): stop connecting twice (once here, once above remote.fetch()).
         remote.connect_auth(Direction::Fetch, Some(remote_callbacks(&mut count)), None)?;
     }
     let default_branch = remote

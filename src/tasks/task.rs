@@ -8,7 +8,7 @@ use std::{
 };
 
 use anyhow::{anyhow, bail, Result};
-use log::{debug, info, log, trace, warn, Level};
+use log::{debug, info, log, trace, Level};
 use serde_derive::{Deserialize, Serialize};
 
 use crate::{
@@ -124,7 +124,7 @@ impl Task {
     where
         F: Fn(&str) -> Result<String>,
     {
-        debug!("Running task '{}'", &self.name);
+        info!("Running task '{}'", &self.name);
         self.status = TaskStatus::Passed;
 
         if let Some(lib) = &self.config.run_lib {
@@ -178,7 +178,7 @@ impl Task {
         }
 
         if let Some(mut cmd) = self.config.check_cmd.clone() {
-            info!("Running '{}' check command.", &self.name);
+            debug!("Running '{}' check command.", &self.name);
             for s in &mut cmd {
                 *s = env_fn(s)?;
             }
@@ -191,15 +191,16 @@ impl Task {
                 return Ok(());
             }
         } else {
-            // TODO(gib): Allow silencing warning by setting check_cmd to boolean false.
-            warn!(
+            // TODO(gib): Make a warning and allow silencing by setting check_cmd to boolean
+            // false.
+            debug!(
                 "You haven't specified a check command for '{}', so it will always be run",
                 &self.name
             )
         }
 
         if let Some(mut cmd) = self.config.run_cmd.clone() {
-            info!("Running '{}' run command.", &self.name);
+            debug!("Running '{}' run command.", &self.name);
             for s in &mut cmd {
                 *s = env_fn(s)?;
             }
