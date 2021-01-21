@@ -90,8 +90,9 @@ fn main() -> Result<()> {
 
     #[allow(clippy::option_if_let_else)]
     let root_logger = if let Some(file_drain) = file_drain {
+        let file_level_filter = LevelFilter::new(file_drain, args.file_log_level);
         Logger::root(
-            Duplicate::new(stderr_level_filter, file_drain).fuse(),
+            Duplicate::new(stderr_level_filter, file_level_filter).fuse(),
             log_kv_pairs,
         )
     } else {

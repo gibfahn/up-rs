@@ -48,6 +48,10 @@ pub struct Args {
     /// to disable file logging.
     #[structopt(long)]
     pub log_dir: Option<PathBuf>,
+    /// Set the file logging level explicitly (options: Off, Error, Warn, Info,
+    /// Debug, Trace).
+    #[structopt(long, default_value = "debug", env = "FILE_LOG_LEVEL", parse(try_from_str = from_level))]
+    pub file_log_level: Level,
     /// Whether to color terminal output.
     #[structopt(long, default_value = "auto", possible_values = &Color::variants(), case_insensitive = true)]
     pub color: Color,
