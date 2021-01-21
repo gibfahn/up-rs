@@ -1,3 +1,18 @@
+<a name="0.6.0"></a>
+## [0.6.0][] (2021-01-21)
+
+
+#### Bug Fixes
+
+* **log:**  make logging less noisy ([c43b471b](https://github.com/gibfahn/up-rs/commit/c43b471bf526900ccf8527ff3b443ba7b8b5ea40))
+
+#### Features
+
+* **git:**  git prune and git cherry implementation ([507e7560](https://github.com/gibfahn/up-rs/commit/507e75600bc23345d1b2d4534299feafb985fea2))
+* **main:**  set default file log level to debug not trace ([9d19fc51](https://github.com/gibfahn/up-rs/commit/9d19fc511aaed2d76e9d7327acfaeddf5e73978b))
+
+
+
 <a name="0.5.4"></a>
 ## [0.5.4][] (2020-12-05)
 
@@ -178,3 +193,4 @@
 [0.5.2]: https://github.com/gibfahn/up-rs/releases/tag/0.5.2
 [0.5.3]: https://github.com/gibfahn/up-rs/releases/tag/0.5.3
 [0.5.4]: https://github.com/gibfahn/up-rs/releases/tag/0.5.4
+[0.6.0]: https://github.com/gibfahn/up-rs/releases/tag/0.6.0
