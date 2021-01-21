@@ -72,9 +72,10 @@ fn real_clone() {
         // Create a branch based on master.
         run_git_cmd(
             &git_path,
+            // TODO(gib): change `checkout -b` to `switch -c` once base docker image supports it.
             &[
-                "switch",
-                "-c",
+                "checkout",
+                "-b",
                 "no_prune_unmerged_changes",
                 "--track",
                 "up/master",
@@ -83,8 +84,9 @@ fn real_clone() {
         );
         // Add a commit not on master.
         run_git_cmd(&git_path, &["merge", "--ff", "up/test"], true);
+        // TODO(gib): change `checkout -` to `switch -` once base docker image supports it.
         // Go back to master.
-        run_git_cmd(&git_path, &["switch", "-"], true);
+        run_git_cmd(&git_path, &["checkout", "-"], true);
         // Reset master to previous commit.
         run_git_cmd(&git_path, &["reset", "--hard", "@^"], true);
         // Create a branch without an upstream (we shouldn't prune).
