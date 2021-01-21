@@ -1,3 +1,13 @@
+<a name="0.6.1"></a>
+## [0.6.1][] (2021-01-21)
+
+
+#### Bug Fixes
+
+* **git:**  make prune option default to false ([cd616955](https://github.com/gibfahn/up-rs/commit/cd616955a6bf76363c76f9c00d51b3f4489aff25))
+
+
+
 <a name="0.6.0"></a>
 ## [0.6.0][] (2021-01-21)
 
@@ -194,3 +204,4 @@
 [0.5.3]: https://github.com/gibfahn/up-rs/releases/tag/0.5.3
 [0.5.4]: https://github.com/gibfahn/up-rs/releases/tag/0.5.4
 [0.6.0]: https://github.com/gibfahn/up-rs/releases/tag/0.6.0
+[0.6.1]: https://github.com/gibfahn/up-rs/releases/tag/0.6.1
