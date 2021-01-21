@@ -69,7 +69,7 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
         "Branches: {:?}",
         repo.branches(None)?
             .into_iter()
-            .map_results(|(branch, _)| branch.name().map(|n| n.map(std::borrow::ToOwned::to_owned)))
+            .map_ok(|(branch, _)| branch.name().map(|n| n.map(std::borrow::ToOwned::to_owned)))
             .collect::<Vec<_>>()
     );
 
