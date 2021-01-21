@@ -56,7 +56,13 @@ pub struct GitConfig {
     /// cloning.
     pub branch: Option<String>,
     /// Prune local branches whose changes have already been merged upstream.
+    #[serde(default = "prune_default")]
     pub prune: bool,
+}
+
+// Serde needs a function to set a default.
+const fn prune_default() -> bool {
+    false
 }
 
 // TODO(gib): Pass by reference instead.
