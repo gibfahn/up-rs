@@ -6,7 +6,7 @@ use log::trace;
 use ring::digest::{Context, Digest, SHA256};
 use std::io::Read;
 
-use crate::git::{branch::branch_name, errors::GitError as E};
+use crate::tasks::git::{branch::get_branch_name, errors::GitError as E};
 
 /// Return true if there are commits that aren't in upstream but are in head.
 ///
@@ -25,8 +25,8 @@ pub(super) fn unmerged_commits(
     head: &Branch,
 ) -> Result<bool> {
     // TODO(gib): Add tests: https://github.com/git/git/blob/master/t/t3500-cherry.sh
-    let head_name = branch_name(head)?;
-    let upstream_name = branch_name(upstream)?;
+    let head_name = get_branch_name(head)?;
+    let upstream_name = get_branch_name(upstream)?;
     let head_oid = head.get().target().ok_or(E::NoOidFound {
         branch_name: head_name,
     })?;

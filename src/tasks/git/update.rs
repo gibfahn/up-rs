@@ -4,10 +4,11 @@ use std::{borrow::ToOwned, fs, path::PathBuf, str};
 
 use anyhow::{bail, ensure, Context, Result};
 use git2::{
-    BranchType, Direction, ErrorCode, FetchOptions, Repository, StatusOptions, SubmoduleIgnore,
+    BranchType, Direction, ErrorCode, FetchOptions, Repository, StatusOptions, Statuses,
+    SubmoduleIgnore,
 };
 use itertools::Itertools;
-use log::{debug, trace};
+use log::{debug, trace, warn};
 use url::Url;
 
 use crate::tasks::git::{
@@ -23,12 +24,16 @@ use crate::tasks::git::{
     fetch::{remote_callbacks, set_remote_head},
 };
 
+use crate::tasks::git::branch::get_branch_name;
+
 pub(crate) fn update(git_config: &GitConfig) -> Result<()> {
     real_update(git_config).with_context(|| E::GitUpdate {
         path: PathBuf::from(git_config.path.to_owned()),
     })
 }
 
+// TODO(gib): remove more stuff from this function.
+#[allow(clippy::clippy::too_many_lines)]
 pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
     // Create dir if it doesn't exist.
     let git_path = PathBuf::from(git_config.path.to_owned());
@@ -69,13 +74,17 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
         "Branches: {:?}",
         repo.branches(None)?
             .into_iter()
-            .map_ok(|(branch, _)| branch.name().map(|n| n.map(std::borrow::ToOwned::to_owned)))
+            .map_ok(|(branch, _)| get_branch_name(&branch))
             .collect::<Vec<_>>()
     );
 
-    ensure_clean(&repo)?;
+    let repo_statuses = repo_statuses(&repo)?;
     if git_config.prune {
-        prune_merged_branches(&repo, &git_config.remotes.get(0).ok_or(E::NoRemotes)?.name)?;
+        prune_merged_branches(
+            &repo,
+            &git_config.remotes.get(0).ok_or(E::NoRemotes)?.name,
+            &repo_statuses,
+        )?;
     }
 
     let branch_name: String = if let Some(branch_name) = &git_config.branch {
@@ -94,6 +103,7 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
             &branch_name,
             short_branch,
             &git_config.remotes.get(0).unwrap().name,
+            &repo_statuses,
         )?;
     }
 
@@ -103,14 +113,11 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
         debug!("Checking for a @{{push}} branch.");
         let push_revision = format!("{}@{{push}}", short_branch);
         let merge_commit = repo.reference_to_annotated_commit(push_branch.get())?;
-        do_merge(&repo, &branch_name, &merge_commit).with_context(|| E::Merge {
+        let push_branch_name = get_branch_name(&push_branch)?;
+        do_merge(&repo, &branch_name, &merge_commit, &repo_statuses).with_context(|| E::Merge {
             branch: branch_name,
             merge_rev: push_revision,
-            merge_ref: push_branch
-                .name()
-                .unwrap_or(Some("Err"))
-                .unwrap_or("None")
-                .to_owned(),
+            merge_ref: push_branch_name,
         })?;
     } else {
         debug!("Branch doesn't have an @{{push}} branch, checking @{{upstream}} instead.");
@@ -121,15 +128,14 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
         {
             Ok(upstream_branch) => {
                 let upstream_commit = repo.reference_to_annotated_commit(upstream_branch.get())?;
-                do_merge(&repo, &branch_name, &upstream_commit).with_context(|| E::Merge {
-                    branch: branch_name,
-                    merge_rev: up_revision,
-                    merge_ref: upstream_branch
-                        .name()
-                        .unwrap_or(Some("Err"))
-                        .unwrap_or("None")
-                        .to_owned(),
-                })?;
+                let upstream_branch_name = get_branch_name(&upstream_branch)?;
+                do_merge(&repo, &branch_name, &upstream_commit, &repo_statuses).with_context(
+                    || E::Merge {
+                        branch: branch_name,
+                        merge_rev: up_revision,
+                        merge_ref: upstream_branch_name,
+                    },
+                )?;
             }
             Err(e) if e.code() == ErrorCode::NotFound => {
                 debug!("Skipping update to remote ref as branch doesn't have an upstream.");
@@ -138,6 +144,13 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
                 return Err(e.into());
             }
         }
+    }
+    // TODO(gib): Add a flag to warn for any fork PR branches still open.
+    if !repo_statuses.is_empty() {
+        warn!(
+            "Repo has uncommitted changes: {}",
+            status_short(&repo, &repo_statuses)
+        );
     }
     Ok(())
 }
@@ -224,21 +237,16 @@ fn set_up_remote(repo: &Repository, remote_config: &GitRemote) -> Result<()> {
     Ok(())
 }
 
-/// Returns `Ok(true)` if the repo has no changes (i.e. `git status` would print
-/// `nothing to commit, working tree clean`. Returns `Ok(false)` if the repo has
-/// uncommitted changes. Returns an error if getting the repo status errors.
-fn ensure_clean(repo: &Repository) -> Result<()> {
+/// Returns `Ok(statuses)`, `statuses` should be an empty vec if the repo has no
+/// changes (i.e. `git status` would print `nothing to commit, working tree
+/// clean`. Returns an error if getting the repo status errors.
+///
+/// To bail using the statuses use `status_short(repo, &statuses)`.
+fn repo_statuses(repo: &Repository) -> Result<Statuses> {
     let mut status_options = StatusOptions::new();
     // Ignored files don't count as dirty, so don't include them.
     status_options.include_ignored(false);
-    let statuses = repo.statuses(Some(&mut status_options))?;
-    // TODO(gib): Allow ignoring certain files.
-    if !statuses.is_empty() {
-        bail!(E::UncommittedChanges {
-            status: status_short(repo, &statuses)
-        })
-    }
-    Ok(())
+    Ok(repo.statuses(Some(&mut status_options))?)
 }
 
 /// Get a string from a config object if defined.
@@ -268,7 +276,7 @@ pub(in crate::tasks::git) fn get_config_value(
 /// This version of the output prefixes each path with two status columns and
 /// shows submodule status information.
 #[allow(clippy::too_many_lines, clippy::useless_let_if_seq)]
-fn status_short(repo: &Repository, statuses: &git2::Statuses) -> String {
+pub(super) fn status_short(repo: &Repository, statuses: &git2::Statuses) -> String {
     let mut output = String::new();
     for entry in statuses
         .iter()

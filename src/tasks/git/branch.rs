@@ -8,7 +8,7 @@ pub(in crate::tasks::git) fn delete_branch(repo: &Repository, branch: &mut Branc
     warn!(
         "Deleting '{}' branch '{}', was at '{}'",
         repo.workdir().ok_or(E::NoGitDirFound)?.display(),
-        branch_name(branch)?,
+        get_branch_name(branch)?,
         branch.get().peel_to_commit()?.id().to_string(),
     );
 
@@ -99,6 +99,6 @@ pub(super) fn calculate_head(repo: &Repository) -> Result<String> {
 }
 
 /// Convert a git branch to a String name.
-pub(super) fn branch_name(branch: &Branch) -> Result<String> {
+pub(super) fn get_branch_name(branch: &Branch) -> Result<String> {
     Ok(branch.name()?.ok_or(E::InvalidBranchError)?.to_owned())
 }

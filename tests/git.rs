@@ -84,8 +84,8 @@ fn real_clone() {
         );
         // Add a commit not on master.
         run_git_cmd(&git_path, &["merge", "--ff", "up/test"], true);
-        // TODO(gib): change `checkout -` to `switch -` once base docker image supports it.
-        // Go back to master.
+        // TODO(gib): change `checkout -` to `switch -` once base docker image supports
+        // it. Go back to master.
         run_git_cmd(&git_path, &["checkout", "-"], true);
         // Reset master to previous commit.
         run_git_cmd(&git_path, &["reset", "--hard", "@^"], true);

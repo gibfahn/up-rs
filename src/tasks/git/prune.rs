@@ -1,9 +1,9 @@
 use anyhow::Result;
-use git2::{Branch, BranchType, Repository};
+use git2::{Branch, BranchType, Repository, Statuses};
 use log::{debug, trace};
 
 use crate::git::{
-    branch::{branch_name, delete_branch},
+    branch::{delete_branch, get_branch_name},
     cherry::unmerged_commits,
 };
 
@@ -14,7 +14,11 @@ use crate::tasks::git::{
 /// Prune merged PR branches. Deletes local branches where the push branch
 /// has been merged into the upstream branch, and the push branch has now
 /// been deleted.
-pub(super) fn prune_merged_branches(repo: &Repository, remote_name: &str) -> Result<()> {
+pub(super) fn prune_merged_branches(
+    repo: &Repository,
+    remote_name: &str,
+    repo_statuses: &Statuses,
+) -> Result<()> {
     let branches_to_prune = branches_to_prune(repo)?;
     if branches_to_prune.is_empty() {
         debug!("Nothing to prune.");
@@ -25,11 +29,11 @@ pub(super) fn prune_merged_branches(repo: &Repository, remote_name: &str) -> Res
         repo.workdir().ok_or(E::NoGitDirFound)?.display(),
         &branches_to_prune
             .iter()
-            .map(|b| branch_name(b))
+            .map(|b| get_branch_name(b))
             .collect::<Result<Vec<String>>>()?,
     );
     for mut branch in branches_to_prune {
-        debug!("Pruning branch: {}", branch_name(&branch)?);
+        debug!("Pruning branch: {}", get_branch_name(&branch)?);
         if branch.is_head() {
             let remote_ref_name =
                 format!("refs/remotes/{remote_name}/HEAD", remote_name = remote_name);
@@ -39,7 +43,7 @@ pub(super) fn prune_merged_branches(repo: &Repository, remote_name: &str) -> Res
             let short_branch = short_branch.trim_start_matches(&format!("{}/", remote_name));
             // TODO(gib): Find better way to make branch_name long and short_branch short.
             let branch_name = format!("refs/heads/{}", short_branch);
-            checkout_branch_force(repo, &branch_name, short_branch, remote_name)?;
+            checkout_branch_force(repo, &branch_name, short_branch, remote_name, repo_statuses)?;
         }
         delete_branch(repo, &mut branch)?;
     }
@@ -54,13 +58,13 @@ fn branches_to_prune(repo: &Repository) -> Result<Vec<Branch>> {
 
     let mut remote_branches = Vec::new();
     for branch in repo.branches(Some(BranchType::Remote))? {
-        remote_branches.push(branch_name(&branch?.0)?);
+        remote_branches.push(get_branch_name(&branch?.0)?);
     }
 
     debug!("Remote branches: {:?}", remote_branches);
     for branch in repo.branches(Some(BranchType::Local))? {
         let branch = branch?.0;
-        let branch_name = branch_name(&branch)?;
+        let branch_name = get_branch_name(&branch)?;
 
         // If no remote-tracking branch with the same name exists in any remote.
         let branch_suffix = format!("/{}", branch_name);
