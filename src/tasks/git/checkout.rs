@@ -1,24 +1,23 @@
 use std::str;
 
-use anyhow::{anyhow, ensure, Result};
-use git2::{build::CheckoutBuilder, BranchType, ErrorCode, Repository, Statuses};
+use anyhow::{anyhow, Result};
+use git2::{build::CheckoutBuilder, BranchType, ErrorCode, Repository};
 
 use log::{debug, trace};
 
-use crate::tasks::git::{errors::GitError as E, update::status_short};
+use crate::tasks::git::status::ensure_repo_clean;
 
-/// Force-checkout a branch.
+/// Checkout the branch if necessary (branch isn't the current branch).
 ///
-/// Note that this function force-overwrites the current working tree and index,
-/// so before calling this function ensure that the repository doesn't have
-/// uncommitted changes (e.g. by erroring if `ensure_clean()` returns false),
-/// or work could be lost.
-pub(super) fn checkout_branch_force(
+/// By default this function will skip checking out the branch when we're
+/// already on the branch, and error if the repo isn't clean. To always checkout
+/// and ignore issues set `force` to `true`.
+pub(super) fn checkout_branch(
     repo: &Repository,
     branch_name: &str,
     short_branch: &str,
     upstream_remote: &str,
-    repo_statuses: &Statuses,
+    force: bool,
 ) -> Result<()> {
     match repo.find_branch(short_branch, BranchType::Local) {
         Ok(_) => (),
@@ -44,47 +43,56 @@ pub(super) fn checkout_branch_force(
         current_head,
         branch_name
     );
-    if !repo.head_detached()? && current_head == Some(branch_name) {
+    if !force && !repo.head_detached()? && current_head == Some(branch_name) {
         debug!(
             "Repo head is already {}, skipping branch checkout...",
             branch_name,
         );
         return Ok(());
     }
-    ensure!(
-        repo_statuses.is_empty(),
-        E::UncommittedChanges {
-            status: status_short(repo, repo_statuses)
-        }
-    );
+    if !force {
+        ensure_repo_clean(repo)?;
+    }
     debug!("Setting head to {branch_name}", branch_name = branch_name);
-    repo.set_head(branch_name)?;
-    debug!(
-        "Checking out HEAD ({short_branch})",
-        short_branch = short_branch
-    );
-    checkout_head_force(repo, repo_statuses)?;
+    set_and_checkout_head(repo, branch_name, force)?;
     Ok(())
 }
+
+/// Set repo head if the branch is clean, then checkout the head directly.
+///
+/// Use force to always check out the branch whether or not it's clean.
+///
+/// The head checkout:
 /// Updates files in the index and the working tree to match the content of
 /// the commit pointed at by HEAD.
-///
 /// Wraps git2's function with a different set of checkout options to the
 /// default.
+pub(super) fn set_and_checkout_head(
+    repo: &Repository,
+    branch_name: &str,
+    force: bool,
+) -> Result<()> {
+    if force {
+        debug!("Force checking out {}", branch_name);
+    } else {
+        ensure_repo_clean(repo)?;
+    }
+    repo.set_head(branch_name)?;
+    force_checkout_head(repo)?;
+    Ok(())
+}
+
+/// Checkout head without checking that the repo is clean.
+///
+/// Private so users don't accidentally use this.
 ///
 /// Note that this function force-overwrites the current working tree and index,
 /// so before calling this function ensure that the repository doesn't have
 /// uncommitted changes (e.g. by erroring if `ensure_clean()` returns false),
 /// or work could be lost.
-pub(super) fn checkout_head_force(repo: &Repository, repo_statuses: &Statuses) -> Result<()> {
-    ensure!(
-        repo_statuses.is_empty(),
-        E::UncommittedChanges {
-            status: status_short(repo, repo_statuses)
-        }
-    );
+fn force_checkout_head(repo: &Repository) -> Result<()> {
     debug!("Force checking out HEAD.");
-    Ok(repo.checkout_head(Some(
+    repo.checkout_head(Some(
         CheckoutBuilder::new()
             // TODO(gib): What submodule options do we want to set?
             .force()
@@ -92,7 +100,8 @@ pub(super) fn checkout_head_force(repo: &Repository, repo_statuses: &Statuses) -
             .recreate_missing(true)
             .conflict_style_diff3(true)
             .conflict_style_merge(true),
-    ))?)
+    ))?;
+    Ok(())
 }
 
 pub(super) fn needs_checkout(repo: &Repository, branch_name: &str) -> bool {

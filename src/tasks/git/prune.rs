@@ -1,5 +1,5 @@
 use anyhow::Result;
-use git2::{Branch, BranchType, Repository, Statuses};
+use git2::{Branch, BranchType, Repository};
 use log::{debug, trace};
 
 use crate::git::{
@@ -8,17 +8,13 @@ use crate::git::{
 };
 
 use crate::tasks::git::{
-    branch::shorten_branch_ref, checkout::checkout_branch_force, errors::GitError as E,
+    branch::shorten_branch_ref, checkout::checkout_branch, errors::GitError as E,
 };
 
 /// Prune merged PR branches. Deletes local branches where the push branch
 /// has been merged into the upstream branch, and the push branch has now
 /// been deleted.
-pub(super) fn prune_merged_branches(
-    repo: &Repository,
-    remote_name: &str,
-    repo_statuses: &Statuses,
-) -> Result<()> {
+pub(super) fn prune_merged_branches(repo: &Repository, remote_name: &str) -> Result<()> {
     let branches_to_prune = branches_to_prune(repo)?;
     if branches_to_prune.is_empty() {
         debug!("Nothing to prune.");
@@ -43,7 +39,7 @@ pub(super) fn prune_merged_branches(
             let short_branch = short_branch.trim_start_matches(&format!("{}/", remote_name));
             // TODO(gib): Find better way to make branch_name long and short_branch short.
             let branch_name = format!("refs/heads/{}", short_branch);
-            checkout_branch_force(repo, &branch_name, short_branch, remote_name, repo_statuses)?;
+            checkout_branch(repo, &branch_name, short_branch, remote_name, false)?;
         }
         delete_branch(repo, &mut branch)?;
     }

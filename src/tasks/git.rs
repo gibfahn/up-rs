@@ -19,6 +19,7 @@ pub mod errors;
 pub mod fetch;
 pub mod merge;
 pub mod prune;
+pub mod status;
 pub mod update;
 
 pub const DEFAULT_REMOTE_NAME: &str = "origin";

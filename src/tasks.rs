@@ -14,6 +14,7 @@ use thiserror::Error;
 use self::TasksError as E;
 use crate::{config, env::get_env};
 
+pub mod defaults;
 pub mod git;
 pub mod link;
 pub mod task;
