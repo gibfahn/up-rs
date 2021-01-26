@@ -1,3 +1,13 @@
+<a name="0.6.2"></a>
+## [0.6.2][] (2021-01-26)
+
+
+#### Bug Fixes
+
+* **git:**  don't error if repo dirty unless we actually need to update ([eb335977](https://github.com/gibfahn/up-rs/commit/eb335977d061a27795cd461afca6254ca1102137))
+
+
+
 <a name="0.6.1"></a>
 ## [0.6.1][] (2021-01-21)
 
@@ -205,3 +215,4 @@
 [0.5.4]: https://github.com/gibfahn/up-rs/releases/tag/0.5.4
 [0.6.0]: https://github.com/gibfahn/up-rs/releases/tag/0.6.0
 [0.6.1]: https://github.com/gibfahn/up-rs/releases/tag/0.6.1
+[0.6.2]: https://github.com/gibfahn/up-rs/releases/tag/0.6.2
