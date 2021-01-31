@@ -1,0 +1,132 @@
+#!/usr/bin/env zsh
+
+set -eu
+
+# For docs see docs/RELEASE.md
+
+CYAN='\033[0;36m'       # Light blue.
+RED='\033[0;31m'        # Red.
+NC='\033[0m'            # No Color.
+
+this_script=$0:A
+project_root=$(dirname $(dirname $this_script))
+cd $project_root
+pwd
+
+main() {
+  # Make sure docker is running as we'll need it later.
+  pgrep -q Docker || open -a docker
+
+  # Bail on uncommitted diffs.
+  diff=$(git diff --color=always)
+  if [[ -n $diff ]]; then
+    error "${CYAN}-> Repo has uncommitted diffs:${NC}
+    $diff"
+  fi
+
+  # TODO(gib): automatically calculate new version from conventional commit messages.
+  changelog_version=$(head -1 CHANGELOG.md | awk -F'"' '{print $2}')
+  last_tag=$(git tag -l | gsort -V | tail -1)
+  tag_before_last=$(git tag -l | gsort -V | tail -2 | head -1)
+  last_release=$(gh release list -L 1 | awk '{print $1}')
+  cargo_toml_version=$(awk -F\" '/^version = /{print $2; exit}' Cargo.toml)
+
+  if [[ $changelog_version != $last_release ]]; then
+    prompt_to_skip "Last release was $last_release, but changelog updated to $changelog_version. Skipping changelog update..."
+    new_version=$changelog_version
+  else
+    log_section "Updating changelog..."
+    read "new_version?New version (old version is ${last_release?}): "
+
+    # Generate and commit the changelog:
+
+    # TODO(gib): make this follow (and link to in CHANGELOG.md) https://keepachangelog.com/en/1.0.0/
+    clog -C CHANGELOG.md --from="${last_release?}" --setversion="${new_version?}"
+    # Make the header a link pointing to the release.
+    gsed -i "s/^## ${new_version?} (/## [${new_version?}][] (/"  CHANGELOG.md
+    echo "[${new_version?}]: https://github.com/gibfahn/up-rs/releases/tag/${new_version?}" >> CHANGELOG.md
+    git add CHANGELOG.md
+    git commit -m "docs(changelog): update changelog for ${new_version?}"
+  fi
+
+  # Bump version:
+
+  version_bump_commit_message="docs(version): bump version to ${new_version?}"
+  if [[ $last_release != $cargo_toml_version ]]; then
+    prompt_to_skip "Skipping Cargo.toml update as commit is already present."
+  else
+    log_section "Updating Cargo.toml..."
+    gsed -i -E "0,/^version = \"${last_release?}\"\$/s//version = \"${new_version?}\"/" Cargo.toml
+    log_and_run cargo check # Bumps version in lockfile too.
+    git add Cargo.toml Cargo.lock
+    git commit -m "$version_bump_commit_message"
+    git show # Check version is correct.
+    prompt_to_skip "Does this look correct?"
+  fi
+
+  # Build and test Linux (static) and Darwin binaries locally:
+
+  # Check the documentation is buildable.
+  log_and_run cargo doc
+  # Test Darwin
+  log_and_run cargo test --release --features=CI
+  # Build Darwin (without the CI feature).
+  log_and_run cargo build --release
+  # Tests musl static Linux binaries.
+  log_and_run bin/cargo-docker
+  # Builds musl static Linux binaries.
+  log_and_run bin/cargo-docker build --release
+
+  if [[ $last_tag == $new_version ]]; then
+    prompt_to_skip "Skipping cargo publish and git tag as tag is already present."
+  else
+    # Publish to crates.io:
+    log_and_run cargo publish
+
+    # Create and push the tag, and create a release:
+    log_section "Pushing release..."
+    git push
+    git tag "${new_version?}"
+    git push up "${new_version?}"
+  fi
+  # This allows them to be downloaded as `up-$(uname)`.
+  cp target/release/up up-Darwin
+  cp target/x86_64-unknown-linux-musl/release/up up-Linux
+  gh release create "${new_version?}" --target=master \
+    --notes="${new_version?}"$'\n\n'"$(clog --from="${last_release?}" --setversion="${new_version?}")" \
+    up-Darwin up-Linux
+  rm up-Darwin up-Linux
+
+  new_release=$(gh release list -L 1 | awk '{print $1}')
+  gh release show $new_release
+  if [[ $new_release != $new_version ]]; then
+    error "Something went wrong, latest GitHub version is not what the script just released."
+  fi
+}
+
+log_section() {
+  echo "
+$CYAN=> $*$NC"
+}
+
+log_and_run() {
+  log_section "Running $*"
+  "$@"
+}
+
+# $1: Error message
+# $2: Error code (default: 1).
+error() {
+    echo -e "${RED}ERROR${NC}: $1" >&2
+    exit "${2:-1}"
+}
+
+prompt_to_skip() {
+  read "user_input?$1
+  Press Enter to continue, type anything or press Ctrl-C to cancel: "
+  if [[ -n ${user_input:-} ]]; then
+    error "User entered text."
+  fi
+}
+
+main "$@"

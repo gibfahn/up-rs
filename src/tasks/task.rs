@@ -138,7 +138,6 @@ impl Task {
                         .clone()
                         .try_into::<LinkConfig>()?;
                     data.resolve_env(env_fn)?;
-                    // TODO(gib): Continue on error, saving status as for run commands.
                     tasks::link::run(data)
                 }
                 "git" => {
@@ -150,7 +149,6 @@ impl Task {
                         .clone()
                         .try_into::<Vec<GitConfig>>()?;
                     data.resolve_env(env_fn)?;
-                    // TODO(gib): Continue on error, saving status as for run commands.
                     tasks::git::run(data)
                 }
                 "generate_git" => {
@@ -162,7 +160,6 @@ impl Task {
                         .clone()
                         .try_into::<Vec<GenerateGitConfig>>()?;
                     data.resolve_env(env_fn)?;
-                    // TODO(gib): Continue on error, saving status as for run commands.
                     generate::git::run(&data)
                 }
                 // TODO(gib): Implement this.
