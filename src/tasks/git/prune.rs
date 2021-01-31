@@ -9,6 +9,7 @@ use crate::git::{
 
 use crate::tasks::git::{
     branch::shorten_branch_ref, checkout::checkout_branch, errors::GitError as E,
+    status::ensure_repo_clean,
 };
 
 /// Prune merged PR branches. Deletes local branches where the push branch
@@ -20,6 +21,7 @@ pub(super) fn prune_merged_branches(repo: &Repository, remote_name: &str) -> Res
         debug!("Nothing to prune.");
         return Ok(());
     }
+    ensure_repo_clean(repo)?;
     debug!(
         "Pruning branches in '{}': {:?}",
         repo.workdir().ok_or(E::NoGitDirFound)?.display(),

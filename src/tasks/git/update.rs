@@ -13,7 +13,7 @@ use crate::tasks::git::{
     errors::GitError as E,
     merge::do_merge,
     prune::prune_merged_branches,
-    status::{ensure_repo_clean, warn_if_repo_not_clean},
+    status::warn_if_repo_not_clean,
     GitConfig, GitRemote,
 };
 
@@ -84,7 +84,6 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
             .collect::<Vec<_>>()
     );
 
-    ensure_repo_clean(&repo)?;
     if git_config.prune {
         prune_merged_branches(&repo, &git_config.remotes.get(0).ok_or(E::NoRemotes)?.name)?;
     }
@@ -145,7 +144,11 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
             }
         }
     }
-    // TODO(gib): Add a flag to warn for any fork PR branches still open.
+    // TODO(gib): add git-unpushed.sh functionality:
+    // - warn for any stashed changes
+    // - warn for any commits not in @{push}
+    // - if no push, warn for any commits not in @{upstream}
+    // - warn for any branches with no @{upstream} or @{push}
     warn_if_repo_not_clean(&repo)?;
     Ok(())
 }
