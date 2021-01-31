@@ -1,3 +1,13 @@
+<a name="0.6.3"></a>
+## [0.6.3][] (2021-01-31)
+
+
+#### Bug Fixes
+
+* **git:**  only ensure repo is clean if we're deleting branches ([b0c4f1f8](https://github.com/gibfahn/up-rs/commit/b0c4f1f84ad7b818e7d167eaae98166c26ef89a9))
+
+
+
 <a name="0.6.2"></a>
 ## [0.6.2][] (2021-01-26)
 
@@ -216,3 +226,4 @@
 [0.6.0]: https://github.com/gibfahn/up-rs/releases/tag/0.6.0
 [0.6.1]: https://github.com/gibfahn/up-rs/releases/tag/0.6.1
 [0.6.2]: https://github.com/gibfahn/up-rs/releases/tag/0.6.2
+[0.6.3]: https://github.com/gibfahn/up-rs/releases/tag/0.6.3
