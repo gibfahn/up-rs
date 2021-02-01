@@ -78,7 +78,8 @@ main() {
   log_and_run bin/cargo-docker build --release
 
   if [[ $last_tag == $new_version ]]; then
-    prompt_to_skip "Skipping cargo publish and git tag as tag is already present."
+    prompt_to_skip "Skipping cargo publish and git tag as tag is already present.
+    If you changed the source you need to delete the tag and the automated release commits."
   else
     # Publish to crates.io:
     log_and_run cargo publish
@@ -98,7 +99,7 @@ main() {
   rm up-Darwin up-Linux
 
   new_release=$(gh release list -L 1 | awk '{print $1}')
-  gh release show $new_release
+  gh release view $new_release
   if [[ $new_release != $new_version ]]; then
     error "Something went wrong, latest GitHub version is not what the script just released."
   fi
