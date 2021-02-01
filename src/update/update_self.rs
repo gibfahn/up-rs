@@ -10,17 +10,48 @@ use std::{
 use anyhow::{Context, Result};
 use chrono::Utc;
 use displaydoc::Display;
-use log::{debug, info};
+use log::{debug, info, trace};
+use serde_derive::Deserialize;
 use thiserror::Error;
 
 use self::UpdateSelfError as E;
 use crate::args::UpdateSelfOptions;
 
+#[derive(Debug, Deserialize)]
+struct GitHubReleaseJsonResponse {
+    tag_name: String,
+}
+
+// Name user agent after the app, e.g. up-rs/1.2.3.
+const APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
+const CURRENT_VERSION: &str = env!("CARGO_PKG_VERSION");
+
 /// Downloads the latest version of the binary from the specified URL and
 /// replaces the current executable path with it.
 pub(crate) fn update_self(opts: &UpdateSelfOptions) -> Result<()> {
-    let current_version = env!("CARGO_PKG_VERSION");
     let up_path = env::current_exe()?.canonicalize().unwrap();
+
+    let client = reqwest::blocking::Client::builder()
+        .user_agent(APP_USER_AGENT)
+        .build()?;
+
+    if opts.url == crate::args::SELF_UPDATE_URL {
+        let latest_github_release = client
+            .get(crate::args::LATEST_RELEASE_URL)
+            .send()?
+            .error_for_status()?
+            .json::<GitHubReleaseJsonResponse>()?;
+        trace!("latest_github_release: {:?}", latest_github_release,);
+        let latest_github_release = latest_github_release.tag_name;
+        if CURRENT_VERSION == latest_github_release {
+            info!(
+                "Skipping up-rs update, current version '{}' is latest GitHub version '{:?}'",
+                CURRENT_VERSION, &latest_github_release,
+            );
+            return Ok(());
+        }
+    }
+
     let temp_dir = env::temp_dir();
     let temp_path = &temp_dir.join(format!("up_rs-{}", Utc::now().to_rfc3339()));
 
@@ -50,10 +81,10 @@ pub(crate) fn update_self(opts: &UpdateSelfOptions) -> Result<()> {
     let new_version = new_version
         .trim()
         .trim_start_matches(concat!(env!("CARGO_PKG_NAME"), " "));
-    if semver::Version::parse(new_version) > semver::Version::parse(current_version) {
+    if semver::Version::parse(new_version) > semver::Version::parse(CURRENT_VERSION) {
         info!(
             "Updating up-rs from '{}' to '{}'",
-            current_version, &new_version,
+            CURRENT_VERSION, &new_version,
         );
         fs::rename(&temp_path, &up_path).with_context(|| E::Rename {
             from: temp_path.clone(),
@@ -62,7 +93,7 @@ pub(crate) fn update_self(opts: &UpdateSelfOptions) -> Result<()> {
     } else {
         info!(
             "Skipping up-rs update, current version '{}' and new version '{}'",
-            current_version, &new_version,
+            CURRENT_VERSION, &new_version,
         );
     }
     Ok(())

@@ -13,10 +13,14 @@ use structopt::{
 
 use crate::tasks::git::GitArgs;
 
+pub(crate) const LATEST_RELEASE_URL: &str =
+    "https://api.github.com/repos/gibfahn/up-rs/releases/latest";
 #[cfg(target_os = "linux")]
-const SELF_UPDATE_URL: &str = "https://github.com/gibfahn/up-rs/releases/latest/download/up-linux";
+pub(crate) const SELF_UPDATE_URL: &str =
+    "https://github.com/gibfahn/up-rs/releases/latest/download/up-linux";
 #[cfg(target_os = "macos")]
-const SELF_UPDATE_URL: &str = "https://github.com/gibfahn/up-rs/releases/latest/download/up-darwin";
+pub(crate) const SELF_UPDATE_URL: &str =
+    "https://github.com/gibfahn/up-rs/releases/latest/download/up-darwin";
 
 /// Builds the Args struct from CLI input and from environment variable input.
 #[must_use]
