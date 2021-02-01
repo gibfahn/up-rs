@@ -24,6 +24,9 @@ main() {
     $diff"
   fi
 
+  # Test Darwin
+  log_and_run cargo test --release --features=CI
+
   # TODO(gib): automatically calculate new version from conventional commit messages.
   changelog_version=$(head -1 CHANGELOG.md | awk -F'"' '{print $2}')
   last_tag=$(git tag -l | gsort -V | tail -1)
@@ -68,8 +71,6 @@ main() {
 
   # Check the documentation is buildable.
   log_and_run cargo doc
-  # Test Darwin
-  log_and_run cargo test --release --features=CI
   # Build Darwin (without the CI feature).
   log_and_run cargo build --release
   # Tests musl static Linux binaries.
