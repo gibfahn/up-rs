@@ -1,3 +1,13 @@
+<a name="0.6.4"></a>
+## [0.6.4][] (2021-02-01)
+
+
+#### Performance
+
+* **self_update:**  check github API for latest release ([40672199](https://github.com/gibfahn/up-rs/commit/40672199c4fde3d9008dc8a17883988b11e6a5b9))
+
+
+
 <a name="0.6.3"></a>
 ## [0.6.3][] (2021-01-31)
 
@@ -227,3 +237,4 @@
 [0.6.1]: https://github.com/gibfahn/up-rs/releases/tag/0.6.1
 [0.6.2]: https://github.com/gibfahn/up-rs/releases/tag/0.6.2
 [0.6.3]: https://github.com/gibfahn/up-rs/releases/tag/0.6.3
+[0.6.4]: https://github.com/gibfahn/up-rs/releases/tag/0.6.4
