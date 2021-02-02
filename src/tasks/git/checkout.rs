@@ -1,6 +1,6 @@
 use std::str;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Result};
 use git2::{build::CheckoutBuilder, BranchType, ErrorCode, Repository};
 
 use log::{debug, trace};
@@ -36,19 +36,30 @@ pub(super) fn checkout_branch(
         }
         Err(e) => return Err(e.into()),
     };
-    let current_head = repo.head()?;
-    let current_head = current_head.name();
-    trace!(
-        "Current head is {:?}, branch_name is {}",
-        current_head,
-        branch_name
-    );
-    if !force && !repo.head_detached()? && current_head == Some(branch_name) {
-        debug!(
-            "Repo head is already {}, skipping branch checkout...",
-            branch_name,
-        );
-        return Ok(());
+    match repo.head() {
+        Ok(current_head) => {
+            // A branch is currently checked out.
+            let current_head = current_head.name();
+            trace!(
+                "Current head is {:?}, branch_name is {}",
+                current_head,
+                branch_name
+            );
+            if !force && !repo.head_detached()? && current_head == Some(branch_name) {
+                debug!(
+                    "Repo head is already {}, skipping branch checkout...",
+                    branch_name,
+                );
+                return Ok(());
+            }
+        }
+        Err(e) if e.code() == ErrorCode::UnbornBranch => {
+            // We just initialized the repo and haven't yet checked out a branch.
+            trace!("No current head, continuing with branch checkout...");
+        }
+        Err(e) => {
+            bail!(e);
+        }
     }
     if !force {
         ensure_repo_clean(repo)?;
