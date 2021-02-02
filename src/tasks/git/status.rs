@@ -24,7 +24,7 @@ pub(super) fn warn_if_repo_not_clean(repo: &Repository) -> Result<()> {
     let statuses = repo_statuses(repo)?;
     if !statuses.is_empty() {
         warn!(
-            "Repo has uncommitted changes: {}",
+            "Repo has uncommitted changes:\n{}",
             status_short(repo, &statuses)
         );
     }
