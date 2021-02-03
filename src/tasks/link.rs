@@ -93,7 +93,10 @@ pub(crate) fn run(config: LinkConfig) -> Result<()> {
 
     // Remove backup dir if not empty.
     if let Err(err) = fs::remove_dir(&backup_dir) {
-        warn!("Backup dir non-empty, check contents: {:?}", err);
+        warn!(
+            "Backup dir {:?} non-empty, check contents: {:?}",
+            backup_dir, err
+        );
     }
 
     debug!(
