@@ -143,7 +143,7 @@ fn no_todo() {
 
     assert!(
         files_with_todos.is_empty(),
-        "\nXXX: should not be committed to the master branch, use TODO: instead\n {:#?}\n",
+        "\nXXX: should not be committed to the main branch, use TODO: instead\n {:#?}\n",
         files_with_todos,
     );
 }
