@@ -4,9 +4,8 @@ use anyhow::{bail, Result};
 use git2::{Reference, Repository};
 use log::debug;
 
-use crate::tasks::git::{checkout::set_and_checkout_head, errors::GitError as E};
-
 use super::status::ensure_repo_clean;
+use crate::tasks::git::{checkout::set_and_checkout_head, errors::GitError as E};
 
 pub(super) fn do_merge<'a>(
     repo: &'a Repository,

@@ -30,7 +30,6 @@ use displaydoc::Display;
 use log::{info, trace};
 use slog::{o, Drain, Duplicate, FnValue, LevelFilter, Logger};
 use thiserror::Error;
-
 use up_rs::args::Color;
 
 fn main() -> Result<()> {

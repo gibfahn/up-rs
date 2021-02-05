@@ -2,7 +2,6 @@ use std::str;
 
 use anyhow::{anyhow, bail, Result};
 use git2::{build::CheckoutBuilder, BranchType, ErrorCode, Repository};
-
 use log::{debug, trace};
 
 use crate::tasks::git::status::ensure_repo_clean;

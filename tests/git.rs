@@ -25,8 +25,7 @@ fn real_clone() {
     // * b1b3f97 (up/octocat-patch-1) sentence case
     // | * b3cbd5b (up/test) Create CONTRIBUTING.md
     // |/
-    // * 7fd1a60 (HEAD -> master, up/master, up/HEAD) Merge pull request #6 from
-    //   Spaceghost/patch-1
+    // * 7fd1a60 (HEAD -> master, up/master, up/HEAD) Merge pull request #6 from Spaceghost/patch-1
     // |\
     // | * 7629413 New line at end of file. --Signed off by Spaceghost
     // |/

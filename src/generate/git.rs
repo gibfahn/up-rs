@@ -12,6 +12,7 @@ use thiserror::Error;
 use walkdir::WalkDir;
 
 use self::GenerateGitError as E;
+use super::GENERATED_PRELUDE_COMMENT;
 use crate::{
     args::GenerateGitConfig,
     tasks::{
@@ -20,8 +21,6 @@ use crate::{
         ResolveEnv,
     },
 };
-
-use super::GENERATED_PRELUDE_COMMENT;
 
 pub fn run(generate_git_configs: &[GenerateGitConfig]) -> Result<()> {
     let errors: Vec<_> = generate_git_configs

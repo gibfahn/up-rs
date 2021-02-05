@@ -190,9 +190,9 @@ fn get_fallback_config_path(fallback_url: String, fallback_path: String) -> Resu
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod toml_paths_tests {
-    use super::UpConfig;
-
     use std::env;
+
+    use super::UpConfig;
 
     /// Test possible options for the up.toml. All run in one file as they
     /// modify the shared test environment.

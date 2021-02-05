@@ -1,6 +1,7 @@
+use std::{io, path::PathBuf};
+
 use displaydoc::Display;
 use git2::{MergeAnalysis, MergePreference};
-use std::{io, path::PathBuf};
 use thiserror::Error;
 
 #[derive(Error, Debug, Display)]

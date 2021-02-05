@@ -9,20 +9,15 @@ use log::{debug, trace};
 use url::Url;
 
 use crate::tasks::git::{
+    branch::{calculate_head, get_branch_name, get_push_branch, shorten_branch_ref},
     checkout::{checkout_branch, needs_checkout},
     errors::GitError as E,
+    fetch::{remote_callbacks, set_remote_head},
     merge::do_merge,
     prune::prune_merged_branches,
     status::warn_if_repo_not_clean,
     GitConfig, GitRemote,
 };
-
-use crate::tasks::git::{
-    branch::{calculate_head, get_push_branch, shorten_branch_ref},
-    fetch::{remote_callbacks, set_remote_head},
-};
-
-use crate::tasks::git::branch::get_branch_name;
 
 pub(crate) fn update(git_config: &GitConfig) -> Result<()> {
     real_update(git_config).with_context(|| E::GitUpdate {
@@ -31,6 +26,9 @@ pub(crate) fn update(git_config: &GitConfig) -> Result<()> {
 }
 
 // TODO(gib): remove more stuff from this function.
+// TODO(gib): Handle the case where a repo update has changed the default
+// branch, e.g. master -> main, and now there's a branch with an upstream
+// pointing to nothing.
 #[allow(clippy::clippy::too_many_lines)]
 pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
     // Create dir if it doesn't exist.
