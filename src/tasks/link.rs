@@ -261,7 +261,7 @@ fn link_path(
         warn!(
             "Removing existing broken link.\n  Path: {:?}\n  Dest: {:?}",
             &to_path,
-            &to_path.read_link().map_err(|e| LinkError::IOError {
+            &to_path.read_link().map_err(|e| LinkError::IoError {
                 path: to_path.to_path_buf(),
                 source: e
             })?
@@ -296,7 +296,7 @@ pub enum LinkError {
     /// Failed to delete '{path}'.
     DeleteError { path: PathBuf, source: io::Error },
     /// Failure for path '{path}'.
-    IOError { path: PathBuf, source: io::Error },
+    IoError { path: PathBuf, source: io::Error },
     /// Failed to rename from '{from_path}' to '{to_path}'.
     RenameError {
         from_path: PathBuf,

@@ -25,7 +25,7 @@ pub mod update;
 pub const DEFAULT_REMOTE_NAME: &str = "origin";
 
 #[derive(Debug, Default, StructOpt)]
-pub struct GitArgs {
+pub struct GitOptions {
     /// URL of git repo to download.
     #[structopt(long)]
     pub git_url: String,
@@ -88,8 +88,8 @@ pub(crate) fn run(configs: Vec<GitConfig>) -> Result<()> {
     }
 }
 
-impl From<GitArgs> for GitConfig {
-    fn from(item: GitArgs) -> Self {
+impl From<GitOptions> for GitConfig {
+    fn from(item: GitOptions) -> Self {
         Self {
             path: item.git_path,
             remotes: vec![GitRemote {

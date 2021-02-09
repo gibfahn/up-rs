@@ -11,8 +11,9 @@ use structopt::{
     StructOpt,
 };
 
-use crate::tasks::git::GitArgs;
+use crate::tasks::git::GitOptions;
 
+pub(crate) const FALLBACK_CONFIG_PATH: &str = "dotfiles/.config/up/up.toml";
 pub(crate) const LATEST_RELEASE_URL: &str =
     "https://api.github.com/repos/gibfahn/up-rs/releases/latest";
 #[cfg(target_os = "linux")]
@@ -34,8 +35,8 @@ pub fn parse() -> Args {
 /// sure the tools you need are installed and up to date.
 ///
 ///
-/// Running `up` without a subcommand provides an easy way to specify what you
-/// want on your system, and how to keep it up to date. It is designed to work
+/// Running `up` without a subcommand runs `up run` with no parameters, providing an easy way to
+/// specify what you want on your system, and how to keep it up to date. It is designed to work
 /// with and complement existing package managers rather than replace them.
 ///
 /// There are also a number of libraries built into up, that can be accessed
@@ -62,23 +63,6 @@ pub struct Args {
     /// Path to the up.toml file for up.
     #[structopt(short = "c", default_value = "$XDG_CONFIG_HOME/up/up.toml")]
     pub(crate) config: String,
-    /// Fallback git repo URL to download to get the config.
-    #[structopt(short = "f")]
-    pub(crate) fallback_url: Option<String>,
-    /// Fallback path inside the git repo to get the config.
-    /// The default path assumes your fallback_url points to a dotfiles repo
-    /// that is linked into ~.
-    #[structopt(short = "p", default_value = "dotfiles/.config/up/up.toml")]
-    pub(crate) fallback_path: String,
-    // TODO(gib): don't include update specific options in the generic options section.
-    /// Optionally pass one or more tasks to run. The default is to run all
-    /// tasks.
-    #[structopt(long)]
-    pub(crate) tasks: Option<Vec<String>>,
-    /// Run the bootstrap list of tasks in series first, then run the rest in
-    /// parallel. Designed for first-time setup.
-    #[structopt(long)]
-    pub(crate) bootstrap: bool,
     #[structopt(subcommand)]
     pub(crate) cmd: Option<SubCommand>,
 }
@@ -103,6 +87,9 @@ arg_enum! {
 // Optional subcommand (e.g. the "link" in "up link").
 #[derive(Debug, StructOpt)]
 pub(crate) enum SubCommand {
+    /// Run the update scripts. If you don't provide a subcommand this is the default action.
+    /// If you want to pass Run args you will need to specify the subcommand.
+    Run(RunOptions),
     // TODO(gib): Work out how to do clap's help and long_help in structopt.
     /// Symlink your dotfiles from a git repo to your home directory.
     // TODO(gib): move contents to LinkConfig.
@@ -118,7 +105,7 @@ pub(crate) enum SubCommand {
         backup_dir: String,
     },
     /// Clone or update a repo at a path.
-    Git(GitArgs),
+    Git(GitOptions),
     // TODO(gib): Implement this.
     /// Set macOS defaults in plist files (not yet implemented).
     Defaults {},
@@ -127,6 +114,27 @@ pub(crate) enum SubCommand {
     // TODO(gib): add an option to update self (and a run_lib for it).
     /// Update the up CLI itself.
     Self_(UpdateSelfOptions),
+}
+
+#[derive(Debug, StructOpt, Default)]
+pub(crate) struct RunOptions {
+    /// Run the bootstrap list of tasks in series first, then run the rest in
+    /// parallel. Designed for first-time setup.
+    #[structopt(long)]
+    pub(crate) bootstrap: bool,
+    /// Fallback git repo URL to download to get the config.
+    #[structopt(short = "f")]
+    pub(crate) fallback_url: Option<String>,
+    /// Fallback path inside the git repo to get the config.
+    /// The default path assumes your fallback_url points to a dotfiles repo
+    /// that is linked into ~.
+    #[structopt(short = "p", default_value = FALLBACK_CONFIG_PATH)]
+    pub(crate) fallback_path: String,
+    // TODO(gib): don't include update specific options in the generic options section.
+    /// Optionally pass one or more tasks to run. The default is to run all
+    /// tasks.
+    #[structopt(long)]
+    pub(crate) tasks: Option<Vec<String>>,
 }
 
 #[derive(Debug, StructOpt)]

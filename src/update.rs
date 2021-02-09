@@ -12,6 +12,6 @@ pub mod update_self;
 // TODO(gib): Implement a command to show the tree and dependencies.
 
 /// Run update checks specified in the `up_dir` config files.
-pub fn update(config: &config::UpConfig, filter_tasks: &Option<Vec<String>>) -> Result<()> {
-    tasks::run(config, filter_tasks, "tasks")
+pub fn update(config: &config::UpConfig) -> Result<()> {
+    tasks::run(config, "tasks")
 }

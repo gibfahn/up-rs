@@ -37,6 +37,10 @@ pub mod update;
 ///
 /// Errors if the relevant subcommand fails.
 ///
+/// # Panics
+///
+/// Panics for unimplemented commands.
+///
 /// [Args]: crate::args::Args
 pub fn run(args: Args) -> Result<()> {
     match args.cmd {
@@ -56,8 +60,8 @@ pub fn run(args: Args) -> Result<()> {
                 backup_dir: shellexpand::tilde(&backup_dir).into_owned(),
             })?;
         }
-        Some(SubCommand::Git(git_args)) => {
-            git::update::update(&git_args.into())?;
+        Some(SubCommand::Git(git_options)) => {
+            git::update::update(&git_options.into())?;
         }
         Some(SubCommand::Defaults {}) => {
             // TODO(gib): implement defaults setting.
@@ -76,16 +80,19 @@ pub fn run(args: Args) -> Result<()> {
                 unimplemented!("Allow generating defaults toml.");
             }
             None => {
-                let tasks = args.tasks.clone();
                 let config = UpConfig::from(args)?;
-                generate::run(&config, &tasks)?;
+                generate::run(&config)?;
             }
         },
-        None => {
-            let tasks = args.tasks.clone();
+        Some(SubCommand::Run(ref _opts)) => {
             // TODO(gib): Store and fetch config in config module.
             let config = UpConfig::from(args)?;
-            update::update(&config, &tasks)?;
+            update::update(&config)?;
+        }
+        None => {
+            // TODO(gib): Store and fetch config in config module.
+            let config = UpConfig::from(args)?;
+            update::update(&config)?;
         }
     }
     Ok(())

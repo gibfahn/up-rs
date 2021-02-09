@@ -38,11 +38,7 @@ pub enum TaskError {
 
 /// Run a set of tasks specified in a subdir of the directory containing the up
 /// config.
-pub fn run(
-    config: &config::UpConfig,
-    filter_tasks: &Option<Vec<String>>,
-    tasks_dirname: &str,
-) -> Result<()> {
+pub fn run(config: &config::UpConfig, tasks_dirname: &str) -> Result<()> {
     // TODO(gib): Handle missing dir & move into config.
     let mut tasks_dir = config.up_toml_path.as_ref().ok_or(E::None {})?.clone();
     tasks_dir.pop();
@@ -77,7 +73,7 @@ pub fn run(
     bootstrap_tasks.reverse();
 
     let filter_tasks_set: Option<HashSet<String>> =
-        filter_tasks.clone().map(|v| v.into_iter().collect());
+        config.tasks.clone().map(|v| v.into_iter().collect());
 
     #[allow(clippy::filter_map)]
     let mut tasks: HashMap<String, task::Task> = HashMap::new();

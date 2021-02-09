@@ -136,7 +136,7 @@ fn parse_git_config(path: &Path, prune: bool) -> Result<GitConfig> {
     let repo = Repository::open(&path)?;
     let mut remotes = Vec::new();
     for opt_name in &repo.remotes()? {
-        let name = opt_name.ok_or(E::InvalidUTF8)?;
+        let name = opt_name.ok_or(E::InvalidUtf8)?;
         let remote = repo.find_remote(name).with_context(|| E::InvalidRemote {
             name: name.to_owned(),
         })?;
@@ -157,7 +157,7 @@ fn parse_git_config(path: &Path, prune: bool) -> Result<GitConfig> {
 /// Errors thrown by this file.
 pub enum GenerateGitError {
     /// Invalid UTF-8.
-    InvalidUTF8,
+    InvalidUtf8,
     /// Invalid remote '{name}'.
     InvalidRemote { name: String },
     /// Unexpected None in option.

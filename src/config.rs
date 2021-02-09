@@ -10,13 +10,17 @@ use anyhow::{anyhow, bail, ensure, Context, Result};
 use log::{debug, info, trace};
 use serde_derive::{Deserialize, Serialize};
 
-use crate::{args::Args, git};
+use crate::{
+    args::{Args, RunOptions, SubCommand},
+    git,
+};
 
 #[derive(Default, Debug)]
 pub struct UpConfig {
     pub up_toml_path: Option<PathBuf>,
     pub config_toml: ConfigToml,
     pub bootstrap: bool,
+    pub tasks: Option<Vec<String>>,
 }
 
 // TODO(gib): Work out the data structure for the toml files.
@@ -63,8 +67,16 @@ impl UpConfig {
     pub fn from(args: Args) -> Result<Self> {
         let mut config_toml = ConfigToml::default();
 
+        let run_options = match args.cmd {
+            Some(SubCommand::Run(run_options)) => run_options,
+            _ => RunOptions::default(),
+        };
+
         let mut config_path_explicitly_specified = true;
-        let up_toml_path = match (Self::get_up_toml_path(&args.config), args.fallback_url) {
+        let up_toml_path = match (
+            Self::get_up_toml_path(&args.config),
+            run_options.fallback_url,
+        ) {
             // File exists, use file.
             (Ok(up_toml_path), _) if up_toml_path.exists() => up_toml_path,
             (result, Some(fallback_url)) => {
@@ -73,9 +85,9 @@ impl UpConfig {
                 if result.is_ok() {
                     config_path_explicitly_specified = false;
                 }
-                get_fallback_config_path(fallback_url, args.fallback_path)?
+                get_fallback_config_path(fallback_url, run_options.fallback_path)?
             }
-            // File doesn't exists, use file.
+            // File doesn't exist, use file.
             (Ok(up_toml_path), _) => up_toml_path,
             (Err(e), None) => {
                 return Err(e);
@@ -97,12 +109,13 @@ impl UpConfig {
             None
         };
 
-        let bootstrap = args.bootstrap;
+        let bootstrap = run_options.bootstrap;
 
         Ok(Self {
             up_toml_path,
             config_toml,
             bootstrap,
+            tasks: run_options.tasks,
         })
     }
 
@@ -170,11 +183,11 @@ fn get_fallback_config_path(fallback_url: String, fallback_path: String) -> Resu
 
     let fallback_config_path = fallback_repo_path.join(fallback_path);
     git::update::update(
-        &git::GitArgs {
+        &git::GitOptions {
             git_url: fallback_url,
             git_path: fallback_repo_path.to_string_lossy().to_string(),
             remote: git::DEFAULT_REMOTE_NAME.to_owned(),
-            ..git::GitArgs::default()
+            ..git::GitOptions::default()
         }
         .into(),
     )?;
