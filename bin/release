@@ -94,7 +94,7 @@ main() {
   # This allows them to be downloaded as `up-$(uname)`.
   cp target/release/up up-Darwin
   cp target/x86_64-unknown-linux-musl/release/up up-Linux
-  gh release create "${new_version?}" --target=master \
+  gh release create "${new_version?}" --target=main \
     --notes="${new_version?}"$'\n\n'"$(clog --from="${last_release?}" --setversion="${new_version?}")" \
     up-Darwin up-Linux
   rm up-Darwin up-Linux
