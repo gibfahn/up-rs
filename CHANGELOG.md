@@ -1,3 +1,18 @@
+<a name="0.7.0"></a>
+## [0.7.0][] (2021-02-17)
+
+
+#### Bug Fixes
+
+* **git:**  handle initial repo setup case when checking out branch ([ce657976](https://github.com/gibfahn/up-rs/commit/ce6579764ed8568d80c63778f40131c889ad87d2))
+* **link:**  show backup directory path in error message ([b0276613](https://github.com/gibfahn/up-rs/commit/b0276613c66aec325426778638e097436c55f122))
+
+#### Features
+
+* **git:**  warn for unpushed changes ([185209a2](https://github.com/gibfahn/up-rs/commit/185209a23054387a289ea0b9f66afeda140ed976))
+
+
+
 <a name="0.6.4"></a>
 ## [0.6.4][] (2021-02-01)
 
@@ -238,3 +253,4 @@
 [0.6.2]: https://github.com/gibfahn/up-rs/releases/tag/0.6.2
 [0.6.3]: https://github.com/gibfahn/up-rs/releases/tag/0.6.3
 [0.6.4]: https://github.com/gibfahn/up-rs/releases/tag/0.6.4
+[0.7.0]: https://github.com/gibfahn/up-rs/releases/tag/0.7.0
