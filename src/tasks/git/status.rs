@@ -1,8 +1,14 @@
+use std::path::Path;
+
 use anyhow::{ensure, Result};
-use git2::{Repository, StatusOptions, Statuses, SubmoduleIgnore};
+use git2::{BranchType, Config, ErrorCode, Repository, StatusOptions, Statuses, SubmoduleIgnore};
 use log::{trace, warn};
 
-use crate::tasks::git::errors::GitError as E;
+use crate::tasks::git::{
+    branch::{get_branch_name, get_push_branch},
+    cherry::unmerged_commits,
+    errors::GitError as E,
+};
 
 /// Check the repo is clean, equivalent to running `git status --porcelain` and
 /// checking everything looks good.
@@ -18,16 +24,119 @@ pub(super) fn ensure_repo_clean(repo: &Repository) -> Result<()> {
     Ok(())
 }
 
-/// Warn if repo not clean, equivalent to running `git status --porcelain` and
-/// checking everything looks good.
-pub(super) fn warn_if_repo_not_clean(repo: &Repository) -> Result<()> {
-    let statuses = repo_statuses(repo)?;
-    if !statuses.is_empty() {
+/// Warn if repo has unpushed changes.
+/// - warns for any uncommitted
+/// - warns for any stashed changes
+/// - warns for any commits not in @{push}
+/// - if no push, warns for any commits not in @{upstream}
+/// - warns for any branches with no @{upstream} or @{push}
+/// - warns for any unpushed fork branches.
+///
+/// This assumes that you have your git repos set up as follows:
+///
+/// - Your forks remote names contain the word 'fork'.
+/// - Your local branches have an `@{upstream}`, and if they are Pull Request branches, a `@{push}`
+///   branch (if you haven't yet pushed that triggers a warning).
+/// - Your forks have been cleaned of all branches except fork/HEAD, which points to fork/forkmain.
+pub(super) fn warn_for_unpushed_changes(
+    repo: &mut Repository,
+    user_git_config: &Config,
+    git_path: &Path,
+) -> Result<()> {
+    // Warn for uncommitted changes.
+    {
+        let statuses = repo_statuses(repo)?;
+        if !statuses.is_empty() {
+            warn!(
+                "Repo '{}' has uncommitted changes:\n{}",
+                git_path.display(),
+                status_short(repo, &statuses)
+            );
+        }
+    }
+
+    // Warn for any stashed changes
+    {
+        let mut stash_messages = Vec::new();
+        repo.stash_foreach(|_index, message, _stash_id| {
+            stash_messages.push(message.to_owned());
+            true
+        })?;
+        if !stash_messages.is_empty() {
+            warn!(
+                "Repo '{}' has stashed changes:\n{:#?}",
+                git_path.display(),
+                stash_messages
+            );
+        }
+    }
+
+    for branch in repo.branches(Some(BranchType::Local))? {
+        let branch = branch?.0;
+        let branch_name = get_branch_name(&branch)?;
+        if let Some(push_branch) = get_push_branch(repo, &branch_name, user_git_config)? {
+            // Warn for any commits not in @{push}
+            if unmerged_commits(repo, &push_branch, &branch)? {
+                warn!(
+                    "Repo '{}' branch '{}' has changes that aren't in @{{push}}.",
+                    git_path.display(),
+                    &branch_name,
+                );
+            }
+        } else {
+            match branch.upstream() {
+                Ok(upstream_branch) => {
+                    // If no push, warn for any commits not in @{upstream}
+                    if unmerged_commits(repo, &upstream_branch, &branch)? {
+                        warn!(
+                            "Repo '{}' branch '{}' has changes that aren't in @{{upstream}}.",
+                            git_path.display(),
+                            &branch_name,
+                        );
+                    }
+                }
+                Err(e) if e.code() == ErrorCode::NotFound => {
+                    // Warn for any branches with no @{upstream} or @{push}
+                    warn!(
+                        "Repo '{}' branch '{}' has no @{{upstream}} or @{{push}} branch.",
+                        git_path.display(),
+                        &branch_name,
+                    );
+                }
+                Err(e) => {
+                    // Something else went wrong, raise error.
+                    return Err(e.into());
+                }
+            }
+        }
+    }
+
+    // List in-progress branches.
+    // git branch --remotes --list '*fork/*' | grep -v 'fork/forkmain'
+    let mut unmerged_branches = Vec::new();
+    for branch in repo.branches(Some(BranchType::Remote))? {
+        let branch = branch?.0;
+        let branch_name = get_branch_name(&branch)?;
+        // TODO(gib): allow user-customisable remote and branch names.
+
+        // Only match fork branches.
+        if branch_name.contains("fork")
+            // Ignore *fork*/HEAD.
+            && !branch_name.contains("HEAD")
+            // Ignore *fork*/forkmain (my default branch name).
+            && !branch_name.contains("forkmain")
+        {
+            unmerged_branches.push(branch_name);
+        }
+    }
+    if !unmerged_branches.is_empty() {
         warn!(
-            "Repo has uncommitted changes:\n{}",
-            status_short(repo, &statuses)
+            "Repo '{}' has unmerged fork branches: '{:?}'.",
+            git_path.display(),
+            &unmerged_branches,
         );
     }
+
     Ok(())
 }
 

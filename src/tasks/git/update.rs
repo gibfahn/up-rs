@@ -15,7 +15,7 @@ use crate::tasks::git::{
     fetch::{remote_callbacks, set_remote_head},
     merge::do_merge,
     prune::prune_merged_branches,
-    status::warn_if_repo_not_clean,
+    status::warn_for_unpushed_changes,
     GitConfig, GitRemote,
 };
 
@@ -46,7 +46,7 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
     }
 
     // Initialize repo if it doesn't exist.
-    let repo = match Repository::open(&git_path) {
+    let mut repo = match Repository::open(&git_path) {
         Ok(repo) => repo,
         Err(e) => {
             if let ErrorCode::NotFound = e.code() {
@@ -142,12 +142,7 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
             }
         }
     }
-    // TODO(gib): add git-unpushed.sh functionality:
-    // - warn for any stashed changes
-    // - warn for any commits not in @{push}
-    // - if no push, warn for any commits not in @{upstream}
-    // - warn for any branches with no @{upstream} or @{push}
-    warn_if_repo_not_clean(&repo)?;
+    warn_for_unpushed_changes(&mut repo, &user_git_config, &git_path)?;
     Ok(())
 }
 
