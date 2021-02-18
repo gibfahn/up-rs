@@ -78,26 +78,25 @@ main() {
   # Builds musl static Linux binaries.
   log_and_run bin/cargo-docker build --release
 
-  if [[ $last_tag == $new_version ]]; then
-    prompt_to_skip "Skipping cargo publish and git tag as tag is already present.
-    If you changed the source you need to delete the tag and the automated release commits."
+  latest_crate_version=$(curl https://crates.io/api/v1/crates/up-rs | jq -r .crate.newest_version)
+  if [[ $latest_crate_version == $new_version ]]; then
+    prompt_to_skip "Skipping cargo publish as latest release is already $latest_crate_version."
   else
     # Publish to crates.io:
     log_and_run cargo publish
 
     # Create and push the tag, and create a release:
-    log_section "Pushing release..."
+    log_section "Pushing latest commits..."
     git push
-    git tag "${new_version?}"
-    git push up "${new_version?}"
   fi
   # This allows them to be downloaded as `up-$(uname)`.
-  cp target/release/up up-Darwin
-  cp target/x86_64-unknown-linux-musl/release/up up-Linux
+  mkdir -p out
+  cp target/release/up out/up-Darwin
+  cp target/x86_64-unknown-linux-musl/release/up out/up-Linux
   gh release create "${new_version?}" --target=main \
     --notes="${new_version?}"$'\n\n'"$(clog --from="${last_release?}" --setversion="${new_version?}")" \
-    up-Darwin up-Linux
-  rm up-Darwin up-Linux
+    out/up-Darwin out/up-Linux
+  rm -r out
 
   new_release=$(gh release list -L 1 | awk '{print $1}')
   gh release view $new_release
