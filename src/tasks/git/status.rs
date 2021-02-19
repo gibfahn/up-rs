@@ -126,14 +126,17 @@ pub(super) fn warn_for_unpushed_changes(
             // Ignore *fork*/forkmain (my default branch name).
             && !branch_name.contains("forkmain")
         {
-            unmerged_branches.push(branch_name);
+            unmerged_branches.push(
+                // fork/mybranch -> mybranch.
+                branch_name,
+            );
         }
     }
     if !unmerged_branches.is_empty() {
         warn!(
-            "Repo '{}' has unmerged fork branches: '{:?}'.",
+            "Repo '{}' has unmerged fork branches: {}.",
             git_path.display(),
-            &unmerged_branches,
+            unmerged_branches.join(", "),
         );
     }
 
