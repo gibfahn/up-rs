@@ -14,7 +14,7 @@ use serde_derive::{Deserialize, Serialize};
 use crate::{
     args::GenerateGitConfig,
     generate, tasks,
-    tasks::{git::GitConfig, link::LinkConfig, ResolveEnv, TasksError},
+    tasks::{defaults::DefaultsConfig, git::GitConfig, link::LinkConfig, ResolveEnv, TasksError},
 };
 
 #[derive(Debug)]
@@ -163,7 +163,17 @@ impl Task {
                     generate::git::run(&data)
                 }
                 // TODO(gib): Implement this.
-                "defaults" => Err(anyhow!("Defaults code isn't yet implemented.")),
+                "defaults" => {
+                    let mut data = self
+                        .config
+                        .data
+                        .as_ref()
+                        .ok_or_else(|| anyhow!("Task '{}' data had no value.", &self.name))?
+                        .clone()
+                        .try_into::<DefaultsConfig>()?;
+                    data.resolve_env(env_fn)?;
+                    tasks::defaults::run(data)
+                }
                 _ => Err(anyhow!("This code isn't yet implemented.")),
             };
             if let Err(e) = run_lib_result {
