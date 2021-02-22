@@ -1,3 +1,13 @@
+<a name="0.8.0"></a>
+## [0.8.0][] (2021-02-22)
+
+
+#### Features
+
+* **defaults:**  add a library to set defaults ([be4bce1b](https://github.com/gibfahn/up-rs/commit/be4bce1b2795e5274d6126929f4db3fe5a6f0c3c))
+
+
+
 <a name="0.7.0"></a>
 ## [0.7.0][] (2021-02-17)
 
@@ -254,3 +264,4 @@
 [0.6.3]: https://github.com/gibfahn/up-rs/releases/tag/0.6.3
 [0.6.4]: https://github.com/gibfahn/up-rs/releases/tag/0.6.4
 [0.7.0]: https://github.com/gibfahn/up-rs/releases/tag/0.7.0
+[0.8.0]: https://github.com/gibfahn/up-rs/releases/tag/0.8.0
