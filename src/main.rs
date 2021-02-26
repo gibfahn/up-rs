@@ -181,8 +181,8 @@ fn get_log_path_file(log_dir: Option<&PathBuf>) -> Result<LogPaths> {
 
     Ok(LogPaths {
         log_path,
-        log_path_link,
         log_file,
+        log_path_link,
     })
 }
 

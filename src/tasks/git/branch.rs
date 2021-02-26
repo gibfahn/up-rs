@@ -58,13 +58,19 @@ pub(in crate::tasks::git) fn get_push_branch<'a>(
 fn get_push_remote(branch: &str, config: &git2::Config) -> Result<Option<String>> {
     debug!("Getting push remote for {}", branch);
 
+    let push_remote_branch_config = format!("branch.{}.pushRemote", branch);
+    trace!("Checking config value: {}", &push_remote_branch_config);
+
     // If git config branch.<branch>.pushRemote exists return that.
-    if let Some(val) = get_config_value(config, &format!("branch.{}.pushRemote", branch))? {
+    if let Some(val) = get_config_value(config, &push_remote_branch_config)? {
         return Ok(Some(val));
     }
 
+    let push_remote_default_config = "remote.pushDefault";
+    trace!("Checking config value: {}", push_remote_default_config);
+
     // If git config remote.pushDefault exists return that.
-    if let Some(val) = get_config_value(config, "remote.pushDefault")? {
+    if let Some(val) = get_config_value(config, push_remote_default_config)? {
         return Ok(Some(val));
     }
 

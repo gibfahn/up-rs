@@ -3,7 +3,7 @@
 use std::{borrow::ToOwned, fs, path::PathBuf, str};
 
 use anyhow::{bail, ensure, Context, Result};
-use git2::{BranchType, Direction, ErrorCode, FetchOptions, Repository};
+use git2::{BranchType, ConfigLevel, Direction, ErrorCode, FetchOptions, Repository};
 use itertools::Itertools;
 use log::{debug, trace};
 use url::Url;
@@ -63,7 +63,13 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
         debug!("Newly created repo, will force overwrite repo contents.");
     }
 
-    let user_git_config = git2::Config::open_default()?;
+    // Opens the global, XDG, and system files in order.
+    let mut user_git_config = git2::Config::open_default()?;
+    // Then add the local one if defined.
+    let local_git_config_path = git_path.join(".git/config");
+    if local_git_config_path.exists() {
+        user_git_config.add_file(&local_git_config_path, ConfigLevel::Local, false)?;
+    }
 
     // Set up remotes.
     ensure!(!git_config.remotes.is_empty(), E::NoRemotes);
@@ -246,6 +252,7 @@ pub(in crate::tasks::git) fn get_config_value(
         }
         _ => {
             // Returned not found error, or entry didn't have a value.
+            trace!("Config value {} was not set", key);
             Ok(None)
         }
     }
