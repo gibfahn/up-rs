@@ -11,8 +11,6 @@ use structopt::{
     StructOpt,
 };
 
-use crate::tasks::git::GitOptions;
-
 pub(crate) const FALLBACK_CONFIG_PATH: &str = "dotfiles/.config/up/up.toml";
 pub(crate) const LATEST_RELEASE_URL: &str =
     "https://api.github.com/repos/gibfahn/up-rs/releases/latest";
@@ -92,18 +90,7 @@ pub(crate) enum SubCommand {
     Run(RunOptions),
     // TODO(gib): Work out how to do clap's help and long_help in structopt.
     /// Symlink your dotfiles from a git repo to your home directory.
-    // TODO(gib): move contents to LinkConfig.
-    Link {
-        /// Path where your dotfiles are kept (hopefully in source control).
-        #[structopt(short = "f", long = "from", default_value = "~/code/dotfiles")]
-        from_dir: String,
-        /// Path to link them to.
-        #[structopt(short = "t", long = "to", default_value = "~")]
-        to_dir: String,
-        /// Path at which to store backups of overwritten files.
-        #[structopt(short = "b", long = "backup", default_value = "~/backup")]
-        backup_dir: String,
-    },
+    Link(LinkOptions),
     /// Clone or update a repo at a path.
     Git(GitOptions),
     // TODO(gib): Implement this.
@@ -137,6 +124,41 @@ pub(crate) struct RunOptions {
     pub(crate) tasks: Option<Vec<String>>,
 }
 
+#[derive(Debug, StructOpt, Default, Serialize, Deserialize)]
+pub(crate) struct LinkOptions {
+    /// Path where your dotfiles are kept (hopefully in source control).
+    #[structopt(short = "f", long = "from", default_value = "~/code/dotfiles")]
+    pub(crate) from_dir: String,
+    /// Path to link them to.
+    #[structopt(short = "t", long = "to", default_value = "~")]
+    pub(crate) to_dir: String,
+    /// Path at which to store backups of overwritten files.
+    #[structopt(short = "b", long = "backup", default_value = "~/backup")]
+    pub(crate) backup_dir: String,
+}
+
+#[derive(Debug, Default, StructOpt)]
+pub struct GitOptions {
+    /// URL of git repo to download.
+    #[structopt(long)]
+    pub git_url: String,
+    /// Path to download git repo to.
+    #[structopt(long)]
+    pub git_path: String,
+    /// Remote to set/update.
+    #[structopt(long, default_value = crate::git::DEFAULT_REMOTE_NAME)]
+    pub remote: String,
+    /// Branch to checkout when cloning/updating. Defaults to default branch for
+    /// cloning, and current branch for updating.
+    #[structopt(long)]
+    pub branch: Option<String>,
+    /// Prune merged PR branches. Deletes local branches where the push branch
+    /// has been merged into the upstream branch, and the push branch has now
+    /// been deleted.
+    #[structopt(long)]
+    pub prune: bool,
+}
+
 #[derive(Debug, StructOpt)]
 pub(crate) struct GenerateOptions {
     /// Lib to generate.
@@ -144,7 +166,7 @@ pub(crate) struct GenerateOptions {
     pub(crate) lib: Option<GenerateLib>,
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Serialize, Deserialize)]
 pub(crate) struct UpdateSelfOptions {
     /// URL to download update from.
     #[structopt(long, default_value = SELF_UPDATE_URL)]

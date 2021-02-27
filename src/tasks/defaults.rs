@@ -25,17 +25,10 @@ use thiserror::Error;
 
 use crate::tasks::{defaults::DefaultsError as E, ResolveEnv};
 
+impl ResolveEnv for DefaultsConfig {}
+
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct DefaultsConfig(HashMap<String, HashMap<String, toml::Value>>);
-
-impl ResolveEnv for DefaultsConfig {
-    fn resolve_env<F>(&mut self, _env_fn: F) -> Result<()>
-    where
-        F: Fn(&str) -> Result<String>,
-    {
-        Ok(())
-    }
-}
 
 // TODO(gib): Pass by reference instead.
 #[allow(clippy::clippy::needless_pass_by_value)]

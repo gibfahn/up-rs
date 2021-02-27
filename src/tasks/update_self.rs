@@ -15,7 +15,7 @@ use serde_derive::Deserialize;
 use thiserror::Error;
 
 use self::UpdateSelfError as E;
-use crate::args::UpdateSelfOptions;
+use crate::{args::UpdateSelfOptions, tasks::ResolveEnv};
 
 #[derive(Debug, Deserialize)]
 struct GitHubReleaseJsonResponse {
@@ -26,9 +26,11 @@ struct GitHubReleaseJsonResponse {
 const APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
 const CURRENT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
+impl ResolveEnv for UpdateSelfOptions {}
+
 /// Downloads the latest version of the binary from the specified URL and
 /// replaces the current executable path with it.
-pub(crate) fn update_self(opts: &UpdateSelfOptions) -> Result<()> {
+pub(crate) fn run(opts: &UpdateSelfOptions) -> Result<()> {
     let up_path = env::current_exe()?.canonicalize().unwrap();
 
     let client = reqwest::blocking::Client::builder()

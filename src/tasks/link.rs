@@ -8,20 +8,12 @@ use anyhow::{bail, ensure, Context, Result};
 use chrono::{DateTime, Utc};
 use displaydoc::Display;
 use log::{debug, info, trace, warn};
-use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
 use walkdir::{DirEntry, WalkDir};
 
-use crate::tasks::ResolveEnv;
+use crate::{args::LinkOptions, tasks::ResolveEnv};
 
-#[derive(Debug, Default, Serialize, Deserialize)]
-pub struct LinkConfig {
-    pub from_dir: String,
-    pub to_dir: String,
-    pub backup_dir: String,
-}
-
-impl ResolveEnv for LinkConfig {
+impl ResolveEnv for LinkOptions {
     fn resolve_env<F>(&mut self, env_fn: F) -> Result<()>
     where
         F: Fn(&str) -> Result<String>,
@@ -42,7 +34,7 @@ impl ResolveEnv for LinkConfig {
 /// example) you just edit ~/.bashrc, and as it's a symlink it'll actually edit
 /// ~/code/dotfiles/.bashrc. Then you can add and commit that change in ~/code/
 /// dotfiles.
-pub(crate) fn run(config: LinkConfig) -> Result<()> {
+pub(crate) fn run(config: LinkOptions) -> Result<()> {
     let now: DateTime<Utc> = Utc::now();
     debug!("UTC time is: {}", now);
 

@@ -11,7 +11,7 @@ use log::{debug, info, trace};
 use serde_derive::{Deserialize, Serialize};
 
 use crate::{
-    args::{Args, RunOptions, SubCommand},
+    args::{Args, GitOptions, RunOptions, SubCommand},
     git,
 };
 
@@ -32,9 +32,6 @@ pub struct UpConfig {
 #[derive(Default, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ConfigToml {
-    // TODO(gib): we can remove this now.
-    /// Link options.
-    link: Option<LinkConfigToml>,
     /// Path to tasks directory (relative to `up.toml`). Default is ./tasks.
     tasks_path: Option<String>,
     /// Environment variables to pass to scripts.
@@ -52,14 +49,6 @@ pub struct ConfigToml {
 
 const fn default_false() -> bool {
     false
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct LinkConfigToml {
-    from_dir: Option<String>,
-    to_dir: Option<String>,
-    backup_dir: Option<String>,
 }
 
 impl UpConfig {
@@ -183,11 +172,11 @@ fn get_fallback_config_path(fallback_url: String, fallback_path: String) -> Resu
 
     let fallback_config_path = fallback_repo_path.join(fallback_path);
     git::update::update(
-        &git::GitOptions {
+        &GitOptions {
             git_url: fallback_url,
             git_path: fallback_repo_path.to_string_lossy().to_string(),
             remote: git::DEFAULT_REMOTE_NAME.to_owned(),
-            ..git::GitOptions::default()
+            ..GitOptions::default()
         }
         .into(),
     )?;

@@ -12,9 +12,9 @@ use log::{debug, info, log, trace, Level};
 use serde_derive::{Deserialize, Serialize};
 
 use crate::{
-    args::GenerateGitConfig,
+    args::{GenerateGitConfig, LinkOptions, UpdateSelfOptions},
     generate, tasks,
-    tasks::{defaults::DefaultsConfig, git::GitConfig, link::LinkConfig, ResolveEnv, TasksError},
+    tasks::{defaults::DefaultsConfig, git::GitConfig, ResolveEnv, TasksError},
 };
 
 #[derive(Debug)]
@@ -136,7 +136,7 @@ impl Task {
                         .as_ref()
                         .ok_or_else(|| anyhow!("Task '{}' data had no value.", &self.name))?
                         .clone()
-                        .try_into::<LinkConfig>()?;
+                        .try_into::<LinkOptions>()?;
                     data.resolve_env(env_fn)?;
                     tasks::link::run(data)
                 }
@@ -162,7 +162,6 @@ impl Task {
                     data.resolve_env(env_fn)?;
                     generate::git::run(&data)
                 }
-                // TODO(gib): Implement this.
                 "defaults" => {
                     let mut data = self
                         .config
@@ -173,6 +172,17 @@ impl Task {
                         .try_into::<DefaultsConfig>()?;
                     data.resolve_env(env_fn)?;
                     tasks::defaults::run(data)
+                }
+                "self" => {
+                    let mut data = self
+                        .config
+                        .data
+                        .as_ref()
+                        .ok_or_else(|| anyhow!("Task '{}' data had no value.", &self.name))?
+                        .clone()
+                        .try_into::<UpdateSelfOptions>()?;
+                    data.resolve_env(env_fn)?;
+                    tasks::update_self::run(&data)
                 }
                 _ => Err(anyhow!("This code isn't yet implemented.")),
             };

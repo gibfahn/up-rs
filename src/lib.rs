@@ -16,12 +16,12 @@
 use anyhow::Result;
 use args::GenerateLib;
 use log::trace;
-use update::update_self::update_self;
+use tasks::update_self;
 
 use crate::{
     args::{Args, SubCommand},
     config::UpConfig,
-    tasks::{git, link::LinkConfig},
+    tasks::git,
 };
 
 pub mod args;
@@ -47,18 +47,8 @@ pub fn run(args: Args) -> Result<()> {
         // TODO(gib): Handle multiple link directories both as args and in config.
         // TODO(gib): Add option to warn instead of failing if there are conflicts.
         // TODO(gib): Check for conflicts before doing any linking.
-        Some(SubCommand::Link {
-            from_dir,
-            to_dir,
-            backup_dir,
-        }) => {
-            // Expand ~, this is only used for the default options, if the user passes them
-            // as explicit args then they will be expanded by the shell.
-            tasks::link::run(LinkConfig {
-                from_dir: shellexpand::tilde(&from_dir).into_owned(),
-                to_dir: shellexpand::tilde(&to_dir).into_owned(),
-                backup_dir: shellexpand::tilde(&backup_dir).into_owned(),
-            })?;
+        Some(SubCommand::Link(link_options)) => {
+            tasks::link::run(link_options)?;
         }
         Some(SubCommand::Git(git_options)) => {
             git::update::update(&git_options.into())?;
@@ -68,7 +58,7 @@ pub fn run(args: Args) -> Result<()> {
             unimplemented!("Not yet implemented.");
         }
         Some(SubCommand::Self_(opts)) => {
-            update_self(&opts)?;
+            update_self::run(&opts)?;
         }
         Some(SubCommand::Generate(ref opts)) => match opts.lib {
             Some(GenerateLib::Git(ref git_opts)) => {

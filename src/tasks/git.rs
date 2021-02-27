@@ -10,7 +10,7 @@ use structopt::StructOpt;
 use thiserror::Error;
 
 use self::GitTaskError as E;
-use crate::tasks::ResolveEnv;
+use crate::{args::GitOptions, tasks::ResolveEnv};
 
 pub mod branch;
 pub mod checkout;
@@ -23,28 +23,6 @@ pub mod status;
 pub mod update;
 
 pub const DEFAULT_REMOTE_NAME: &str = "origin";
-
-#[derive(Debug, Default, StructOpt)]
-pub struct GitOptions {
-    /// URL of git repo to download.
-    #[structopt(long)]
-    pub git_url: String,
-    /// Path to download git repo to.
-    #[structopt(long)]
-    pub git_path: String,
-    /// Remote to set/update.
-    #[structopt(long, default_value = DEFAULT_REMOTE_NAME)]
-    pub remote: String,
-    /// Branch to checkout when cloning/updating. Defaults to default branch for
-    /// cloning, and current branch for updating.
-    #[structopt(long)]
-    pub branch: Option<String>,
-    /// Prune merged PR branches. Deletes local branches where the push branch
-    /// has been merged into the upstream branch, and the push branch has now
-    /// been deleted.
-    #[structopt(long)]
-    pub prune: bool,
-}
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct GitConfig {

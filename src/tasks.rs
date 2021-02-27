@@ -18,6 +18,7 @@ pub mod defaults;
 pub mod git;
 pub mod link;
 pub mod task;
+pub mod update_self;
 
 pub trait ResolveEnv {
     /// Expand env vars in `self` by running `enf_fn()` on its component
@@ -25,9 +26,12 @@ pub trait ResolveEnv {
     ///
     /// # Errors
     /// `resolve_env()` should return any errors returned by the `enf_fn()`.
-    fn resolve_env<F>(&mut self, env_fn: F) -> Result<()>
+    fn resolve_env<F>(&mut self, _env_fn: F) -> Result<()>
     where
-        F: Fn(&str) -> Result<String>;
+        F: Fn(&str) -> Result<String>,
+    {
+        Ok(())
+    }
 }
 
 #[derive(Error, Debug)]
