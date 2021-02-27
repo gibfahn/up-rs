@@ -98,7 +98,6 @@ pub(crate) enum SubCommand {
     Defaults {},
     /// Generate up config from current system state.
     Generate(GenerateOptions),
-    // TODO(gib): add an option to update self (and a run_lib for it).
     /// Update the up CLI itself.
     Self_(UpdateSelfOptions),
 }
@@ -166,11 +165,16 @@ pub(crate) struct GenerateOptions {
     pub(crate) lib: Option<GenerateLib>,
 }
 
-#[derive(Debug, StructOpt, Serialize, Deserialize)]
+#[derive(Debug, Default, StructOpt, Serialize, Deserialize)]
 pub(crate) struct UpdateSelfOptions {
     /// URL to download update from.
     #[structopt(long, default_value = SELF_UPDATE_URL)]
     pub(crate) url: String,
+    /// Set to update self even if it seems to be a development install.
+    /// Assumes a dev install when the realpath of the current binary is in a
+    /// subdirectory of the cargo root path that the binary was originally built in.
+    #[structopt(long)]
+    pub(crate) always_update: bool,
 }
 
 /// Library to generate.

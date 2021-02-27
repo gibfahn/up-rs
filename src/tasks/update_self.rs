@@ -33,6 +33,16 @@ impl ResolveEnv for UpdateSelfOptions {}
 pub(crate) fn run(opts: &UpdateSelfOptions) -> Result<()> {
     let up_path = env::current_exe()?.canonicalize().unwrap();
 
+    // If the current binary's location is where it was originally compiled, assume it is a dev
+    // build, and thus skip the update.
+    if !opts.always_update && up_path.starts_with(env!("CARGO_MANIFEST_DIR")) {
+        info!(
+            "Skipping up-rs update, current version '{}' is a dev build.",
+            &up_path.display(),
+        );
+        return Ok(());
+    }
+
     let client = reqwest::blocking::Client::builder()
         .user_agent(APP_USER_AGENT)
         .build()?;
@@ -77,7 +87,6 @@ pub(crate) fn run(opts: &UpdateSelfOptions) -> Result<()> {
         path: temp_path.to_owned(),
     })?;
 
-    // TODO(gib): check API instead of actually downloading the file.
     let output = Command::new(temp_path).arg("--version").output()?;
     let new_version = String::from_utf8_lossy(&output.stdout);
     let new_version = new_version

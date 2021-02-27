@@ -174,17 +174,16 @@ impl Task {
                     tasks::defaults::run(data)
                 }
                 "self" => {
-                    let mut data = self
-                        .config
-                        .data
-                        .as_ref()
-                        .ok_or_else(|| anyhow!("Task '{}' data had no value.", &self.name))?
-                        .clone()
-                        .try_into::<UpdateSelfOptions>()?;
-                    data.resolve_env(env_fn)?;
-                    tasks::update_self::run(&data)
+                    let options = if let Some(raw_data) = self.config.data.as_ref() {
+                        let mut raw_opts = raw_data.clone().try_into::<UpdateSelfOptions>()?;
+                        raw_opts.resolve_env(env_fn)?;
+                        raw_opts
+                    } else {
+                        UpdateSelfOptions::default()
+                    };
+                    tasks::update_self::run(&options)
                 }
-                _ => Err(anyhow!("This code isn't yet implemented.")),
+                _ => Err(anyhow!("This run_lib is invalid or not yet implemented.")),
             };
             if let Err(e) = run_lib_result {
                 self.status = TaskStatus::Failed(e);
