@@ -1,3 +1,18 @@
+<a name="0.8.1"></a>
+## [0.8.1][] (2021-02-27)
+
+
+#### Features
+
+* **generate:**  allow providing a sort order for git config generation ([11cc73ba](https://github.com/gibfahn/up-rs/commit/11cc73ba28ea8ea0684cfc94809dcac85cd7e841))
+* **update_self:**  allow self update to be called as a lib ([999b9122](https://github.com/gibfahn/up-rs/commit/999b9122f11d728ecf3d4d72521e3293c9bb5132))
+
+#### Bug Fixes
+
+* **git:**  check local git config as well as global ([44b3ebe7](https://github.com/gibfahn/up-rs/commit/44b3ebe7101f7b95b40db806990f31c7622ad646))
+
+
+
 <a name="0.8.0"></a>
 ## [0.8.0][] (2021-02-22)
 
@@ -265,3 +280,4 @@
 [0.6.4]: https://github.com/gibfahn/up-rs/releases/tag/0.6.4
 [0.7.0]: https://github.com/gibfahn/up-rs/releases/tag/0.7.0
 [0.8.0]: https://github.com/gibfahn/up-rs/releases/tag/0.8.0
+[0.8.1]: https://github.com/gibfahn/up-rs/releases/tag/0.8.1
