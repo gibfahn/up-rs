@@ -1,3 +1,18 @@
+<a name="0.8.2"></a>
+## [0.8.2][] (2021-02-27)
+
+
+#### Performance
+
+* **git:**  remove double connection to server ([c6e365f4](https://github.com/gibfahn/up-rs/commit/c6e365f4633ae73a08438d9d2fad7e3670780fb8))
+
+#### Bug Fixes
+
+* **self_update:**  allow adding as a task, skip if a dev build ([23bc13c4](https://github.com/gibfahn/up-rs/commit/23bc13c432ca04edc2798661114974c2f5591926))
+* **tasks:**  skip broken symlinks in tasks directory ([b90a599c](https://github.com/gibfahn/up-rs/commit/b90a599c71a2096d99d5b0e8285dc3a200b51056))
+
+
+
 <a name="0.8.1"></a>
 ## [0.8.1][] (2021-02-27)
 
@@ -281,3 +296,4 @@
 [0.7.0]: https://github.com/gibfahn/up-rs/releases/tag/0.7.0
 [0.8.0]: https://github.com/gibfahn/up-rs/releases/tag/0.8.0
 [0.8.1]: https://github.com/gibfahn/up-rs/releases/tag/0.8.1
+[0.8.2]: https://github.com/gibfahn/up-rs/releases/tag/0.8.2
