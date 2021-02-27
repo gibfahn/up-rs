@@ -46,6 +46,10 @@ fn real_clone() {
             "master",
             "up/master",
         );
+        assert_eq!(
+            run_git_cmd(&git_path, &["rev-parse", "up/HEAD"], true).trim(),
+            "7fd1a60b01f91b314f59955a4e4d4e80d8edf11d",
+        );
     }
 
     // Clone again to the same directory, different branch.

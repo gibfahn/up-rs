@@ -3,7 +3,7 @@
 use std::{borrow::ToOwned, fs, path::PathBuf, str};
 
 use anyhow::{bail, ensure, Context, Result};
-use git2::{BranchType, ConfigLevel, Direction, ErrorCode, FetchOptions, Repository};
+use git2::{BranchType, ConfigLevel, ErrorCode, FetchOptions, Repository};
 use itertools::Itertools;
 use log::{debug, trace};
 use url::Url;
@@ -219,17 +219,16 @@ fn set_up_remote(repo: &Repository, remote_config: &GitRemote) -> Result<()> {
             .map(git2::RemoteHead::name)
             .collect::<Vec<_>>()
     );
-    {
-        let mut count = 0;
-        // TODO(gib): stop connecting twice (once here, once above remote.fetch()).
-        remote.connect_auth(Direction::Fetch, Some(remote_callbacks(&mut count)), None)?;
-    }
     let default_branch = remote
         .default_branch()?
         .as_str()
         .map(ToOwned::to_owned)
         .ok_or(E::InvalidBranchError)?;
-    remote.disconnect()?;
+    trace!(
+        "Default branch for remote {:?}: {}",
+        remote.name(),
+        &default_branch
+    );
     set_remote_head(repo, &remote, &default_branch)?;
     Ok(())
 }
