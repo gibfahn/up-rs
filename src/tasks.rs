@@ -8,7 +8,7 @@ use std::{
 
 use anyhow::{anyhow, Context, Result};
 use displaydoc::Display;
-use log::{debug, error, info, trace};
+use log::{debug, error, info, trace, warn};
 use thiserror::Error;
 
 use self::TasksError as E;
@@ -89,7 +89,16 @@ pub fn run(config: &config::UpConfig, tasks_dirname: &str) -> Result<()> {
         if entry.file_type()?.is_dir() {
             continue;
         }
-        let task = task::Task::from(&entry.path())?;
+        let path = entry.path();
+        // If file is a broken symlink.
+        if !path.exists() && path.symlink_metadata().is_ok() {
+            warn!(
+                "Failed to read task, broken symlink or file permissions issue? {}",
+                path.display()
+            );
+            continue;
+        }
+        let task = task::Task::from(&path)?;
         if let Some(filter) = filter_tasks_set.as_ref() {
             if !filter.contains(&task.name) {
                 debug!(
