@@ -51,7 +51,11 @@ pub fn run_single(generate_git_config: &GenerateGitConfig) -> Result<()> {
         &generate_git_config.search_paths,
         generate_git_config.excludes.as_ref(),
     ) {
-        git_configs.push(parse_git_config(&path, generate_git_config.prune)?);
+        git_configs.push(parse_git_config(
+            &path,
+            generate_git_config.prune,
+            &generate_git_config.remote_order,
+        )?);
     }
     // TODO(gib): keep old branch names.
     git_configs.sort_unstable_by(|c1, c2| c1.path.cmp(&c2.path));
@@ -132,17 +136,32 @@ fn find_repos(search_paths: &[PathBuf], excludes: Option<&Vec<String>>) -> Vec<P
     repo_paths
 }
 
-fn parse_git_config(path: &Path, prune: bool) -> Result<GitConfig> {
+fn parse_git_config(path: &Path, prune: bool, remote_order: &[String]) -> Result<GitConfig> {
     let repo = Repository::open(&path)?;
-    let mut remotes = Vec::new();
-    for opt_name in &repo.remotes()? {
-        let name = opt_name.ok_or(E::InvalidUtf8)?;
-        let remote = repo.find_remote(name).with_context(|| E::InvalidRemote {
-            name: name.to_owned(),
-        })?;
-        let git_remote = GitRemote::from(&remote)?;
-        remotes.push(git_remote);
+
+    let mut sorted_remote_names = Vec::new();
+    {
+        let mut remote_names: Vec<String> = Vec::new();
+        for opt_name in &repo.remotes()? {
+            remote_names.push(opt_name.ok_or(E::InvalidUtf8)?.to_owned());
+        }
+        for order in remote_order {
+            if let Some(pos) = remote_names.iter().position(|el| el == order) {
+                sorted_remote_names.push(remote_names.remove(pos));
+            }
+        }
+        sorted_remote_names.extend(remote_names.into_iter());
     }
+
+    let mut remotes = Vec::new();
+    for name in sorted_remote_names {
+        remotes.push(GitRemote::from(
+            &repo
+                .find_remote(&name)
+                .with_context(|| E::InvalidRemote { name })?,
+        )?);
+    }
+
     let config = GitConfig {
         path: path.to_string_lossy().to_string(),
         branch: None,

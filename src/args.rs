@@ -198,6 +198,9 @@ pub struct GenerateGitConfig {
     /// upstream.
     #[structopt(long)]
     pub(crate) prune: bool,
+    /// Order to save remotes, other remotes will be included after those listed here.
+    #[structopt(long)]
+    pub(crate) remote_order: Vec<String>,
     // TODO(gib): add a check option that errors if not up to date.
 }
 
