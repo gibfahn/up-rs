@@ -165,7 +165,7 @@ pub(crate) struct GenerateOptions {
     pub(crate) lib: Option<GenerateLib>,
 }
 
-#[derive(Debug, Default, StructOpt, Serialize, Deserialize)]
+#[derive(Debug, StructOpt, Serialize, Deserialize)]
 pub(crate) struct UpdateSelfOptions {
     /// URL to download update from.
     #[structopt(long, default_value = SELF_UPDATE_URL)]
@@ -175,6 +175,15 @@ pub(crate) struct UpdateSelfOptions {
     /// subdirectory of the cargo root path that the binary was originally built in.
     #[structopt(long)]
     pub(crate) always_update: bool,
+}
+
+impl Default for UpdateSelfOptions {
+    fn default() -> Self {
+        Self {
+            url: SELF_UPDATE_URL.to_owned(),
+            always_update: false,
+        }
+    }
 }
 
 /// Library to generate.
