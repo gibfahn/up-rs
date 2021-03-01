@@ -1,3 +1,13 @@
+<a name="0.8.3"></a>
+## [0.8.3][] (2021-03-01)
+
+
+#### Bug Fixes
+
+* **update_self:**  manually implement default for UpdateSelfOptions ([a5ad0378](https://github.com/gibfahn/up-rs/commit/a5ad03783571c9fa44452e27eaa34d418f1cf820))
+
+
+
 <a name="0.8.2"></a>
 ## [0.8.2][] (2021-02-27)
 
@@ -297,3 +307,4 @@
 [0.8.0]: https://github.com/gibfahn/up-rs/releases/tag/0.8.0
 [0.8.1]: https://github.com/gibfahn/up-rs/releases/tag/0.8.1
 [0.8.2]: https://github.com/gibfahn/up-rs/releases/tag/0.8.2
+[0.8.3]: https://github.com/gibfahn/up-rs/releases/tag/0.8.3
