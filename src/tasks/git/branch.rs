@@ -42,6 +42,16 @@ pub(in crate::tasks::git) fn get_push_branch<'a>(
 
     match get_push_remote(branch, config)? {
         Some(remote) => {
+            // If the push default isn't a remote ignore it.
+            // e.g. when using `gh pr checkout`, the remote.pushDefault will be set to the URL of
+            // the fork repo, e.g. https://github.com/user/repo.git
+            match repo.find_remote(&remote) {
+                Ok(_) => {}
+                Err(e) if e.code() == ErrorCode::InvalidSpec => return Ok(None),
+                Err(e) if e.code() == ErrorCode::NotFound => return Ok(None),
+                Err(e) => return Err(e.into()),
+            }
+
             let remote_ref = format!("{}/{}", remote, branch);
             trace!("Checking push remote for matching branch {}", &remote_ref);
             match repo.find_branch(&remote_ref, BranchType::Remote) {
