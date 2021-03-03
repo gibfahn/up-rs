@@ -134,7 +134,7 @@ pub(super) fn warn_for_unpushed_changes(
     }
     if !unmerged_branches.is_empty() {
         warn!(
-            "Repo '{}' has unmerged fork branches: {}.",
+            "Repo '{}' has unmerged fork branches: {} .",
             git_path.display(),
             unmerged_branches.join(" "),
         );
