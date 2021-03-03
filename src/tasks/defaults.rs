@@ -45,7 +45,7 @@ pub(crate) fn run(config: DefaultsConfig) -> Result<()> {
             trace!(
                 "Requested type: '{}', value: '{}'",
                 requested_value.type_str(),
-                requested_value
+                value_to_string(&requested_value)?,
             );
             if current_value.as_ref() == Some(&requested_value) {
                 debug!("Already set, continuing...");
@@ -82,7 +82,7 @@ fn write_default_to_toml_value(
         // TODO(gib): Handle arrays and dicts properly (is Plist the same as TOML?).
         // https://github.com/ebarnard/rust-plist/issues/54
         // toml::from_str::<plist::Value>(&requested_value.to_string())?,
-        &requested_value.to_string(),
+        &value_to_string(requested_value)?,
     ])?;
     Ok(())
 }
@@ -129,7 +129,7 @@ fn run_defaults(args: &[&str]) -> Result<String> {
             .trim_end()
             .to_string();
         if !stderr.contains("does not exist") {
-            return Err(E::DefaultsError {
+            return Err(E::DefaultsCmdError {
                 status: output.status,
                 command: defaults_cmd,
                 stdout,
@@ -159,6 +159,23 @@ fn defaults_cmd_for_printing(args: &[&str]) -> String {
         })
 }
 
+/// Convert a toml value to the string representation.
+///
+/// If the value is already a String, then `value.to_string()` will add quotes around it, so:
+/// If value was `toml::Value::String("some_value")`, then `value.to_string()` would return `"some_value"`.
+fn value_to_string(value: &toml::Value) -> Result<String> {
+    if value.is_str() {
+        Ok(value
+            .as_str()
+            .map(std::borrow::ToOwned::to_owned)
+            .ok_or_else(|| E::UnexpectedStringError {
+                value: value.to_string(),
+            })?)
+    } else {
+        Ok(value.to_string())
+    }
+}
+
 #[derive(Error, Debug, Display)]
 /// Errors thrown by this file.
 pub enum DefaultsError {
@@ -167,10 +184,12 @@ pub enum DefaultsError {
      * Stdout: {stdout}
      * Stderr: {stderr}
      */
-    DefaultsError {
+    DefaultsCmdError {
         command: String,
         stdout: String,
         stderr: String,
         status: ExitStatus,
     },
+    /// Toml value claimed to be a string but failed to convert to one: '{value}'.
+    UnexpectedStringError { value: String },
 }
