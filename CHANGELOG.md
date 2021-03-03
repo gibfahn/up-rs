@@ -1,3 +1,16 @@
+<a name="0.8.4"></a>
+## [0.8.4][] (2021-03-03)
+
+
+#### Bug Fixes
+
+* **defaults:**  don't write quoted strings as defaults ([079b2d19](https://github.com/gibfahn/up-rs/commit/079b2d19762d37e541dea9f1eba97a056170b84a))
+* **git:**
+  *  make it easier to copy unmerged fork branches ([424d2209](https://github.com/gibfahn/up-rs/commit/424d2209eb3ac198a001adbc14fdb53f22dd1205))
+  *  handle remote.pushDefault that's a URL not remote name ([6ecc38e2](https://github.com/gibfahn/up-rs/commit/6ecc38e249e316a4116b76f3939fead98627e03e))
+
+
+
 <a name="0.8.3"></a>
 ## [0.8.3][] (2021-03-01)
 
@@ -308,3 +321,4 @@
 [0.8.1]: https://github.com/gibfahn/up-rs/releases/tag/0.8.1
 [0.8.2]: https://github.com/gibfahn/up-rs/releases/tag/0.8.2
 [0.8.3]: https://github.com/gibfahn/up-rs/releases/tag/0.8.3
+[0.8.4]: https://github.com/gibfahn/up-rs/releases/tag/0.8.4
