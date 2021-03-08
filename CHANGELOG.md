@@ -1,3 +1,13 @@
+<a name="0.8.5"></a>
+## [0.8.5][] (2021-03-08)
+
+
+#### Bug Fixes
+
+* **git:**  handle out-of-date submodules when updating repos ([df8bb072](https://github.com/gibfahn/up-rs/commit/df8bb07263c4a8902e6bb25a080b3ee636dae014))
+
+
+
 <a name="0.8.4"></a>
 ## [0.8.4][] (2021-03-03)
 
@@ -322,3 +332,4 @@
 [0.8.2]: https://github.com/gibfahn/up-rs/releases/tag/0.8.2
 [0.8.3]: https://github.com/gibfahn/up-rs/releases/tag/0.8.3
 [0.8.4]: https://github.com/gibfahn/up-rs/releases/tag/0.8.4
+[0.8.5]: https://github.com/gibfahn/up-rs/releases/tag/0.8.5
