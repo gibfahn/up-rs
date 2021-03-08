@@ -1,7 +1,7 @@
 use std::str;
 
 use anyhow::{anyhow, bail, Result};
-use git2::{build::CheckoutBuilder, BranchType, ErrorCode, Repository};
+use git2::{build::CheckoutBuilder, BranchType, ErrorCode, Repository, SubmoduleUpdateOptions};
 use log::{debug, trace};
 
 use crate::tasks::git::status::ensure_repo_clean;
@@ -104,13 +104,35 @@ fn force_checkout_head(repo: &Repository) -> Result<()> {
     debug!("Force checking out HEAD.");
     repo.checkout_head(Some(
         CheckoutBuilder::new()
-            // TODO(gib): What submodule options do we want to set?
             .force()
             .allow_conflicts(true)
             .recreate_missing(true)
             .conflict_style_diff3(true)
             .conflict_style_merge(true),
     ))?;
+
+    for mut submodule in repo.submodules()? {
+        trace!("Updating submodule: {:?}", submodule.name());
+
+        let mut checkout_builder = CheckoutBuilder::new();
+        checkout_builder
+            .force()
+            .allow_conflicts(true)
+            .recreate_missing(true)
+            .conflict_style_diff3(true)
+            .conflict_style_merge(true);
+
+        // Update the submodule's head. Doesn't fetch as it assumes that the parent repo was already
+        // fetched.
+        submodule.update(
+            false,
+            Some(SubmoduleUpdateOptions::new().checkout(checkout_builder)),
+        )?;
+
+        // Open the submodule and force checkout its head too (recurses into nested submodules).
+        let submodule_repo = submodule.open()?;
+        force_checkout_head(&submodule_repo)?;
+    }
     Ok(())
 }
 

@@ -162,7 +162,8 @@ fn defaults_cmd_for_printing(args: &[&str]) -> String {
 /// Convert a toml value to the string representation.
 ///
 /// If the value is already a String, then `value.to_string()` will add quotes around it, so:
-/// If value was `toml::Value::String("some_value")`, then `value.to_string()` would return `"some_value"`.
+/// If value was `toml::Value::String("some_value")`, then `value.to_string()` would return
+/// `"some_value"`.
 fn value_to_string(value: &toml::Value) -> Result<String> {
     if value.is_str() {
         Ok(value
