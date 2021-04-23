@@ -45,7 +45,7 @@ const fn prune_default() -> bool {
 }
 
 // TODO(gib): Pass by reference instead.
-#[allow(clippy::clippy::needless_pass_by_value)]
+#[allow(clippy::needless_pass_by_value)]
 pub(crate) fn run(configs: Vec<GitConfig>) -> Result<()> {
     // TODO(gib): run them in parallel.
     // TODO(gib): continue even if one errors.

@@ -31,7 +31,7 @@ impl ResolveEnv for DefaultsConfig {}
 pub struct DefaultsConfig(HashMap<String, HashMap<String, toml::Value>>);
 
 // TODO(gib): Pass by reference instead.
-#[allow(clippy::clippy::needless_pass_by_value)]
+#[allow(clippy::needless_pass_by_value)]
 pub(crate) fn run(config: DefaultsConfig) -> Result<()> {
     debug!("Setting defaults");
     for (domain, preferences) in config.0 {

@@ -21,7 +21,7 @@ use crate::tasks::git::{
 
 pub(crate) fn update(git_config: &GitConfig) -> Result<()> {
     real_update(git_config).with_context(|| E::GitUpdate {
-        path: PathBuf::from(git_config.path.to_owned()),
+        path: PathBuf::from(git_config.path.clone()),
     })
 }
 
@@ -29,10 +29,10 @@ pub(crate) fn update(git_config: &GitConfig) -> Result<()> {
 // TODO(gib): Handle the case where a repo update has changed the default
 // branch, e.g. master -> main, and now there's a branch with an upstream
 // pointing to nothing.
-#[allow(clippy::clippy::too_many_lines)]
+#[allow(clippy::too_many_lines)]
 pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
     // Create dir if it doesn't exist.
-    let git_path = PathBuf::from(git_config.path.to_owned());
+    let git_path = PathBuf::from(git_config.path.clone());
     debug!("Updating git repo '{}'", git_path.display());
     // Whether we just created this repo.
     let mut newly_created_repo = false;
@@ -40,7 +40,7 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
         debug!("Dir doesn't exist, creating...");
         newly_created_repo = true;
         fs::create_dir_all(&git_path).map_err(|e| E::CreateDirError {
-            path: git_path.to_path_buf(),
+            path: git_path.clone(),
             source: e,
         })?;
     }
@@ -93,7 +93,7 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
     }
 
     let branch_name: String = if let Some(branch_name) = &git_config.branch {
-        branch_name.to_owned()
+        branch_name.clone()
     } else {
         calculate_head(&repo)?
     };
@@ -204,7 +204,7 @@ fn set_up_remote(repo: &Repository, remote_config: &GitRemote) -> Result<()> {
                     String::new()
                 };
                 E::FetchFailed {
-                    remote: remote_name.to_owned(),
+                    remote: remote_name.clone(),
                     extra_info,
                     source: e,
                 }

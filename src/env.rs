@@ -16,7 +16,7 @@ pub fn get_env(
     if let Some(inherited_env) = inherit_env {
         for inherited_var in inherited_env {
             if let Ok(value) = std::env::var(inherited_var) {
-                env.insert(inherited_var.to_owned(), value);
+                env.insert(inherited_var.clone(), value);
             }
         }
     }
@@ -33,7 +33,7 @@ pub fn get_env(
                     Some(val) => Ok(Some(val)),
                     None => {
                         if config_env.contains_key(k) {
-                            unresolved_env.push(key.to_owned());
+                            unresolved_env.push(key.clone());
                             Ok(None)
                         } else {
                             Err(anyhow!(
@@ -50,9 +50,9 @@ pub fn get_env(
                 .into_owned(),
             );
         }
-        calculated_env.drain().for_each(|(k, v)| {
+        for (k, v) in calculated_env.drain() {
             env.insert(k, v);
-        });
+        }
     }
 
     // Resolve unresolved env vars.

@@ -78,13 +78,13 @@ pub(crate) fn run(opts: &UpdateSelfOptions) -> Result<()> {
 
     fs::create_dir_all(&temp_dir).with_context(|| E::CreateDir { path: temp_dir })?;
     let mut dest = File::create(&temp_path).with_context(|| E::CreateFile {
-        path: temp_path.to_path_buf(),
+        path: temp_path.clone(),
     })?;
     io::copy(&mut response, &mut dest).context(E::Copy {})?;
 
     let permissions = Permissions::from_mode(0o755);
     fs::set_permissions(&temp_path, permissions).with_context(|| E::SetPermissions {
-        path: temp_path.to_owned(),
+        path: temp_path.clone(),
     })?;
 
     let output = Command::new(temp_path).arg("--version").output()?;

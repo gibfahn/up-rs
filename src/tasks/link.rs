@@ -210,7 +210,7 @@ fn link_path(
                         from_path.path()
                     );
                     fs::remove_file(&to_path).map_err(|e| LinkError::DeleteError {
-                        path: to_path.to_path_buf(),
+                        path: to_path.clone(),
                         source: e,
                     })?;
                 }
@@ -229,7 +229,7 @@ fn link_path(
                 source: e,
             })?;
             fs::rename(&to_path, &backup_path).map_err(|e| LinkError::RenameError {
-                from_path: to_path.to_path_buf(),
+                from_path: to_path.clone(),
                 to_path: backup_path,
                 source: e,
             })?;
@@ -242,7 +242,7 @@ fn link_path(
                 source: e,
             })?;
             fs::rename(&to_path, &backup_path).map_err(|e| LinkError::RenameError {
-                from_path: to_path.to_path_buf(),
+                from_path: to_path.clone(),
                 to_path: backup_path,
                 source: e,
             })?;
@@ -254,12 +254,12 @@ fn link_path(
             "Removing existing broken link.\n  Path: {:?}\n  Dest: {:?}",
             &to_path,
             &to_path.read_link().map_err(|e| LinkError::IoError {
-                path: to_path.to_path_buf(),
+                path: to_path.clone(),
                 source: e
             })?
         );
         fs::remove_file(&to_path).map_err(|e| LinkError::DeleteError {
-            path: to_path.to_path_buf(),
+            path: to_path.clone(),
             source: e,
         })?;
     } else {
@@ -269,7 +269,7 @@ fn link_path(
     unix::fs::symlink(from_path.path(), &to_path).map_err(|e| {
         LinkError::SymlinkError {
             from_path: from_path.path().to_path_buf(),
-            to_path: to_path.to_path_buf(),
+            to_path: to_path.clone(),
             source: e,
         }
         .into()

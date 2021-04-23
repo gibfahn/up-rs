@@ -138,7 +138,10 @@ struct LogPaths {
 /// Create log file, and a symlink to it that can be used to find the latest
 /// one.
 fn get_log_path_file(log_dir: Option<&PathBuf>) -> Result<LogPaths> {
-    let log_dir = log_dir.map_or_else(|| env::temp_dir().join("up-rs/logs"), |p| p.to_path_buf());
+    let log_dir = log_dir.map_or_else(
+        || env::temp_dir().join("up-rs/logs"),
+        std::clone::Clone::clone,
+    );
     fs::create_dir_all(&log_dir).map_err(|e| MainError::CreateDirError {
         path: log_dir.clone(),
         source: e,
@@ -152,7 +155,7 @@ fn get_log_path_file(log_dir: Option<&PathBuf>) -> Result<LogPaths> {
         let log_path_link_file_type = log_path_link.symlink_metadata()?.file_type();
         if log_path_link_file_type.is_symlink() {
             fs::remove_file(&log_path_link).map_err(|e| MainError::DeleteError {
-                path: log_path_link.to_path_buf(),
+                path: log_path_link.clone(),
                 source: e,
             })?;
         } else {
@@ -164,8 +167,8 @@ fn get_log_path_file(log_dir: Option<&PathBuf>) -> Result<LogPaths> {
     }
 
     unix::fs::symlink(&log_path, &log_path_link).map_err(|e| MainError::SymlinkError {
-        link_path: log_path_link.to_path_buf(),
-        src_path: log_path.to_path_buf(),
+        link_path: log_path_link.clone(),
+        src_path: log_path.clone(),
         source: e,
     })?;
 
@@ -175,7 +178,7 @@ fn get_log_path_file(log_dir: Option<&PathBuf>) -> Result<LogPaths> {
         .truncate(true)
         .open(&log_path)
         .map_err(|e| MainError::LogFileOpenFailed {
-            path: log_path.to_path_buf(),
+            path: log_path.clone(),
             source: e,
         })?;
 
