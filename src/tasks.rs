@@ -3,16 +3,17 @@ use std::{
     io,
     path::PathBuf,
     process::Command,
-    thread, time,
+    time::{Duration, Instant},
 };
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use displaydoc::Display;
 use log::{debug, error, info, trace, warn};
+use rayon::prelude::*;
 use thiserror::Error;
 
-use self::TasksError as E;
-use crate::{config, env::get_env};
+use self::{task::Task, TasksError as E};
+use crate::{config, env::get_env, tasks::task::TaskStatus};
 
 pub mod defaults;
 pub mod git;
@@ -79,7 +80,6 @@ pub fn run(config: &config::UpConfig, tasks_dirname: &str) -> Result<()> {
     let filter_tasks_set: Option<HashSet<String>> =
         config.tasks.clone().map(|v| v.into_iter().collect());
 
-    #[allow(clippy::filter_map)]
     let mut tasks: HashMap<String, task::Task> = HashMap::new();
     for entry in tasks_dir.read_dir().map_err(|e| E::ReadDir {
         path: tasks_dir.clone(),
@@ -118,10 +118,95 @@ pub fn run(config: &config::UpConfig, tasks_dirname: &str) -> Result<()> {
 }
 
 fn run_tasks(
-    mut bootstrap_tasks: Vec<String>,
+    bootstrap_tasks: Vec<String>,
     mut tasks: HashMap<String, task::Task>,
     env: &HashMap<String, String>,
 ) -> Result<()> {
+    let bootstrap_tasks_len = bootstrap_tasks.len();
+    if !bootstrap_tasks.is_empty() {
+        for task in bootstrap_tasks {
+            let task = run_task(
+                tasks
+                    .remove(&task)
+                    .ok_or_else(|| anyhow!("Task '{}' was missing.", task))?,
+                env,
+            );
+            if let TaskStatus::Failed(e) = task.status {
+                bail!(e);
+            }
+        }
+    }
+
+    // TODO(gib): Remove or make tunable sleep delay.
+    // TODO(gib): Each minute log that we've been running for a minute, and how many
+    // of each task is still running.
+    let tasks = tasks
+        .into_par_iter()
+        .filter(|(_, task)| task.config.auto_run.unwrap_or(true))
+        .map(|(_, task)| run_task(task, env))
+        .collect::<Vec<Task>>();
+    let tasks_len = tasks.len() + bootstrap_tasks_len;
+
+    let mut tasks_passed = Vec::new();
+    let mut tasks_skipped = Vec::new();
+    let mut tasks_failed = Vec::new();
+    let mut tasks_incomplete = Vec::new();
+    let mut task_errors: Vec<anyhow::Error> = Vec::new();
+
+    for mut task in tasks {
+        match task.status {
+            TaskStatus::Failed(ref mut e) => {
+                let extracted_error = std::mem::replace(e, anyhow!(""));
+                task_errors.push(extracted_error);
+                tasks_failed.push(task);
+            }
+            TaskStatus::Passed => tasks_passed.push(task),
+            TaskStatus::Skipped => tasks_skipped.push(task),
+            TaskStatus::Incomplete => tasks_incomplete.push(task),
+        }
+    }
+
+    info!(
+        "Ran {} tasks, {} passed, {} failed, {} skipped",
+        tasks_len,
+        tasks_passed.len(),
+        tasks_failed.len(),
+        tasks_skipped.len()
+    );
+    if !tasks_passed.is_empty() {
+        info!(
+            "Tasks passed: {:?}",
+            tasks_passed.iter().map(|t| &t.name).collect::<Vec<_>>()
+        );
+    }
+    if !tasks_skipped.is_empty() {
+        info!(
+            "Tasks skipped: {:?}",
+            tasks_skipped.iter().map(|t| &t.name).collect::<Vec<_>>()
+        );
+    }
+
+    if !tasks_failed.is_empty() {
+        error!(
+            "Tasks failed: {:#?}",
+            tasks_failed.iter().map(|t| &t.name).collect::<Vec<_>>()
+        );
+    }
+    if !task_errors.is_empty() {
+        // Error out.
+        error!("One or more tasks failed, exiting.");
+        return Err(anyhow!("")).with_context(|| {
+            let task_errors_string = task_errors
+                .into_iter()
+                .fold(String::new(), |acc, e| acc + &format!("\n- {:?}", e));
+            anyhow!("Task errors: {}", task_errors_string)
+        });
+    }
+
+    Ok(())
+}
+
+fn run_task(mut task: Task, env: &HashMap<String, String>) -> Task {
     // TODO(gib): Allow vars to refer to other vars, detect cycles (topologically
     // sort inputs).
     let env_fn = &|s: &str| {
@@ -139,107 +224,14 @@ fn run_tasks(
         Ok(out)
     };
 
-    #[allow(clippy::filter_map)]
-    let post_bootstrap_tasks_to_run: Vec<String> = tasks
-        .iter()
-        .filter(|(_, task)| task.config.auto_run.unwrap_or(true))
-        .map(|(name, _)| name.clone())
-        .collect();
-
-    let mut bootstrap = !bootstrap_tasks.is_empty();
-    let mut tasks_to_run: HashSet<String> = HashSet::new();
-    if let Some(task) = bootstrap_tasks.pop() {
-        tasks_to_run.insert(task);
-    } else {
-        tasks_to_run.extend(post_bootstrap_tasks_to_run.iter().cloned())
+    let now = Instant::now();
+    task.run(env_fn, env);
+    let elapsed_time = now.elapsed();
+    // TODO(gib): configurable logging for long actions.
+    if elapsed_time > Duration::from_secs(60) {
+        warn!("Task {} took {:?}", task.name, elapsed_time);
     }
-
-    let mut tasks_passed = Vec::new();
-    let mut tasks_skipped = Vec::new();
-    let mut tasks_failed = Vec::new();
-    let mut task_errors: Vec<anyhow::Error> = Vec::new();
-
-    let mut tasks_to_run_completed = Vec::new();
-
-    while !tasks_to_run.is_empty() {
-        // TODO(gib): Remove or make tunable sleep delay.
-        // TODO(gib): Each minute log that we've been running for a minute, and how many
-        // of each task is still running.
-        thread::sleep(time::Duration::from_millis(10));
-        for name in &tasks_to_run {
-            let task = tasks
-                .get_mut(name)
-                .ok_or_else(|| anyhow!("Task '{}' was missing.", name))?;
-
-            match task.status {
-                task::TaskStatus::New => {
-                    // Start the task or mark it as blocked.
-                    task.try_start(env_fn, env)?;
-                }
-                task::TaskStatus::Blocked => {
-                    // Check if still blocked, if not start it.
-                }
-                task::TaskStatus::Running(_, _) => {
-                    // Check if finished, if so gather status.
-                    task.try_finish()?;
-                }
-                task::TaskStatus::Failed(ref mut e) => {
-                    tasks_to_run_completed.push(name.clone());
-                    tasks_failed.push(name.clone());
-                    let extracted_error = std::mem::replace(e, anyhow!(""));
-                    task_errors.push(extracted_error);
-                }
-                task::TaskStatus::Passed => {
-                    tasks_to_run_completed.push(name.clone());
-                    tasks_passed.push(name.clone());
-                }
-                task::TaskStatus::Skipped => {
-                    tasks_to_run_completed.push(name.clone());
-                    tasks_skipped.push(name.clone());
-                }
-            }
-        }
-        for name in tasks_to_run_completed.drain(..) {
-            tasks_to_run.remove(&name);
-        }
-        if tasks_to_run.is_empty() {
-            if let Some(task) = bootstrap_tasks.pop() {
-                tasks_to_run.insert(task);
-            } else if bootstrap {
-                bootstrap = false;
-                tasks_to_run.extend(post_bootstrap_tasks_to_run.iter().cloned())
-            } else {
-                // We're done.
-            }
-        }
-    }
-
-    info!(
-        "Ran {} tasks, {} passed, {} failed, {} skipped",
-        tasks.len(),
-        tasks_passed.len(),
-        tasks_failed.len(),
-        tasks_skipped.len()
-    );
-    if !tasks_passed.is_empty() {
-        info!("Tasks passed: {:?}", tasks_passed);
-    }
-    if !tasks_skipped.is_empty() {
-        info!("Tasks skipped: {:?}", tasks_skipped);
-    }
-
-    if !tasks_failed.is_empty() {
-        // Error out.
-        error!("Tasks failed: {:#?}", tasks_failed);
-        error!("One or more tasks failed, exiting.");
-        return Err(anyhow!("")).with_context(|| {
-            let task_errors_string = task_errors
-                .into_iter()
-                .fold(String::new(), |acc, e| acc + &format!("\n- {:?}", e));
-            anyhow!("Task errors: {}", task_errors_string)
-        });
-    }
-    Ok(())
+    task
 }
 
 #[derive(Error, Debug, Display)]

@@ -1,9 +1,8 @@
 use std::{
     collections::HashMap,
     fs,
-    io::Read,
     path::{Path, PathBuf},
-    process::{Child, Command, ExitStatus, Output, Stdio},
+    process::{Command, Output, Stdio},
     time::{Duration, Instant},
 };
 
@@ -19,12 +18,8 @@ use crate::{
 
 #[derive(Debug)]
 pub enum TaskStatus {
-    /// We haven't checked this task yet.
-    New,
-    /// Not yet ready to run as some requires still haven't finished.
-    Blocked,
-    /// In progress.
-    Running(Child, Instant),
+    /// Skipped.
+    Incomplete,
     /// Skipped.
     Skipped,
     /// Completed successfully.
@@ -97,79 +92,59 @@ impl Task {
                 .ok_or(TasksError::None {})?
                 .to_owned(),
         };
-        let status = TaskStatus::New;
         let task = Self {
             name,
             path: path.to_owned(),
             config,
-            status,
             start_time,
+            status: TaskStatus::Incomplete,
         };
         debug!("Task '{}': {:?}", &task.name, task);
         Ok(task)
     }
 
-    pub fn try_start<F>(&mut self, env_fn: F, env: &HashMap<String, String>) -> Result<()>
+    pub fn run<F>(&mut self, env_fn: F, env: &HashMap<String, String>)
     where
         F: Fn(&str) -> Result<String>,
     {
-        // TODO(gib): actually check whether we're blocked.
-
-        self.status = TaskStatus::Blocked;
-        self.start(env_fn, env)
+        match self.try_run(env_fn, env) {
+            Ok(status) => self.status = status,
+            Err(e) => self.status = TaskStatus::Failed(e),
+        }
     }
 
-    // TODO(gib): Test for this (using basic config).
-    pub fn start<F>(&mut self, env_fn: F, env: &HashMap<String, String>) -> Result<()>
+    pub fn try_run<F>(&mut self, env_fn: F, env: &HashMap<String, String>) -> Result<TaskStatus>
     where
         F: Fn(&str) -> Result<String>,
     {
         info!("Running task '{}'", &self.name);
-        self.status = TaskStatus::Passed;
 
         if let Some(lib) = &self.config.run_lib {
-            let run_lib_result = match lib.as_str() {
+            let data = self
+                .config
+                .data
+                .as_ref()
+                .ok_or_else(|| anyhow!("Task '{}' data had no value.", &self.name))?
+                .clone();
+
+            match lib.as_str() {
                 "link" => {
-                    let mut data = self
-                        .config
-                        .data
-                        .as_ref()
-                        .ok_or_else(|| anyhow!("Task '{}' data had no value.", &self.name))?
-                        .clone()
-                        .try_into::<LinkOptions>()?;
+                    let mut data = data.try_into::<LinkOptions>()?;
                     data.resolve_env(env_fn)?;
                     tasks::link::run(data)
                 }
                 "git" => {
-                    let mut data = self
-                        .config
-                        .data
-                        .as_ref()
-                        .ok_or_else(|| anyhow!("Task '{}' data had no value.", &self.name))?
-                        .clone()
-                        .try_into::<Vec<GitConfig>>()?;
+                    let mut data = data.try_into::<Vec<GitConfig>>()?;
                     data.resolve_env(env_fn)?;
                     tasks::git::run(data)
                 }
                 "generate_git" => {
-                    let mut data = self
-                        .config
-                        .data
-                        .as_ref()
-                        .ok_or_else(|| anyhow!("Task '{}' data had no value.", &self.name))?
-                        .clone()
-                        .try_into::<Vec<GenerateGitConfig>>()?;
+                    let mut data = data.try_into::<Vec<GenerateGitConfig>>()?;
                     data.resolve_env(env_fn)?;
                     generate::git::run(&data)
                 }
                 "defaults" => {
-                    let mut data = self
-                        .config
-                        .data
-                        .as_ref()
-                        .ok_or_else(|| anyhow!("Task '{}' data had no value.", &self.name))?
-                        .clone()
-                        .try_into::<DefaultsConfig>()?;
+                    let mut data = data.try_into::<DefaultsConfig>()?;
                     data.resolve_env(env_fn)?;
                     tasks::defaults::run(data)
                 }
@@ -184,13 +159,8 @@ impl Task {
                     tasks::update_self::run(&options)
                 }
                 _ => Err(anyhow!("This run_lib is invalid or not yet implemented.")),
-            };
-            if let Err(e) = run_lib_result {
-                self.status = TaskStatus::Failed(e);
-            } else {
-                self.status = TaskStatus::Passed;
-            }
-            return Ok(());
+            }?;
+            return Ok(TaskStatus::Passed);
         }
 
         if let Some(mut cmd) = self.config.check_cmd.clone() {
@@ -198,13 +168,11 @@ impl Task {
             for s in &mut cmd {
                 *s = env_fn(s)?;
             }
-            let check_output = self.run_check_cmd(&cmd, env)?;
             // TODO(gib): Allow choosing how to validate check_cmd output (stdout, zero exit
             // code, non-zero exit code).
-            if check_output.status.success() {
+            if self.run_check_cmd(&cmd, env)? {
                 debug!("Skipping task '{}' as check command passed.", &self.name);
-                self.status = TaskStatus::Skipped;
-                return Ok(());
+                return Ok(TaskStatus::Skipped);
             }
         } else {
             // TODO(gib): Make a warning and allow silencing by setting check_cmd to boolean
@@ -220,9 +188,10 @@ impl Task {
             for s in &mut cmd {
                 *s = env_fn(s)?;
             }
-            let (child, start_time) = Self::start_command(&cmd, env)?;
-            self.status = TaskStatus::Running(child, start_time);
-            return Ok(());
+            if self.run_run_cmd(&cmd, env)? {
+                return Ok(TaskStatus::Passed);
+            }
+            return Ok(TaskStatus::Failed(anyhow!("Task {} failed.", self.name)));
         }
 
         bail!(TasksError::MissingCmd {
@@ -230,47 +199,7 @@ impl Task {
         });
     }
 
-    /// If command has completed set output state.
-    pub fn try_finish(&mut self) -> Result<()> {
-        let (child, start_time) = match &mut self.status {
-            TaskStatus::Running(child, start_time) => (child, start_time),
-            _ => bail!(anyhow!("Can't finish non-running task.")),
-        };
-
-        if let Some(status) = child.try_wait()? {
-            debug!("Task '{}' complete.", &self.name);
-            let elapsed_time = start_time.elapsed();
-
-            let mut stdout = String::new();
-            child
-                .stdout
-                .as_mut()
-                .ok_or_else(|| anyhow!("Missing stdout"))?
-                .read_to_string(&mut stdout)?;
-
-            let mut stderr = String::new();
-            child
-                .stderr
-                .as_mut()
-                .ok_or_else(|| anyhow!("Missing stderr"))?
-                .read_to_string(&mut stderr)?;
-
-            self.log_command_output(CommandType::Run, status, &stdout, &stderr, elapsed_time);
-            if status.success() {
-                self.status = TaskStatus::Passed;
-            } else {
-                // TODO(gib): Error should include an easy way to see the task logs.
-                self.status = TaskStatus::Failed(anyhow!("Task {} failed.", self.name));
-            }
-        } else {
-            // Still running.
-            // trace!("Task '{}' still in progress.", &self.name);
-        }
-
-        Ok(())
-    }
-
-    pub fn run_check_cmd(&self, cmd: &[String], env: &HashMap<String, String>) -> Result<Output> {
+    pub fn run_check_cmd(&self, cmd: &[String], env: &HashMap<String, String>) -> Result<bool> {
         let mut command = Self::get_command(cmd, env)?;
 
         let now = Instant::now();
@@ -281,30 +210,26 @@ impl Task {
         })?;
 
         let elapsed_time = now.elapsed();
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        let stderr = String::from_utf8_lossy(&output.stderr);
-
-        self.log_command_output(
-            CommandType::Check,
-            output.status,
-            &stdout,
-            &stderr,
-            elapsed_time,
-        );
-        Ok(output)
+        let success = output.status.success();
+        self.log_command_output(CommandType::Check, &output, elapsed_time);
+        Ok(success)
     }
 
-    pub fn start_command(
-        cmd: &[String],
-        env: &HashMap<String, String>,
-    ) -> Result<(Child, Instant)> {
+    pub fn run_run_cmd(&self, cmd: &[String], env: &HashMap<String, String>) -> Result<bool> {
         let command = Self::get_command(cmd, env);
         let now = Instant::now();
-        let child = command?
+        let output = command?
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
-            .spawn()?;
-        Ok((child, now))
+            .output()?;
+        debug!("Task '{}' complete.", &self.name);
+        let elapsed_time = now.elapsed();
+
+        let success = output.status.success();
+        self.log_command_output(CommandType::Run, &output, elapsed_time);
+        // TODO(gib): Error should include an easy way to see the task logs.
+
+        Ok(success)
     }
 
     pub fn get_command(cmd: &[String], env: &HashMap<String, String>) -> Result<Command> {
@@ -322,21 +247,19 @@ impl Task {
         Ok(command)
     }
 
+    /// | Command | Result | Status  | Stdout/Stderr |
+    /// | ---     | ---    | ---     | ---           |
+    /// | Check   | passes | `debug` | `debug`       |
+    /// | Run     | passes | `debug` | `debug`       |
+    /// | Check   | fails  | `info`  | `debug`       |
+    /// | Run     | fails  | `error` | `error`       |
     pub fn log_command_output(
         &self,
         command_type: CommandType,
-        status: ExitStatus,
-        stdout: &str,
-        stderr: &str,
+        output: &Output,
         elapsed_time: Duration,
     ) {
-        // | Command | Result | Status  | Stdout/Stderr |
-        // | ---     | ---    | ---     | ---           |
-        // | Check   | passes | `debug` | `debug`       |
-        // | Run     | passes | `debug` | `debug`       |
-        // | Check   | fails  | `info`  | `debug`       |
-        // | Run     | fails  | `error` | `error`       |
-        let (level, stdout_stderr_level) = match (command_type, status.success()) {
+        let (level, stdout_stderr_level) = match (command_type, output.status.success()) {
             (_, true) => (Level::Debug, Level::Debug),
             (CommandType::Run, false) => (Level::Error, Level::Error),
             (CommandType::Check, false) => (Level::Info, Level::Debug),
@@ -349,22 +272,22 @@ impl Task {
             "Task '{}' command ran in {:?} with status: {}",
             &self.name,
             elapsed_time,
-            status
+            output.status
         );
-        if !stdout.is_empty() {
+        if !output.stdout.is_empty() {
             log!(
                 stdout_stderr_level,
                 "Task '{}' command stdout:\n<<<\n{}>>>\n",
                 &self.name,
-                stdout,
+                String::from_utf8_lossy(&output.stdout),
             );
         }
-        if !stderr.is_empty() {
+        if !output.stderr.is_empty() {
             log!(
                 stdout_stderr_level,
                 "Task '{}' command stderr:\n<<<\n{}>>>\n",
                 &self.name,
-                stderr
+                String::from_utf8_lossy(&output.stderr),
             );
         }
     }

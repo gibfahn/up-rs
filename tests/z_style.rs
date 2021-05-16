@@ -85,7 +85,7 @@ fn clippy() {
 
     assert!(
         clippy_output.status.success(),
-        "Clippy needs to be run, please run 'cargo clippy-preview -Z=unstable-options -- --deny=clippy-pedantic'."
+        "Clippy needs to be run, please run 'cargo clippy -- --deny=clippy::pedantic'."
     );
 }
 
