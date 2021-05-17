@@ -135,6 +135,7 @@ fn run_tasks(
         }
     }
 
+    // TODO(gib): use tui Terminal UI lib (https://crates.io/keywords/tui) for better UI.
     // TODO(gib): Remove or make tunable sleep delay.
     // TODO(gib): Each minute log that we've been running for a minute, and how many
     // of each task is still running.
