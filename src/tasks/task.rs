@@ -1,5 +1,6 @@
 use std::{
     collections::HashMap,
+    fmt::{self, Display},
     fs,
     path::{Path, PathBuf},
     process::{Command, Output, Stdio},
@@ -72,12 +73,21 @@ const fn default_false() -> bool {
 }
 
 /// Shell commands we run.
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum CommandType {
     /// check_cmd field in the toml.
     Check,
     /// run_cmd field in the toml.
     Run,
+}
+
+impl Display for CommandType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            CommandType::Run => write!(f, "run command"),
+            CommandType::Check => write!(f, "check command"),
+        }
+    }
 }
 
 impl Task {
@@ -278,24 +288,27 @@ impl Task {
         // TODO(gib): Document error codes.
         log!(
             level,
-            "Task '{}' command ran in {:?} with status: {}",
+            "Task '{}' {} ran in {:?} with status: {}",
             &self.name,
+            command_type,
             elapsed_time,
             output.status
         );
         if !output.stdout.is_empty() {
             log!(
                 stdout_stderr_level,
-                "Task '{}' command stdout:\n<<<\n{}>>>\n",
+                "Task '{}' {} stdout:\n<<<\n{}>>>\n",
                 &self.name,
+                command_type,
                 String::from_utf8_lossy(&output.stdout),
             );
         }
         if !output.stderr.is_empty() {
             log!(
                 stdout_stderr_level,
-                "Task '{}' command stderr:\n<<<\n{}>>>\n",
+                "Task '{}' {} command stderr:\n<<<\n{}>>>\n",
                 &self.name,
+                command_type,
                 String::from_utf8_lossy(&output.stderr),
             );
         }
