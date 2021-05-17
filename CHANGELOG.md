@@ -1,3 +1,20 @@
+<a name="0.9.1"></a>
+## [0.9.1][] (2021-05-17)
+
+
+#### Bug Fixes
+
+* **generate:**  make task data come last for toml serialization ([f95f5beb](https://github.com/gibfahn/up-rs/commit/f95f5bebc5ac13343dc7b2d0eeed66f1ddd308b2))
+* **task:**
+  *  make task data optional again ([97ce5641](https://github.com/gibfahn/up-rs/commit/97ce56414aab344b555d9895e0a1196dfebeae38))
+  *  have task output log their command type ([e303c232](https://github.com/gibfahn/up-rs/commit/e303c23250e62372703cae74743c1fd2b7657013))
+
+#### Features
+
+* **git:**  warn for git updates that take more than 60s ([d8d38e1b](https://github.com/gibfahn/up-rs/commit/d8d38e1b2940608cd7c626ee5f4f7e40575a47df))
+
+
+
 <a name="0.9.0"></a>
 ## [0.9.0][] (2021-05-17)
 
@@ -348,3 +365,4 @@
 [0.8.4]: https://github.com/gibfahn/up-rs/releases/tag/0.8.4
 [0.8.5]: https://github.com/gibfahn/up-rs/releases/tag/0.8.5
 [0.9.0]: https://github.com/gibfahn/up-rs/releases/tag/0.9.0
+[0.9.1]: https://github.com/gibfahn/up-rs/releases/tag/0.9.1
