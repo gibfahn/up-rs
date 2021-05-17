@@ -1,11 +1,17 @@
 // TODO(gib): Use https://lib.rs/crates/indicatif for progress bars and remove this.
 #![allow(clippy::print_stdout, clippy::unwrap_used)]
-use std::{borrow::ToOwned, fs, path::PathBuf, str};
+use std::{
+    borrow::ToOwned,
+    fs,
+    path::PathBuf,
+    str,
+    time::{Duration, Instant},
+};
 
 use anyhow::{bail, ensure, Context, Result};
 use git2::{BranchType, ConfigLevel, ErrorCode, FetchOptions, Repository};
 use itertools::Itertools;
-use log::{debug, trace};
+use log::{debug, trace, warn};
 use url::Url;
 
 use crate::tasks::git::{
@@ -20,9 +26,16 @@ use crate::tasks::git::{
 };
 
 pub(crate) fn update(git_config: &GitConfig) -> Result<()> {
-    real_update(git_config).with_context(|| E::GitUpdate {
+    let now = Instant::now();
+    let result = real_update(git_config).with_context(|| E::GitUpdate {
         path: PathBuf::from(git_config.path.clone()),
-    })
+    });
+    let elapsed_time = now.elapsed();
+    // TODO(gib): configurable logging for long actions.
+    if elapsed_time > Duration::from_secs(60) {
+        warn!("Git update for {} took {:?}", git_config.path, elapsed_time);
+    }
+    result
 }
 
 // TODO(gib): remove more stuff from this function.
