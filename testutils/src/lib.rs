@@ -27,6 +27,11 @@ fn up_binary_dir() -> PathBuf {
     up_path
 }
 
+/// Returns the path to the up binary being run.
+pub fn up_binary_path() -> PathBuf {
+    up_binary_dir().join("up")
+}
+
 /// Returns the path to the root of the project (the up-rs/ folder).
 fn up_project_dir() -> PathBuf {
     // Directory of the testutils Cargo.toml i.e. up-rs/testutils/
@@ -39,7 +44,7 @@ fn up_project_dir() -> PathBuf {
 /// Returns a new command starting with /path/to/up (add args as needed).
 #[must_use]
 pub fn up_cmd(temp_dir: &Path) -> Command {
-    let mut cmd = Command::new(up_binary_dir().join("up"));
+    let mut cmd = Command::new(up_binary_path());
     // Set temp dir to be inside our test's temp dir.
     cmd.env("TMPDIR", temp_dir.join("up_temp_dir"));
     // Always print colours, even when output is not a tty.
