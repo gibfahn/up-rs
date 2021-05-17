@@ -86,8 +86,8 @@ pub enum CommandType {
 impl Display for CommandType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            CommandType::Run => write!(f, "run command"),
-            CommandType::Check => write!(f, "check command"),
+            Self::Run => write!(f, "run command"),
+            Self::Check => write!(f, "check command"),
         }
     }
 }
