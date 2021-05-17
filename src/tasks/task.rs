@@ -60,6 +60,15 @@ pub struct TaskConfig {
     pub data: Option<toml::Value>,
     /// Description of the task.
     pub description: Option<String>,
+    /// Set to true to prompt for superuser privileges before running.
+    /// This will allow all subtasks that up executes in this iteration.
+    #[serde(default = "default_false")]
+    pub needs_sudo: bool,
+}
+
+/// Used for serde defaults above.
+const fn default_false() -> bool {
+    false
 }
 
 /// Shell commands we run.

@@ -54,12 +54,6 @@ pub fn run(config: &config::UpConfig, tasks_dirname: &str) -> Result<()> {
         config.config_toml.env.as_ref(),
     )?;
 
-    if config.config_toml.needs_sudo {
-        // TODO(gib): this only lasts for 5 minutes.
-        debug!("Prompting for superuser privileges with 'sudo -v'");
-        Command::new("sudo").arg("-v").output()?;
-    }
-
     // If in macOS, don't let the display sleep until the command exits.
     #[cfg(target_os = "macos")]
     Command::new("caffeinate")
@@ -109,6 +103,13 @@ pub fn run(config: &config::UpConfig, tasks_dirname: &str) -> Result<()> {
             }
         }
         tasks.insert(task.name.clone(), task);
+    }
+
+    // TODO(gib): only grant sudo to subprocesses that requested it.
+    if tasks.values().any(|t| t.config.needs_sudo) {
+        // TODO(gib): this only lasts for 5 minutes.
+        debug!("Prompting for superuser privileges with 'sudo -v'");
+        Command::new("sudo").arg("-v").output()?;
     }
 
     debug!("Task count: {:?}", tasks.len());

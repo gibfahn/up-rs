@@ -39,16 +39,8 @@ pub struct ConfigToml {
     /// Environment variables to inherit from running env, doesn't error if not
     /// defined.
     pub inherit_env: Option<Vec<String>>,
-    // TODO(gib): handle sudo requirements more granularly.
-    /// Set to true to prompt for sudo privileges before running.
-    #[serde(default = "default_false")]
-    pub needs_sudo: bool,
     /// List of tasks to run in order in bootstrap mode.
     pub bootstrap_tasks: Option<Vec<String>>,
-}
-
-const fn default_false() -> bool {
-    false
 }
 
 impl UpConfig {
