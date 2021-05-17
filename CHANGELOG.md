@@ -1,3 +1,17 @@
+<a name="0.9.0"></a>
+## [0.9.0][] (2021-05-17)
+
+
+#### Performance
+
+* **tasks:**  run all tasks in parallel using Rayon ([4da6e955](https://github.com/gibfahn/up-rs/commit/4da6e955475997e2865df0abfde32c9c3805dc5f))
+
+#### Bug Fixes
+
+* **args:**  support long option name for up --config ([5e21ef28](https://github.com/gibfahn/up-rs/commit/5e21ef28f0c4c817a40f5421ab837a7bf245a130))
+
+
+
 <a name="0.8.5"></a>
 ## [0.8.5][] (2021-03-08)
 
@@ -333,3 +347,4 @@
 [0.8.3]: https://github.com/gibfahn/up-rs/releases/tag/0.8.3
 [0.8.4]: https://github.com/gibfahn/up-rs/releases/tag/0.8.4
 [0.8.5]: https://github.com/gibfahn/up-rs/releases/tag/0.8.5
+[0.9.0]: https://github.com/gibfahn/up-rs/releases/tag/0.9.0
