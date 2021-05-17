@@ -94,15 +94,19 @@ pub fn fixtures_dir() -> PathBuf {
 /// Returns the path to a temporary directory for your test (OS tempdir + test
 /// file name + test function name). Cleans the directory if it already exists.
 ///
+/// ```rust
+/// let temp_dir = temp_dir(testutils::file!(), testutils::function_name!()).unwrap();
+/// ```
+///
 /// # Errors
 ///
 /// Fails if any of the underlying file system operations fail.
-pub fn temp_dir(file: &str, test_fn: &str) -> Result<PathBuf> {
+pub fn temp_dir(file: &str, function_name: &str) -> Result<PathBuf> {
     let os_temp_dir = env::temp_dir().canonicalize()?;
     let mut temp_dir = os_temp_dir.clone();
     temp_dir.push("up_rs_tests");
     temp_dir.push(file);
-    temp_dir.push(test_fn);
+    temp_dir.push(function_name);
     assert!(temp_dir.starts_with(os_temp_dir));
     if temp_dir.exists() {
         temp_dir.canonicalize()?;
@@ -111,6 +115,24 @@ pub fn temp_dir(file: &str, test_fn: &str) -> Result<PathBuf> {
     assert!(!temp_dir.exists());
     fs::create_dir_all(&temp_dir)?;
     Ok(temp_dir)
+}
+
+/// Expands to the current function name (not the full path).
+#[macro_export]
+macro_rules! function_name {
+    () => {{
+        fn f() {}
+        fn type_name_of<T>(_: T) -> &'static str {
+            std::any::type_name::<T>()
+        }
+        let name = type_name_of(f);
+
+        // Find and cut the rest of the path
+        match &name[..name.len() - 3].rfind(':') {
+            Some(pos) => &name[pos + 1..name.len() - 3],
+            None => &name[..name.len() - 3],
+        }
+    }};
 }
 
 /// Copy everything in `from_dir` into `to_dir` (including broken links).

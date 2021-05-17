@@ -12,7 +12,7 @@ use testutils::assert;
 /// get the expected changes.
 #[test]
 fn new_link() {
-    let (home_dir, dotfile_dir, temp_dir) = get_home_dotfile_dirs("new_link");
+    let (home_dir, dotfile_dir, temp_dir) = get_home_dotfile_dirs(testutils::function_name!());
     // Create empty dir (can't check in as git doesn't store dirs without contents.
     fs::create_dir(home_dir.join("existing_dir")).unwrap();
     run_link_cmd(&dotfile_dir, &home_dir, &temp_dir, LinkResult::Success);
@@ -33,7 +33,7 @@ fn new_link() {
 /// get the expected changes.
 #[test]
 fn backup_files() {
-    let (home_dir, dotfile_dir, temp_dir) = get_home_dotfile_dirs("backup_files");
+    let (home_dir, dotfile_dir, temp_dir) = get_home_dotfile_dirs(testutils::function_name!());
     run_link_cmd(&dotfile_dir, &home_dir, &temp_dir, LinkResult::Success);
 
     // Backup dir should stay.
@@ -88,7 +88,7 @@ fn backup_files() {
 
 #[test]
 fn hidden_and_nested() {
-    let (home_dir, dotfile_dir, temp_dir) = get_home_dotfile_dirs("hidden_and_nested");
+    let (home_dir, dotfile_dir, temp_dir) = get_home_dotfile_dirs(testutils::function_name!());
     // If this symlink is correct, it shouldn't make a difference.
     unix::fs::symlink(
         &dotfile_dir.join("existing_link"),
@@ -168,7 +168,7 @@ fn hidden_and_nested() {
 /// Pass a from_dir that doesn't exist and make sure we fail.
 #[test]
 fn missing_from_dir() {
-    let temp_dir = testutils::temp_dir(file!(), "missing_from_dir").unwrap();
+    let temp_dir = testutils::temp_dir(file!(), testutils::function_name!()).unwrap();
     let output = run_link_cmd(
         &temp_dir.join("dotfile_dir"),
         &temp_dir.join("home_dir"),
@@ -188,7 +188,7 @@ fn missing_from_dir() {
 /// Pass a to_dir that doesn't exist and make sure we fail.
 #[test]
 fn missing_to_dir() {
-    let temp_dir = testutils::temp_dir(file!(), "missing_to_dir").unwrap();
+    let temp_dir = testutils::temp_dir(file!(), testutils::function_name!()).unwrap();
     fs::create_dir(&temp_dir.join("dotfile_dir")).unwrap();
     let output = run_link_cmd(
         &temp_dir.join("dotfile_dir"),
@@ -210,7 +210,7 @@ fn missing_to_dir() {
 /// already a file).
 #[test]
 fn uncreateable_backup_dir() {
-    let temp_dir = testutils::temp_dir(file!(), "uncreateable_backup_dir").unwrap();
+    let temp_dir = testutils::temp_dir(file!(), testutils::function_name!()).unwrap();
     fs::create_dir(&temp_dir.join("dotfile_dir")).unwrap();
     fs::create_dir(&temp_dir.join("home_dir")).unwrap();
     File::create(&temp_dir.join("home_dir/backup")).unwrap();
