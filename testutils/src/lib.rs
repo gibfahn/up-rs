@@ -146,7 +146,12 @@ macro_rules! function_name {
 ///
 /// Fails if any of the underlying file system operations fail.
 pub fn copy_all(from_dir: &Path, to_dir: &Path) -> Result<()> {
-    println!("Copying everything in '{:?}' to '{:?}'", from_dir, to_dir);
+    println!("Copying everything in {:?} to {:?}", from_dir, to_dir);
+    assert!(
+        from_dir.exists(),
+        "Cannot copy from non-existent directory {:?}.",
+        from_dir
+    );
     for from_path in WalkDir::new(&from_dir)
         .min_depth(1)
         .into_iter()
