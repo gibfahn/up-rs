@@ -57,14 +57,16 @@ pub struct TaskConfig {
     pub check_cmd: Option<Vec<String>>,
     /// Run command: command to run to perform the update.
     pub run_cmd: Option<Vec<String>>,
-    /// Set of data provided to the Run library.
-    pub data: Option<toml::Value>,
     /// Description of the task.
     pub description: Option<String>,
     /// Set to true to prompt for superuser privileges before running.
     /// This will allow all subtasks that up executes in this iteration.
     #[serde(default = "default_false")]
     pub needs_sudo: bool,
+    // This field must be the last one in order for the toml serializer in the generate functions
+    // to be able to serialise it properly.
+    /// Set of data provided to the Run library.
+    pub data: Option<toml::Value>,
 }
 
 /// Used for serde defaults above.
