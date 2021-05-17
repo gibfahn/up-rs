@@ -12,7 +12,10 @@ use log::{debug, error, info, trace, warn};
 use rayon::prelude::*;
 use thiserror::Error;
 
-use self::{task::Task, TaskError as E};
+use self::{
+    task::{CommandType, Task},
+    TaskError as E,
+};
 use crate::{config, env::get_env, tasks::task::TaskStatus};
 
 pub mod defaults;
@@ -240,8 +243,9 @@ pub enum TaskError {
     EnvLookup { var: String, source: anyhow::Error },
     /// Task '{name}' had no run command.
     MissingCmd { name: String },
-    /// Task '{name}' check command failed. Command: {cmd:?}.
-    CheckCmdFailed {
+    /// Task '{name}' {command_type} failed. Command: {cmd:?}.
+    CmdFailed {
+        command_type: CommandType,
         name: String,
         source: io::Error,
         cmd: Vec<String>,

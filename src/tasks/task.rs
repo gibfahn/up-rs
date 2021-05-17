@@ -206,7 +206,7 @@ impl Task {
             }
             // TODO(gib): Allow choosing how to validate check_cmd output (stdout, zero exit
             // code, non-zero exit code).
-            if self.run_check_cmd(&cmd, env)? {
+            if self.run_command(CommandType::Check, &cmd, env)? {
                 debug!("Skipping task '{}' as check command passed.", &self.name);
                 return Ok(TaskStatus::Skipped);
             }
@@ -224,7 +224,7 @@ impl Task {
             for s in &mut cmd {
                 *s = env_fn(s)?;
             }
-            if self.run_run_cmd(&cmd, env)? {
+            if self.run_command(CommandType::Run, &cmd, env)? {
                 return Ok(TaskStatus::Passed);
             }
             return Ok(TaskStatus::Failed(anyhow!("Task {} failed.", self.name)));
@@ -235,11 +235,18 @@ impl Task {
         });
     }
 
-    pub fn run_check_cmd(&self, cmd: &[String], env: &HashMap<String, String>) -> Result<bool> {
+    // TODO(gib): Error should include an easy way to see the task logs.
+    pub fn run_command(
+        &self,
+        command_type: CommandType,
+        cmd: &[String],
+        env: &HashMap<String, String>,
+    ) -> Result<bool> {
         let mut command = Self::get_command(cmd, env)?;
 
         let now = Instant::now();
-        let output = command.output().map_err(|e| E::CheckCmdFailed {
+        let output = command.output().map_err(|e| E::CmdFailed {
+            command_type,
             name: self.name.clone(),
             cmd: cmd.into(),
             source: e,
@@ -248,23 +255,6 @@ impl Task {
         let elapsed_time = now.elapsed();
         let success = output.status.success();
         self.log_command_output(CommandType::Check, &output, elapsed_time);
-        Ok(success)
-    }
-
-    pub fn run_run_cmd(&self, cmd: &[String], env: &HashMap<String, String>) -> Result<bool> {
-        let command = Self::get_command(cmd, env);
-        let now = Instant::now();
-        let output = command?
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .output()?;
-        debug!("Task '{}' complete.", &self.name);
-        let elapsed_time = now.elapsed();
-
-        let success = output.status.success();
-        self.log_command_output(CommandType::Run, &output, elapsed_time);
-        // TODO(gib): Error should include an easy way to see the task logs.
-
         Ok(success)
     }
 
