@@ -12,7 +12,7 @@ use log::{debug, error, info, trace, warn};
 use rayon::prelude::*;
 use thiserror::Error;
 
-use self::{task::Task, TasksError as E};
+use self::{task::Task, TaskError as E};
 use crate::{config, env::get_env, tasks::task::TaskStatus};
 
 pub mod defaults;
@@ -33,12 +33,6 @@ pub trait ResolveEnv {
     {
         Ok(())
     }
-}
-
-#[derive(Error, Debug)]
-pub enum TaskError {
-    #[error("Env lookup error, please define '{}' in your up.toml:", var)]
-    ResolveEnv { var: String, source: anyhow::Error },
 }
 
 /// Run a set of tasks specified in a subdir of the directory containing the up
@@ -217,7 +211,7 @@ fn run_task(mut task: Task, env: &HashMap<String, String>) -> Task {
                 .map(Some)
         })
         .map(std::borrow::Cow::into_owned)
-        .map_err(|e| TaskError::ResolveEnv {
+        .map_err(|e| E::ResolveEnv {
             var: e.var_name,
             source: e.cause,
         })?;
@@ -237,7 +231,7 @@ fn run_task(mut task: Task, env: &HashMap<String, String>) -> Task {
 
 #[derive(Error, Debug, Display)]
 /// Errors thrown by this file.
-pub enum TasksError {
+pub enum TaskError {
     /// Error walking directory '{path}':
     ReadDir { path: PathBuf, source: io::Error },
     /// Error reading file '{path}':
@@ -259,4 +253,8 @@ pub enum TasksError {
         path: PathBuf,
         source: toml::de::Error,
     },
+    /// Env lookup error, please define '{var}' in your up.toml
+    ResolveEnv { var: String, source: anyhow::Error },
+    /// Task {task} must have data.
+    TaskDataRequired { task: String },
 }

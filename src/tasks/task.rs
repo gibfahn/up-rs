@@ -14,7 +14,7 @@ use serde_derive::{Deserialize, Serialize};
 use crate::{
     args::{GenerateGitConfig, LinkOptions, UpdateSelfOptions},
     generate, tasks,
-    tasks::{defaults::DefaultsConfig, git::GitConfig, ResolveEnv, TasksError},
+    tasks::{defaults::DefaultsConfig, git::GitConfig, ResolveEnv, TaskError as E},
 };
 
 #[derive(Debug)]
@@ -93,12 +93,12 @@ impl Display for CommandType {
 impl Task {
     pub fn from(path: &Path) -> Result<Self> {
         let start_time = Instant::now();
-        let s = fs::read_to_string(&path).map_err(|e| TasksError::ReadFile {
+        let s = fs::read_to_string(&path).map_err(|e| E::ReadFile {
             path: path.to_owned(),
             source: e,
         })?;
         trace!("Task '{:?}' contents: <<<{}>>>", &path, &s);
-        let config = toml::from_str::<TaskConfig>(&s).map_err(|e| TasksError::InvalidToml {
+        let config = toml::from_str::<TaskConfig>(&s).map_err(|e| E::InvalidToml {
             path: path.to_owned(),
             source: e,
         })?;
@@ -108,7 +108,7 @@ impl Task {
                 .file_stem()
                 .ok_or_else(|| anyhow!("Task had no path."))?
                 .to_str()
-                .ok_or(TasksError::None {})?
+                .ok_or(E::None {})?
                 .to_owned(),
         };
         let task = Self {
@@ -139,31 +139,46 @@ impl Task {
         info!("Running task '{}'", &self.name);
 
         if let Some(lib) = &self.config.run_lib {
-            let data = self
-                .config
-                .data
-                .as_ref()
-                .ok_or_else(|| anyhow!("Task '{}' data had no value.", &self.name))?
-                .clone();
+            let data = self.config.data.as_ref();
 
             match lib.as_str() {
                 "link" => {
-                    let mut data = data.try_into::<LinkOptions>()?;
+                    let mut data = data
+                        .ok_or_else(|| E::TaskDataRequired {
+                            task: self.name.clone(),
+                        })?
+                        .clone()
+                        .try_into::<LinkOptions>()?;
                     data.resolve_env(env_fn)?;
                     tasks::link::run(data)
                 }
                 "git" => {
-                    let mut data = data.try_into::<Vec<GitConfig>>()?;
+                    let mut data = data
+                        .ok_or_else(|| E::TaskDataRequired {
+                            task: self.name.clone(),
+                        })?
+                        .clone()
+                        .try_into::<Vec<GitConfig>>()?;
                     data.resolve_env(env_fn)?;
                     tasks::git::run(data)
                 }
                 "generate_git" => {
-                    let mut data = data.try_into::<Vec<GenerateGitConfig>>()?;
+                    let mut data = data
+                        .ok_or_else(|| E::TaskDataRequired {
+                            task: self.name.clone(),
+                        })?
+                        .clone()
+                        .try_into::<Vec<GenerateGitConfig>>()?;
                     data.resolve_env(env_fn)?;
                     generate::git::run(&data)
                 }
                 "defaults" => {
-                    let mut data = data.try_into::<DefaultsConfig>()?;
+                    let mut data = data
+                        .ok_or_else(|| E::TaskDataRequired {
+                            task: self.name.clone(),
+                        })?
+                        .clone()
+                        .try_into::<DefaultsConfig>()?;
                     data.resolve_env(env_fn)?;
                     tasks::defaults::run(data)
                 }
@@ -213,7 +228,7 @@ impl Task {
             return Ok(TaskStatus::Failed(anyhow!("Task {} failed.", self.name)));
         }
 
-        bail!(TasksError::MissingCmd {
+        bail!(E::MissingCmd {
             name: self.name.clone()
         });
     }
@@ -222,7 +237,7 @@ impl Task {
         let mut command = Self::get_command(cmd, env)?;
 
         let now = Instant::now();
-        let output = command.output().map_err(|e| TasksError::CheckCmdFailed {
+        let output = command.output().map_err(|e| E::CheckCmdFailed {
             name: self.name.clone(),
             cmd: cmd.into(),
             source: e,
@@ -278,7 +293,7 @@ impl Task {
         output: &Output,
         elapsed_time: Duration,
     ) {
-        let (level, stdout_stderr_level) = match (command_type, output.status.success()) {
+        let (level, stdout_stderr_level) = match (&command_type, output.status.success()) {
             (_, true) => (Level::Debug, Level::Debug),
             (CommandType::Run, false) => (Level::Error, Level::Error),
             (CommandType::Check, false) => (Level::Info, Level::Debug),
