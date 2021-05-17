@@ -59,7 +59,7 @@ pub struct Args {
     #[structopt(long, default_value = "auto", possible_values = &Color::variants(), case_insensitive = true)]
     pub color: Color,
     /// Path to the up.toml file for up.
-    #[structopt(short = "c", default_value = "$XDG_CONFIG_HOME/up/up.toml")]
+    #[structopt(long, short = "c", default_value = "$XDG_CONFIG_HOME/up/up.toml")]
     pub(crate) config: String,
     #[structopt(subcommand)]
     pub(crate) cmd: Option<SubCommand>,
