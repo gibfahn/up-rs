@@ -1,10 +1,12 @@
 use std::str;
 
 use anyhow::{anyhow, bail, Result};
-use git2::{build::CheckoutBuilder, BranchType, ErrorCode, Repository, SubmoduleUpdateOptions};
+use git2::{
+    build::CheckoutBuilder, BranchType, ErrorCode, FetchOptions, Repository, SubmoduleUpdateOptions,
+};
 use log::{debug, trace};
 
-use crate::tasks::git::status::ensure_repo_clean;
+use crate::tasks::git::{fetch::remote_callbacks, status::ensure_repo_clean};
 
 /// Checkout the branch if necessary (branch isn't the current branch).
 ///
@@ -122,11 +124,18 @@ fn force_checkout_head(repo: &Repository) -> Result<()> {
             .conflict_style_diff3(true)
             .conflict_style_merge(true);
 
-        // Update the submodule's head. Doesn't fetch as it assumes that the parent repo was already
-        // fetched.
+        // Update the submodule's head.
+        let mut count = 0;
+        let mut fetch_options = FetchOptions::new();
+        fetch_options.remote_callbacks(remote_callbacks(&mut count));
+
         submodule.update(
             false,
-            Some(SubmoduleUpdateOptions::new().checkout(checkout_builder)),
+            Some(
+                SubmoduleUpdateOptions::new()
+                    .fetch(fetch_options)
+                    .checkout(checkout_builder),
+            ),
         )?;
 
         // Open the submodule and force checkout its head too (recurses into nested submodules).

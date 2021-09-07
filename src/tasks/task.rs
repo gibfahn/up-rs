@@ -216,7 +216,7 @@ impl Task {
             debug!(
                 "You haven't specified a check command for '{}', so it will always be run",
                 &self.name
-            )
+            );
         }
 
         if let Some(mut cmd) = self.config.run_cmd.clone() {
