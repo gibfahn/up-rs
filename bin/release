@@ -84,11 +84,12 @@ main() {
   else
     # Publish to crates.io:
     log_and_run cargo publish
-
-    # Create and push the tag, and create a release:
-    log_section "Pushing latest commits..."
-    git push
   fi
+
+  log_section "Pushing latest commits..."
+  git push
+
+  log_section "Creating GitHub release..."
   # This allows them to be downloaded as `up-$(uname)`.
   mkdir -p out
   cp target/release/up out/up-Darwin
@@ -103,6 +104,10 @@ main() {
   if [[ $new_release != $new_version ]]; then
     error "Something went wrong, latest GitHub version is not what the script just released."
   fi
+
+  # Pull in the tag we just created remotely.
+  log_section "Fetching just-created tag..."
+  git fetch --all
 }
 
 log_section() {
