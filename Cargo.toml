@@ -20,38 +20,38 @@ name = "up"
 path = "src/main.rs"
 
 [dependencies]
-walkdir = "2.3.1"
+walkdir = "2.3.2"
 shellexpand = "2.1.0"
-structopt = "0.3.21"
-serde = "1.0.120"
-serde_derive = "1.0.120"
+structopt = "0.3.23"
+serde = "1.0.130"
+serde_derive = "1.0.130"
 envy = "0.4.2"
 toml = "0.5.8"
-serde_json = "1.0.61"
-serde_yaml = "0.8.15"
-log = "0.4.13"
-anyhow = "1.0.38"
-thiserror = "1.0.23"
+serde_json = "1.0.67"
+serde_yaml = "0.8.20"
+log = "0.4.14"
+anyhow = "1.0.43"
+thiserror = "1.0.29"
 chrono = "0.4.19"
-git2 = { version = "0.13.16", features = ["vendored-openssl"] }
-dirs = "3.0.1"
+git2 = { version = "0.13.21", features = ["vendored-openssl"] }
+dirs = "3.0.2"
 slog = "2.7.0"
 slog-stdlog = "4.1.0"
-slog-term = "2.6.0"
+slog-term = "2.8.0"
 slog-scope = "4.4.0"
-slog-async = "2.6.0"
-displaydoc = "0.1.7"
-itertools = "0.10.0"
-url = "2.2.0"
-rayon = "1.5.0"
-reqwest = { version = "0.11.0", features = ["blocking", "json"] }
-semver = "0.11.0"
-ring = "0.16.19"
-plist = "1.1.0"
+slog-async = "2.7.0"
+displaydoc = "0.2.3"
+itertools = "0.10.1"
+url = "2.2.2"
+rayon = "1.5.1"
+reqwest = { version = "0.11.4", features = ["blocking", "json"] }
+semver = "1.0.4"
+ring = "0.16.20"
+plist = "1.2.1"
 
 [dev-dependencies]
 testutils = { path = "./testutils" }
-ignore = "0.4.17"
+ignore = "0.4.18"
 
 [features]
 CI = [] # Enabled when running in CI.

@@ -92,7 +92,7 @@ pub(crate) fn run(opts: &UpdateSelfOptions) -> Result<()> {
     let new_version = new_version
         .trim()
         .trim_start_matches(concat!(env!("CARGO_PKG_NAME"), " "));
-    if semver::Version::parse(new_version) > semver::Version::parse(CURRENT_VERSION) {
+    if semver::Version::parse(new_version)? > semver::Version::parse(CURRENT_VERSION)? {
         info!(
             "Updating up-rs from '{}' to '{}'",
             CURRENT_VERSION, &new_version,
