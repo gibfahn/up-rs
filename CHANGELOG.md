@@ -1,3 +1,13 @@
+<a name="0.9.2"></a>
+## [0.9.2][] (2021-09-07)
+
+
+#### Bug Fixes
+
+* **git:**  recursively fetch submodules if we need to check them out ([f152965b](https://github.com/gibfahn/up-rs/commit/f152965b6ecaf11255ccb7ad706d23726bfaea16))
+
+
+
 <a name="0.9.1"></a>
 ## [0.9.1][] (2021-05-17)
 
@@ -366,3 +376,4 @@
 [0.8.5]: https://github.com/gibfahn/up-rs/releases/tag/0.8.5
 [0.9.0]: https://github.com/gibfahn/up-rs/releases/tag/0.9.0
 [0.9.1]: https://github.com/gibfahn/up-rs/releases/tag/0.9.1
+[0.9.2]: https://github.com/gibfahn/up-rs/releases/tag/0.9.2
