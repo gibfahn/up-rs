@@ -1,4 +1,4 @@
-use anyhow::Result;
+use color_eyre::eyre::Result;
 use git2::{Branch, BranchType, Repository};
 use log::{debug, trace};
 

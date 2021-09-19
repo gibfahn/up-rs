@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use anyhow::{ensure, Result};
+use color_eyre::eyre::{ensure, Result};
 use git2::{BranchType, Config, ErrorCode, Repository, StatusOptions, Statuses, SubmoduleIgnore};
 use log::{trace, warn};
 

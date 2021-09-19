@@ -6,7 +6,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use anyhow::{anyhow, bail, Context, Result};
+use color_eyre::eyre::{bail, eyre, Context, Result};
 use displaydoc::Display;
 use log::{debug, error, info, trace, warn};
 use rayon::prelude::*;
@@ -61,7 +61,7 @@ pub fn run(config: &config::UpConfig, tasks_dirname: &str) -> Result<()> {
 
     let mut bootstrap_tasks = match (config.bootstrap, &config.config_toml.bootstrap_tasks) {
         (false, _) => Ok(Vec::new()),
-        (true, None) => Err(anyhow!(
+        (true, None) => Err(eyre!(
             "Bootstrap flag set but no bootstrap_tasks specified in config."
         )),
         (true, Some(b_tasks)) => Ok(b_tasks.clone()),
@@ -126,7 +126,7 @@ fn run_tasks(
             let task = run_task(
                 tasks
                     .remove(&task)
-                    .ok_or_else(|| anyhow!("Task '{}' was missing.", task))?,
+                    .ok_or_else(|| eyre!("Task '{}' was missing.", task))?,
                 env,
             );
             if let TaskStatus::Failed(e) = task.status {
@@ -150,12 +150,12 @@ fn run_tasks(
     let mut tasks_skipped = Vec::new();
     let mut tasks_failed = Vec::new();
     let mut tasks_incomplete = Vec::new();
-    let mut task_errors: Vec<anyhow::Error> = Vec::new();
+    let mut task_errors: Vec<color_eyre::eyre::Error> = Vec::new();
 
     for mut task in tasks {
         match task.status {
             TaskStatus::Failed(ref mut e) => {
-                let extracted_error = std::mem::replace(e, anyhow!(""));
+                let extracted_error = std::mem::replace(e, eyre!(""));
                 task_errors.push(extracted_error);
                 tasks_failed.push(task);
             }
@@ -194,11 +194,11 @@ fn run_tasks(
     if !task_errors.is_empty() {
         // Error out.
         error!("One or more tasks failed, exiting.");
-        return Err(anyhow!("")).with_context(|| {
+        return Err(eyre!("")).with_context(|| {
             let task_errors_string = task_errors
                 .into_iter()
                 .fold(String::new(), |acc, e| acc + &format!("\n- {:?}", e));
-            anyhow!("Task errors: {}", task_errors_string)
+            eyre!("Task errors: {}", task_errors_string)
         });
     }
 
@@ -210,9 +210,7 @@ fn run_task(mut task: Task, env: &HashMap<String, String>) -> Task {
     // sort inputs).
     let env_fn = &|s: &str| {
         let out = shellexpand::full_with_context(s, dirs::home_dir, |k| {
-            env.get(k)
-                .ok_or_else(|| anyhow!("Value not found"))
-                .map(Some)
+            env.get(k).ok_or_else(|| eyre!("Value not found")).map(Some)
         })
         .map(std::borrow::Cow::into_owned)
         .map_err(|e| E::ResolveEnv {
@@ -241,7 +239,10 @@ pub enum TaskError {
     /// Error reading file '{path}':
     ReadFile { path: PathBuf, source: io::Error },
     /// Env lookup error, please define '{var}' in your up.toml:"
-    EnvLookup { var: String, source: anyhow::Error },
+    EnvLookup {
+        var: String,
+        source: color_eyre::eyre::Error,
+    },
     /// Task '{name}' had no run command.
     MissingCmd { name: String },
     /// Task '{name}' {command_type} failed. Command: {cmd:?}.
@@ -259,7 +260,10 @@ pub enum TaskError {
         source: toml::de::Error,
     },
     /// Env lookup error, please define '{var}' in your up.toml
-    ResolveEnv { var: String, source: anyhow::Error },
+    ResolveEnv {
+        var: String,
+        source: color_eyre::eyre::Error,
+    },
     /// Task {task} must have data.
     TaskDataRequired { task: String },
 }

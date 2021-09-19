@@ -1,7 +1,7 @@
 use std::{path::PathBuf, str::FromStr};
 
-use anyhow::{anyhow, Result};
 use clap::{AppSettings, ArgEnum, Clap};
+use color_eyre::eyre::{eyre, Result};
 use serde_derive::{Deserialize, Serialize};
 use slog::Level;
 
@@ -60,7 +60,7 @@ pub struct Opts {
 }
 
 fn from_level(level: &str) -> Result<Level> {
-    Level::from_str(level).map_err(|()| anyhow!("Failed to parse level {}", level))
+    Level::from_str(level).map_err(|()| eyre!("Failed to parse level {}", level))
 }
 
 /// Settings for colouring output.

@@ -6,7 +6,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::{anyhow, bail, ensure, Context, Result};
+use color_eyre::eyre::{bail, ensure, eyre, Context, Result};
 use log::{debug, info, trace};
 use serde_derive::{Deserialize, Serialize};
 
@@ -132,8 +132,7 @@ impl UpConfig {
 
             trace!("Checking default config paths.");
 
-            let home_dir =
-                dirs::home_dir().ok_or_else(|| anyhow!("Couldn't calculate home_dir."))?;
+            let home_dir = dirs::home_dir().ok_or_else(|| eyre!("Couldn't calculate home_dir."))?;
 
             config_path = env::var("XDG_CONFIG_HOME")
                 .map_or_else(|_err| Path::new(&home_dir).join(".config"), PathBuf::from);

@@ -7,8 +7,8 @@ use std::{
     process::Command,
 };
 
-use anyhow::{Context, Result};
 use chrono::Utc;
+use color_eyre::eyre::{Context, Result};
 use displaydoc::Display;
 use log::{debug, info, trace};
 use serde_derive::Deserialize;

@@ -1,7 +1,7 @@
 use std::convert::From;
 
-use anyhow::{anyhow, Context, Result};
 use clap::Clap;
+use color_eyre::eyre::{eyre, Context, Result};
 use displaydoc::Display;
 use git2::Remote;
 use log::error;
@@ -62,7 +62,7 @@ pub(crate) fn run(configs: Vec<GitConfig>) -> Result<()> {
         }
         let mut errors_iter = errors.into_iter();
         Err(errors_iter.next().ok_or(E::UnexpectedNone)?)
-            .with_context(|| anyhow!("{:?}", errors_iter.collect::<Vec<_>>()))
+            .with_context(|| eyre!("{:?}", errors_iter.collect::<Vec<_>>()))
     }
 }
 

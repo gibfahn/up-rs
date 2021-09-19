@@ -3,7 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::{Context, Result};
+use color_eyre::eyre::{Context, Result};
 use displaydoc::Display;
 use git2::Repository;
 use log::{debug, error, info, trace};

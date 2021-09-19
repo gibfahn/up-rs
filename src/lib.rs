@@ -13,8 +13,8 @@
     clippy::missing_docs_in_private_items,
     clippy::missing_errors_doc
 )]
-use anyhow::Result;
 use args::GenerateLib;
+use color_eyre::eyre::Result;
 use log::trace;
 use tasks::update_self;
 

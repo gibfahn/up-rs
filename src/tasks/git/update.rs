@@ -8,7 +8,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use anyhow::{bail, ensure, Context, Result};
+use color_eyre::eyre::{bail, ensure, Context, Result};
 use git2::{BranchType, ConfigLevel, ErrorCode, FetchOptions, Repository};
 use itertools::Itertools;
 use log::{debug, trace, warn};

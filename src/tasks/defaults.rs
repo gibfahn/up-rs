@@ -17,7 +17,7 @@ use std::{
     process::{Command, ExitStatus},
 };
 
-use anyhow::{anyhow, bail, Result};
+use color_eyre::eyre::{bail, eyre, Result};
 use displaydoc::Display;
 use log::{debug, trace};
 use serde_derive::{Deserialize, Serialize};
@@ -71,7 +71,7 @@ fn write_default_to_toml_value(
         toml::Value::Integer(_) => "integer",
         toml::Value::Boolean(_) => "boolean",
         toml::Value::Datetime(_) => {
-            bail!(anyhow!("Can't set DateTime values, set to string instead."))
+            bail!(eyre!("Can't set DateTime values, set to string instead."))
         }
     };
     run_defaults(&[
@@ -97,7 +97,7 @@ fn read_default_to_toml_value(domain: &str, pref_key: &str) -> Result<Option<tom
         ("float", _) => Ok(Some(toml::Value::Float(current_value.parse()?))),
         ("string", _) => Ok(Some(toml::Value::String(current_value))),
         ("", "") => Ok(None),
-        _ => Err(anyhow!(
+        _ => Err(eyre!(
             "Unable to parse value: '{}' of type '{}'",
             current_value,
             current_type,

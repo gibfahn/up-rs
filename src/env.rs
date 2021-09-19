@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::{anyhow, bail, Result};
+use color_eyre::eyre::{bail, eyre, Result};
 use displaydoc::Display;
 use log::{debug, trace};
 use thiserror::Error;
@@ -36,10 +36,7 @@ pub fn get_env(
                             unresolved_env.push(key.clone());
                             Ok(None)
                         } else {
-                            Err(anyhow!(
-                                "Value {} not found in inherited_env or env vars.",
-                                k
-                            ))
+                            Err(eyre!("Value {} not found in inherited_env or env vars.", k))
                         }
                     }
                 })
@@ -62,9 +59,7 @@ pub fn get_env(
         trace!("Still unresolved env: {:#?}", unresolved_env);
         let mut resolved_indices = Vec::new();
         for (index, key) in unresolved_env.iter().enumerate() {
-            let val = env
-                .get(key)
-                .ok_or_else(|| anyhow!("How did we get here?"))?;
+            let val = env.get(key).ok_or_else(|| eyre!("How did we get here?"))?;
             let resolved_val = shellexpand::env_with_context(val, |k| {
                 if unresolved_env.iter().any(|s| s == k) {
                     Ok(None)
@@ -72,7 +67,7 @@ pub fn get_env(
                     resolved_indices.push(index);
                     Ok(Some(v))
                 } else {
-                    Err(anyhow!("Shouldn't be possible to hit this."))
+                    Err(eyre!("Shouldn't be possible to hit this."))
                 }
             })
             .map_err(|e| E::EnvLookup {
@@ -82,7 +77,7 @@ pub fn get_env(
             .into_owned();
             let val_ref = env
                 .get_mut(key)
-                .ok_or_else(|| anyhow!("How did we get here?"))?;
+                .ok_or_else(|| eyre!("How did we get here?"))?;
             *val_ref = resolved_val;
         }
         trace!("resolved indices: {:?}", resolved_indices);
@@ -113,5 +108,8 @@ pub fn get_env(
 /// Errors thrown by this file.
 pub enum EnvError {
     /// Env lookup error, please define '{var}' in your up.toml:"
-    EnvLookup { var: String, source: anyhow::Error },
+    EnvLookup {
+        var: String,
+        source: color_eyre::eyre::Error,
+    },
 }

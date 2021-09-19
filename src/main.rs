@@ -24,8 +24,8 @@ use std::{
     time::Instant,
 };
 
-use anyhow::{bail, Result};
 use chrono::Utc;
+use color_eyre::eyre::{bail, Result};
 use displaydoc::Display;
 use log::{info, trace};
 use slog::{o, Drain, Duplicate, FnValue, LevelFilter, Logger};
@@ -35,6 +35,13 @@ use up_rs::args::Color;
 fn main() -> Result<()> {
     // Get starting time.
     let now = Instant::now();
+
+    // Default to showing backtraces.
+    if std::env::var("RUST_LIB_BACKTRACE").is_err() {
+        std::env::set_var("RUST_LIB_BACKTRACE", "1");
+    }
+    color_eyre::install()?;
+
     let args = up_rs::args::parse();
 
     // TODO(gib): Don't need dates in stderr as we have them in file logger.
@@ -195,7 +202,7 @@ pub enum MainError {
     /// Failed to set up log files.
     LogFileSetupFailed {
         /// Any log path error thrown.
-        source: anyhow::Error,
+        source: color_eyre::eyre::Error,
     },
     /// Failed to create symlink '{link_path}' pointing to '{src_path}'.
     SymlinkError {

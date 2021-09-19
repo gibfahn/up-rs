@@ -7,7 +7,7 @@ use std::{
     process::{Command, Output},
 };
 
-use anyhow::Result;
+use color_eyre::eyre::Result;
 use walkdir::WalkDir;
 
 pub mod assert;

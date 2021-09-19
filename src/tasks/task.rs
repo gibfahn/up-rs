@@ -7,7 +7,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use anyhow::{anyhow, bail, Result};
+use color_eyre::eyre::{bail, eyre, Error, Result};
 use log::{debug, info, log, trace, Level};
 use serde_derive::{Deserialize, Serialize};
 
@@ -26,7 +26,7 @@ pub enum TaskStatus {
     /// Completed successfully.
     Passed,
     /// Completed unsuccessfully.
-    Failed(anyhow::Error),
+    Failed(Error),
 }
 
 #[derive(Debug)]
@@ -108,7 +108,7 @@ impl Task {
             Some(n) => n.clone(),
             None => path
                 .file_stem()
-                .ok_or_else(|| anyhow!("Task had no path."))?
+                .ok_or_else(|| eyre!("Task had no path."))?
                 .to_str()
                 .ok_or(E::None {})?
                 .to_owned(),
@@ -194,7 +194,7 @@ impl Task {
                     };
                     tasks::update_self::run(&options)
                 }
-                _ => Err(anyhow!("This run_lib is invalid or not yet implemented.")),
+                _ => Err(eyre!("This run_lib is invalid or not yet implemented.")),
             }?;
             return Ok(TaskStatus::Passed);
         }
@@ -227,7 +227,7 @@ impl Task {
             if self.run_command(CommandType::Run, &cmd, env)? {
                 return Ok(TaskStatus::Passed);
             }
-            return Ok(TaskStatus::Failed(anyhow!("Task {} failed.", self.name)));
+            return Ok(TaskStatus::Failed(eyre!("Task {} failed.", self.name)));
         }
 
         bail!(E::MissingCmd {
@@ -262,7 +262,7 @@ impl Task {
         // TODO(gib): set current dir.
         let mut command = Command::new(
             &cmd.get(0)
-                .ok_or_else(|| anyhow!("Task '{}' command was empty."))?,
+                .ok_or_else(|| eyre!("Task '{}' command was empty."))?,
         );
         command
             .args(cmd.get(1..).unwrap_or(&[]))

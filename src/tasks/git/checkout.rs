@@ -1,6 +1,6 @@
 use std::str;
 
-use anyhow::{anyhow, bail, Result};
+use color_eyre::eyre::{bail, eyre, Result};
 use git2::{
     build::CheckoutBuilder, BranchType, ErrorCode, FetchOptions, Repository, SubmoduleUpdateOptions,
 };
@@ -149,7 +149,7 @@ pub(super) fn needs_checkout(repo: &Repository, branch_name: &str) -> bool {
     match repo.head().map_err(|e| e.into()).and_then(|h| {
         h.shorthand()
             .map(ToOwned::to_owned)
-            .ok_or_else(|| anyhow!("Current branch is not valid UTF-8"))
+            .ok_or_else(|| eyre!("Current branch is not valid UTF-8"))
     }) {
         Ok(current_branch) if current_branch == branch_name => {
             debug!("Already on branch: '{}'", branch_name);

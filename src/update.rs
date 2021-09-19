@@ -3,7 +3,7 @@
 
 // TODO(gib): Use https://lib.rs/crates/indicatif for progress bars.
 
-use anyhow::Result;
+use color_eyre::eyre::Result;
 
 use crate::{config, tasks};
 

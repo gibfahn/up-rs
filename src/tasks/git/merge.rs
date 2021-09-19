@@ -1,6 +1,6 @@
 use std::str;
 
-use anyhow::{bail, Result};
+use color_eyre::eyre::{bail, Result};
 use git2::{Reference, Repository};
 use log::debug;
 
