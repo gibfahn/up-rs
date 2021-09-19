@@ -13,6 +13,9 @@ project_root=$(dirname $(dirname $this_script))
 cd $project_root
 pwd
 
+# Deny all warnings in CI.
+export RUSTFLAGS="-D warnings"
+
 main() {
   # Make sure docker is running as we'll need it later.
   pgrep -q Docker || open -a docker
