@@ -15,7 +15,7 @@ use serde_derive::Deserialize;
 use thiserror::Error;
 
 use self::UpdateSelfError as E;
-use crate::{args::UpdateSelfOptions, tasks::ResolveEnv};
+use crate::{opts::UpdateSelfOptions, tasks::ResolveEnv};
 
 #[derive(Debug, Deserialize)]
 struct GitHubReleaseJsonResponse {
@@ -47,9 +47,9 @@ pub(crate) fn run(opts: &UpdateSelfOptions) -> Result<()> {
         .user_agent(APP_USER_AGENT)
         .build()?;
 
-    if opts.url == crate::args::SELF_UPDATE_URL {
+    if opts.url == crate::opts::SELF_UPDATE_URL {
         let latest_github_release = client
-            .get(crate::args::LATEST_RELEASE_URL)
+            .get(crate::opts::LATEST_RELEASE_URL)
             .send()?
             .error_for_status()?
             .json::<GitHubReleaseJsonResponse>()?;

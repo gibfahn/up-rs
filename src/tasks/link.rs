@@ -11,7 +11,7 @@ use log::{debug, info, trace, warn};
 use thiserror::Error;
 use walkdir::{DirEntry, WalkDir};
 
-use crate::{args::LinkOptions, tasks::ResolveEnv};
+use crate::{opts::LinkOptions, tasks::ResolveEnv};
 
 impl ResolveEnv for LinkOptions {
     fn resolve_env<F>(&mut self, env_fn: F) -> Result<()>

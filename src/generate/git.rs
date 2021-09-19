@@ -14,7 +14,7 @@ use walkdir::WalkDir;
 use self::GenerateGitError as E;
 use super::GENERATED_PRELUDE_COMMENT;
 use crate::{
-    args::GenerateGitConfig,
+    opts::GenerateGitConfig,
     tasks::{
         git::{GitConfig, GitRemote},
         task::Task,

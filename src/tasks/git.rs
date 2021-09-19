@@ -10,7 +10,7 @@ use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
 
 use self::GitTaskError as E;
-use crate::{args::GitOptions, tasks::ResolveEnv};
+use crate::{opts::GitOptions, tasks::ResolveEnv};
 
 pub mod branch;
 pub mod checkout;

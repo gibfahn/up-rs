@@ -12,8 +12,9 @@ use log::{debug, info, log, trace, Level};
 use serde_derive::{Deserialize, Serialize};
 
 use crate::{
-    args::{GenerateGitConfig, LinkOptions, UpdateSelfOptions},
-    generate, tasks,
+    generate,
+    opts::{GenerateGitConfig, LinkOptions, UpdateSelfOptions},
+    tasks,
     tasks::{defaults::DefaultsConfig, git::GitConfig, ResolveEnv, TaskError as E},
 };
 

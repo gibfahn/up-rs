@@ -13,21 +13,21 @@
     clippy::missing_docs_in_private_items,
     clippy::missing_errors_doc
 )]
-use args::GenerateLib;
 use color_eyre::eyre::Result;
 use log::trace;
+use opts::GenerateLib;
 use tasks::update_self;
 
 use crate::{
-    args::{Opts, SubCommand},
     config::UpConfig,
+    opts::{Opts, SubCommand},
     tasks::git,
 };
 
-pub mod args;
 mod config;
 mod env;
 mod generate;
+pub mod opts;
 pub mod tasks;
 pub mod update;
 
@@ -41,7 +41,7 @@ pub mod update;
 ///
 /// Panics for unimplemented commands.
 ///
-/// [Args]: crate::args::Args
+/// [Args]: crate::opts::Args
 pub fn run(args: Opts) -> Result<()> {
     match args.cmd {
         // TODO(gib): Handle multiple link directories both as args and in config.

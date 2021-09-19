@@ -11,8 +11,8 @@ use log::{debug, info, trace};
 use serde_derive::{Deserialize, Serialize};
 
 use crate::{
-    args::{GitOptions, Opts, RunOptions, SubCommand},
     git,
+    opts::{GitOptions, Opts, RunOptions, SubCommand},
 };
 
 #[derive(Default, Debug)]

@@ -30,7 +30,7 @@ use displaydoc::Display;
 use log::{info, trace};
 use slog::{o, Drain, Duplicate, FnValue, LevelFilter, Logger};
 use thiserror::Error;
-use up_rs::args::Color;
+use up_rs::opts::Color;
 
 fn main() -> Result<()> {
     // Get starting time.
@@ -42,7 +42,7 @@ fn main() -> Result<()> {
     }
     color_eyre::install()?;
 
-    let args = up_rs::args::parse();
+    let args = up_rs::opts::parse();
 
     // TODO(gib): Don't need dates in stderr as we have them in file logger.
     // Create stderr logger.
