@@ -29,7 +29,7 @@ pub mod opts;
 pub mod tasks;
 pub mod update;
 
-/// Run `up_rs` with provided [Args][] struct.
+/// Run `up_rs` with provided [Opts][] struct.
 ///
 /// # Errors
 ///
@@ -39,7 +39,7 @@ pub mod update;
 ///
 /// Panics for unimplemented commands.
 ///
-/// [Args]: crate::opts::Args
+/// [Opts]: crate::opts::Opts
 pub fn run(opts: Opts) -> Result<()> {
     match opts.cmd {
         // TODO(gib): Handle multiple link directories both as args and in config.
