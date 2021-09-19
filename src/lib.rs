@@ -19,7 +19,7 @@ use log::trace;
 use tasks::update_self;
 
 use crate::{
-    args::{Args, SubCommand},
+    args::{Opts, SubCommand},
     config::UpConfig,
     tasks::git,
 };
@@ -42,7 +42,7 @@ pub mod update;
 /// Panics for unimplemented commands.
 ///
 /// [Args]: crate::args::Args
-pub fn run(args: Args) -> Result<()> {
+pub fn run(args: Opts) -> Result<()> {
     match args.cmd {
         // TODO(gib): Handle multiple link directories both as args and in config.
         // TODO(gib): Add option to warn instead of failing if there are conflicts.

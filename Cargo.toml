@@ -22,7 +22,6 @@ path = "src/main.rs"
 [dependencies]
 walkdir = "2.3.2"
 shellexpand = "2.1.0"
-structopt = "0.3.23"
 serde = "1.0.130"
 serde_derive = "1.0.130"
 envy = "0.4.2"
@@ -48,6 +47,7 @@ reqwest = { version = "0.11.4", features = ["blocking", "json"] }
 semver = "1.0.4"
 ring = "0.16.20"
 plist = "1.2.1"
+clap = "3.0.0-beta.4"
 
 [dev-dependencies]
 testutils = { path = "./testutils" }

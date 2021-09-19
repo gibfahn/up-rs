@@ -1,12 +1,12 @@
 use std::convert::From;
 
 use anyhow::{anyhow, Context, Result};
+use clap::Clap;
 use displaydoc::Display;
 use git2::Remote;
 use log::error;
 use rayon::prelude::*;
 use serde_derive::{Deserialize, Serialize};
-use structopt::StructOpt;
 use thiserror::Error;
 
 use self::GitTaskError as E;
@@ -105,7 +105,7 @@ impl ResolveEnv for Vec<GitConfig> {
     }
 }
 
-#[derive(Debug, Default, StructOpt, Serialize, Deserialize)]
+#[derive(Debug, Default, Clap, Serialize, Deserialize)]
 pub struct GitRemote {
     /// Name of the remote to set in git.
     pub name: String,

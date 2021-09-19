@@ -11,7 +11,7 @@ use log::{debug, info, trace};
 use serde_derive::{Deserialize, Serialize};
 
 use crate::{
-    args::{Args, GitOptions, RunOptions, SubCommand},
+    args::{GitOptions, Opts, RunOptions, SubCommand},
     git,
 };
 
@@ -45,7 +45,7 @@ pub struct ConfigToml {
 
 impl UpConfig {
     /// Build the `UpConfig` struct by parsing the config toml files.
-    pub fn from(args: Args) -> Result<Self> {
+    pub fn from(args: Opts) -> Result<Self> {
         let mut config_toml = ConfigToml::default();
 
         let run_options = match args.cmd {
