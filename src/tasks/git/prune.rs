@@ -2,15 +2,12 @@ use color_eyre::eyre::Result;
 use git2::{Branch, BranchType, Repository};
 use log::{debug, trace};
 
-use crate::{
-    git::{
-        branch::{delete_branch, get_branch_name},
-        cherry::unmerged_commits,
-    },
-    tasks::git::{
-        branch::shorten_branch_ref, checkout::checkout_branch, errors::GitError as E,
-        status::ensure_repo_clean,
-    },
+use crate::tasks::git::{
+    branch::{delete_branch, get_branch_name, shorten_branch_ref},
+    checkout::checkout_branch,
+    cherry::unmerged_commits,
+    errors::GitError as E,
+    status::ensure_repo_clean,
 };
 
 /// Prune merged PR branches. Deletes local branches where the push branch

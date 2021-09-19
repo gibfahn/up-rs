@@ -48,6 +48,7 @@ ring = "0.16.20"
 plist = "1.2.1"
 clap = "3.0.0-beta.4"
 color-eyre = "0.5.11"
+clap_generate = "3.0.0-beta.4"
 
 [dev-dependencies]
 testutils = { path = "./testutils" }

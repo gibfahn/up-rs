@@ -18,6 +18,7 @@ use self::{
 };
 use crate::{config, env::get_env, tasks::task::TaskStatus};
 
+pub mod completions;
 pub mod defaults;
 pub mod git;
 pub mod link;

@@ -1,6 +1,7 @@
 use std::{path::PathBuf, str::FromStr};
 
 use clap::{AppSettings, ArgEnum, Clap};
+use clap_generate::Shell;
 use color_eyre::eyre::{eyre, Result};
 use serde_derive::{Deserialize, Serialize};
 use slog::Level;
@@ -92,6 +93,8 @@ pub(crate) enum SubCommand {
     Generate(GenerateOptions),
     /// Update the up CLI itself.
     Self_(UpdateSelfOptions),
+    /// Generate shell completions to stdout.
+    Completions(CompletionsOptions),
 }
 
 #[derive(Debug, Clap, Default)]
@@ -137,7 +140,7 @@ pub struct GitOptions {
     #[clap(long)]
     pub git_path: String,
     /// Remote to set/update.
-    #[clap(long, default_value = crate::git::DEFAULT_REMOTE_NAME)]
+    #[clap(long, default_value = crate::tasks::git::DEFAULT_REMOTE_NAME)]
     pub remote: String,
     /// Branch to checkout when cloning/updating. Defaults to default branch for
     /// cloning, and current branch for updating.
@@ -167,6 +170,12 @@ pub(crate) struct UpdateSelfOptions {
     /// subdirectory of the cargo root path that the binary was originally built in.
     #[clap(long)]
     pub(crate) always_update: bool,
+}
+
+#[derive(Debug, Clap)]
+pub(crate) struct CompletionsOptions {
+    /// Shell for which to generate completions.
+    pub(crate) shell: Shell,
 }
 
 impl Default for UpdateSelfOptions {

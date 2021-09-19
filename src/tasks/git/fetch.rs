@@ -2,7 +2,7 @@ use color_eyre::eyre::Result;
 use git2::{Cred, CredentialType, ErrorClass, ErrorCode, Remote, RemoteCallbacks, Repository};
 use log::{debug, warn};
 
-use crate::git::{branch::shorten_branch_ref, errors::GitError as E};
+use crate::tasks::git::{branch::shorten_branch_ref, errors::GitError as E};
 
 /// Number of times to try authenticating when fetching.
 const AUTH_RETRY_COUNT: usize = 6;

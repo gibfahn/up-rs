@@ -16,12 +16,10 @@
 use color_eyre::eyre::Result;
 use log::trace;
 use opts::GenerateLib;
-use tasks::update_self;
 
 use crate::{
     config::UpConfig,
     opts::{Opts, SubCommand},
-    tasks::git,
 };
 
 mod config;
@@ -42,8 +40,8 @@ pub mod update;
 /// Panics for unimplemented commands.
 ///
 /// [Args]: crate::opts::Args
-pub fn run(args: Opts) -> Result<()> {
-    match args.cmd {
+pub fn run(opts: Opts) -> Result<()> {
+    match opts.cmd {
         // TODO(gib): Handle multiple link directories both as args and in config.
         // TODO(gib): Add option to warn instead of failing if there are conflicts.
         // TODO(gib): Check for conflicts before doing any linking.
@@ -51,16 +49,16 @@ pub fn run(args: Opts) -> Result<()> {
             tasks::link::run(link_options)?;
         }
         Some(SubCommand::Git(git_options)) => {
-            git::update::update(&git_options.into())?;
+            tasks::git::update::update(&git_options.into())?;
         }
         Some(SubCommand::Defaults {}) => {
             // TODO(gib): implement defaults setting.
             unimplemented!("Not yet implemented.");
         }
-        Some(SubCommand::Self_(opts)) => {
-            update_self::run(&opts)?;
+        Some(SubCommand::Self_(cmd_opts)) => {
+            tasks::update_self::run(&cmd_opts)?;
         }
-        Some(SubCommand::Generate(ref opts)) => match opts.lib {
+        Some(SubCommand::Generate(ref cmd_opts)) => match cmd_opts.lib {
             Some(GenerateLib::Git(ref git_opts)) => {
                 generate::git::run_single(git_opts)?;
             }
@@ -70,18 +68,21 @@ pub fn run(args: Opts) -> Result<()> {
                 unimplemented!("Allow generating defaults toml.");
             }
             None => {
-                let config = UpConfig::from(args)?;
+                let config = UpConfig::from(opts)?;
                 generate::run(&config)?;
             }
         },
-        Some(SubCommand::Run(ref _opts)) => {
+        Some(SubCommand::Run(ref _cmd_opts)) => {
             // TODO(gib): Store and fetch config in config module.
-            let config = UpConfig::from(args)?;
+            let config = UpConfig::from(opts)?;
             update::update(&config)?;
+        }
+        Some(SubCommand::Completions(ref cmd_opts)) => {
+            tasks::completions::run(cmd_opts)?;
         }
         None => {
             // TODO(gib): Store and fetch config in config module.
-            let config = UpConfig::from(args)?;
+            let config = UpConfig::from(opts)?;
             update::update(&config)?;
         }
     }

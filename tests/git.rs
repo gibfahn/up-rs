@@ -190,7 +190,7 @@ fn real_clone() {
 }
 
 fn up_git_cmd(git_path: &str, temp_dir: &Path) -> Command {
-    let mut cmd = testutils::up_cmd(&temp_dir);
+    let mut cmd = testutils::up_cmd(temp_dir);
     cmd.args(
         [
             "git",
