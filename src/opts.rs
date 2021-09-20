@@ -35,7 +35,7 @@ pub fn parse() -> Opts {
 /// There are also a number of libraries built into up, that can be accessed
 /// directly, e.g. `up link` to link dotfiles.
 #[derive(Debug, Clap)]
-#[clap(global_setting = AppSettings::ColoredHelp)]
+#[clap(version = env!("CARGO_PKG_VERSION"), global_setting = AppSettings::ColoredHelp)]
 pub struct Opts {
     // TODO(gib): Improve help text to cover env_logger setup.
     /// Set the logging level explicitly (options: Off, Error, Warn, Info,
