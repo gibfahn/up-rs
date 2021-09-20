@@ -1,3 +1,13 @@
+<a name="0.9.4"></a>
+## [0.9.4][] (2021-09-20)
+
+
+#### Bug Fixes
+
+* **version:**  work around clap 3 beta issue where version isn't guessed ([cc4694fa](https://github.com/gibfahn/up-rs/commit/cc4694fa62c5ef2522589886399e2d29433167de))
+
+
+
 <a name="0.9.3"></a>
 ## [0.9.3][] (2021-09-20)
 
@@ -388,3 +398,4 @@
 [0.9.1]: https://github.com/gibfahn/up-rs/releases/tag/0.9.1
 [0.9.2]: https://github.com/gibfahn/up-rs/releases/tag/0.9.2
 [0.9.3]: https://github.com/gibfahn/up-rs/releases/tag/0.9.3
+[0.9.4]: https://github.com/gibfahn/up-rs/releases/tag/0.9.4
