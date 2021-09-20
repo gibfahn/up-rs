@@ -4,9 +4,9 @@ set -eu
 
 # For docs see docs/RELEASE.md
 
-CYAN='\033[0;36m'       # Light blue.
-RED='\033[0;31m'        # Red.
-NC='\033[0m'            # No Color.
+CYAN='\033[0;36m' # Light blue.
+RED='\033[0;31m'  # Red.
+NC='\033[0m'      # No Color.
 
 this_script=$0:A
 project_root=$(dirname $(dirname $this_script))
@@ -49,8 +49,8 @@ main() {
     # TODO(gib): make this follow (and link to in CHANGELOG.md) https://keepachangelog.com/en/1.0.0/
     clog -C CHANGELOG.md --from="${last_release?}" --setversion="${new_version?}"
     # Make the header a link pointing to the release.
-    gsed -i "s/^## ${new_version?} (/## [${new_version?}][] (/"  CHANGELOG.md
-    echo "[${new_version?}]: https://github.com/gibfahn/up-rs/releases/tag/${new_version?}" >> CHANGELOG.md
+    gsed -i "s/^## ${new_version?} (/## [${new_version?}][] (/" CHANGELOG.md
+    echo "[${new_version?}]: https://github.com/gibfahn/up-rs/releases/tag/${new_version?}" >>CHANGELOG.md
     git add CHANGELOG.md
     git commit -m "docs(changelog): update changelog for ${new_version?}"
   fi
@@ -126,8 +126,8 @@ log_and_run() {
 # $1: Error message
 # $2: Error code (default: 1).
 error() {
-    echo -e "${RED}ERROR${NC}: $1" >&2
-    exit "${2:-1}"
+  echo -e "${RED}ERROR${NC}: $1" >&2
+  exit "${2:-1}"
 }
 
 prompt_to_skip() {

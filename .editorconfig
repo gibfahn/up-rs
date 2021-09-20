@@ -13,8 +13,17 @@ trim_trailing_whitespace = true
 [*.rs]
 indent_size = 4
 
-[*.{md,sh}]
+[*.md]
 indent_size = 2
+
+# Extra files are needed for shfmt until https://github.com/mvdan/sh/issues/664 is fixed.
+[{*.sh,*.zsh,cargo-docker,release}]
+indent_size = 2
+## Read by shfmt
+# Indent the options to case statements.
+switch_case_indent = true
+# Lines can start with && or ||
+binary_next_line = true
 
 # File used for git commit message editing.
 [COMMIT_EDITMSG]

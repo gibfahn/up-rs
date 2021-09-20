@@ -7,25 +7,28 @@ set -eu -o pipefail
 #   `bin/build-in-docker build` builds in debug.
 #   `bin/build-in-docker test` tests in debug.
 
-project_root="$(cd "$(dirname "$0")"/..; pwd)"
+project_root="$(
+  cd "$(dirname "$0")"/..
+  pwd
+)"
 
 if [[ ${1:-} == -s || ${1:-} == --shell ]]; then
-    build_args=bash
+  build_args=bash
 elif [[ -n "$*" ]]; then
-    build_args=(cargo "${@}")
+  build_args=(cargo "${@}")
 else
-    build_args=(cargo test --release --features=CI )
+  build_args=(cargo test --release --features=CI)
 fi
 
 # Cross-compile this project into a static Linux binary.
 
 # Default target is set in Dockerfile ~/.cargo/config as x86_64-unknown-linux-musl
 set -x
-docker run --rm -it                                                                       \
-    -v "${XDG_CACHE_HOME:-$HOME/.cache}"/docker/cargo/registry:/opt/rust/cargo/registry   \
-    -v "${XDG_CACHE_HOME:-$HOME/.cache}"/docker/cargo/git:/opt/rust/cargo/git             \
-    -v "$project_root":/workspace                                                         \
-    -e CARGO_HOME=/opt/rust/cargo                                                         \
-    -u root -w /workspace                                                                 \
-    ekidd/rust-musl-builder                                                               \
-    "${build_args[@]}"
+docker run --rm -it \
+  -v "${XDG_CACHE_HOME:-$HOME/.cache}"/docker/cargo/registry:/opt/rust/cargo/registry \
+  -v "${XDG_CACHE_HOME:-$HOME/.cache}"/docker/cargo/git:/opt/rust/cargo/git \
+  -v "$project_root":/workspace \
+  -e CARGO_HOME=/opt/rust/cargo \
+  -u root -w /workspace \
+  ekidd/rust-musl-builder \
+  "${build_args[@]}"
