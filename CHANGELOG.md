@@ -1,3 +1,13 @@
+<a name="0.9.3"></a>
+## [0.9.3][] (2021-09-20)
+
+
+#### Features
+
+* **completions:**  add command to write completions to stdout ([2dfbc4ef](https://github.com/gibfahn/up-rs/commit/2dfbc4efddedb548baa12006027bed8b4b074a1f))
+
+
+
 <a name="0.9.2"></a>
 ## [0.9.2][] (2021-09-07)
 
@@ -377,3 +387,4 @@
 [0.9.0]: https://github.com/gibfahn/up-rs/releases/tag/0.9.0
 [0.9.1]: https://github.com/gibfahn/up-rs/releases/tag/0.9.1
 [0.9.2]: https://github.com/gibfahn/up-rs/releases/tag/0.9.2
+[0.9.3]: https://github.com/gibfahn/up-rs/releases/tag/0.9.3
