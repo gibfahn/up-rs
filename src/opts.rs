@@ -22,20 +22,30 @@ pub fn parse() -> Opts {
     Opts::parse()
 }
 
-/// Up is a tool to help you manage your developer machine. When run by itself
-/// (`up`) runs the tasks defined in its config directory. It links
-/// configuration files into the right locations, and it runs scripts to make
-/// sure the tools you need are installed and up to date.
-///
-///
-/// Running `up` without a subcommand runs `up run` with no parameters, providing an easy way to
-/// specify what you want on your system, and how to keep it up to date. It is designed to work
-/// with and complement existing package managers rather than replace them.
-///
-/// There are also a number of libraries built into up, that can be accessed
-/// directly, e.g. `up link` to link dotfiles.
-///
-/// For debugging, run with `RUST_LIB_BACKTRACE=1` to show error/panic traces.
+/**
+Up is a tool to help you manage your developer machine. `up run` runs the tasks defined in its
+config directory. It handles linking configuration files into the right locations, and running
+scripts to make sure the tools you need are installed and up to date. It is designed to complete
+common bootstrapping tasks without dependencies, so you can bootstrap a new machine by:
+
+```shell
+
+curl --create-dirs -Lo ~/bin/up https://github.com/gibfahn/up-rs/releases/latest/download/up-$(uname) && chmod +x ~/bin/up
+
+~/bin/up run --bootstrap --fallback-url https://github.com/gibfahn/dot
+
+```
+
+Running `up` without a subcommand runs `up run` with no parameters, which is useful for
+post-bootstrapping, when you want to just run all your setup steps again, to make sure
+everything is installed and up-to-date. For this reason it's important to make your up tasks
+idempotent, so they skip if nothing is needed.
+
+There are also a number of libraries built into up, that can be accessed directly as well as via
+up task configs, e.g. `up link` to link dotfiles.
+
+For debugging, run with `RUST_LIB_BACKTRACE=1` to show error/panic traces.
+*/
 #[derive(Debug, Clap)]
 #[clap(version = env!("CARGO_PKG_VERSION"), global_setting = AppSettings::ColoredHelp)]
 pub struct Opts {
