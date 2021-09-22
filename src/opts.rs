@@ -34,6 +34,8 @@ pub fn parse() -> Opts {
 ///
 /// There are also a number of libraries built into up, that can be accessed
 /// directly, e.g. `up link` to link dotfiles.
+///
+/// For debugging, run with `RUST_LIB_BACKTRACE=1` to show error/panic traces.
 #[derive(Debug, Clap)]
 #[clap(version = env!("CARGO_PKG_VERSION"), global_setting = AppSettings::ColoredHelp)]
 pub struct Opts {

@@ -36,10 +36,6 @@ fn main() -> Result<()> {
     // Get starting time.
     let now = Instant::now();
 
-    // Default to showing backtraces.
-    if std::env::var("RUST_LIB_BACKTRACE").is_err() {
-        std::env::set_var("RUST_LIB_BACKTRACE", "1");
-    }
     color_eyre::install()?;
 
     let args = up_rs::opts::parse();
