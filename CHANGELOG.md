@@ -1,3 +1,13 @@
+<a name="0.9.5"></a>
+## [0.9.5][] (2021-09-24)
+
+
+#### Bug Fixes
+
+* **log:**  don't log a full backtrace on error ([72949e41](https://github.com/gibfahn/up-rs/commit/72949e4116a2187e69c14b647ce0786eba033541))
+
+
+
 <a name="0.9.4"></a>
 ## [0.9.4][] (2021-09-20)
 
@@ -399,3 +409,4 @@
 [0.9.2]: https://github.com/gibfahn/up-rs/releases/tag/0.9.2
 [0.9.3]: https://github.com/gibfahn/up-rs/releases/tag/0.9.3
 [0.9.4]: https://github.com/gibfahn/up-rs/releases/tag/0.9.4
+[0.9.5]: https://github.com/gibfahn/up-rs/releases/tag/0.9.5
