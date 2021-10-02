@@ -20,9 +20,5 @@ pub(crate) fn run(cmd_opts: &CompletionsOptions) -> Result<()> {
 }
 
 fn generate<T: clap_generate::Generator>() {
-    clap_generate::generate::<T, _>(
-        &mut Opts::into_app(),
-        env!("CARGO_PKG_NAME"),
-        &mut std::io::stdout(),
-    );
+    clap_generate::generate::<T, _>(&mut Opts::into_app(), "up", &mut std::io::stdout());
 }
