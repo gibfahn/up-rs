@@ -25,7 +25,7 @@ pub(super) fn prune_merged_branches(repo: &Repository, remote_name: &str) -> Res
         repo.workdir().ok_or(E::NoGitDirFound)?.display(),
         &branches_to_prune
             .iter()
-            .map(|b| get_branch_name(b))
+            .map(get_branch_name)
             .collect::<Result<Vec<String>>>()?,
     );
     for mut branch in branches_to_prune {

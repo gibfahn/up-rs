@@ -103,7 +103,6 @@ pub fn run(config: &config::UpConfig, tasks_dirname: &str) -> Result<()> {
         tasks.insert(task.name.clone(), task);
     }
 
-    // TODO(gib): only grant sudo to subprocesses that requested it.
     if tasks.values().any(|t| t.config.needs_sudo) {
         // TODO(gib): this only lasts for 5 minutes.
         debug!("Prompting for superuser privileges with 'sudo -v'");
@@ -137,9 +136,6 @@ fn run_tasks(
     }
 
     // TODO(gib): use tui Terminal UI lib (https://crates.io/keywords/tui) for better UI.
-    // TODO(gib): Remove or make tunable sleep delay.
-    // TODO(gib): Each minute log that we've been running for a minute, and how many
-    // of each task is still running.
     let tasks = tasks
         .into_par_iter()
         .filter(|(_, task)| task.config.auto_run.unwrap_or(true))
@@ -207,8 +203,6 @@ fn run_tasks(
 }
 
 fn run_task(mut task: Task, env: &HashMap<String, String>) -> Task {
-    // TODO(gib): Allow vars to refer to other vars, detect cycles (topologically
-    // sort inputs).
     let env_fn = &|s: &str| {
         let out = shellexpand::full_with_context(s, dirs::home_dir, |k| {
             env.get(k).ok_or_else(|| eyre!("Value not found")).map(Some)
@@ -225,7 +219,6 @@ fn run_task(mut task: Task, env: &HashMap<String, String>) -> Task {
     let now = Instant::now();
     task.run(env_fn, env);
     let elapsed_time = now.elapsed();
-    // TODO(gib): configurable logging for long actions.
     if elapsed_time > Duration::from_secs(60) {
         warn!("Task {} took {:?}", task.name, elapsed_time);
     }

@@ -42,9 +42,6 @@ pub mod update;
 /// [Opts]: crate::opts::Opts
 pub fn run(opts: Opts) -> Result<()> {
     match opts.cmd {
-        // TODO(gib): Handle multiple link directories both as args and in config.
-        // TODO(gib): Add option to warn instead of failing if there are conflicts.
-        // TODO(gib): Check for conflicts before doing any linking.
         Some(SubCommand::Link(link_options)) => {
             tasks::link::run(link_options)?;
         }
@@ -73,7 +70,6 @@ pub fn run(opts: Opts) -> Result<()> {
             }
         },
         Some(SubCommand::Run(ref _cmd_opts)) => {
-            // TODO(gib): Store and fetch config in config module.
             let config = UpConfig::from(opts)?;
             update::update(&config)?;
         }
@@ -81,7 +77,6 @@ pub fn run(opts: Opts) -> Result<()> {
             tasks::completions::run(cmd_opts)?;
         }
         None => {
-            // TODO(gib): Store and fetch config in config module.
             let config = UpConfig::from(opts)?;
             update::update(&config)?;
         }

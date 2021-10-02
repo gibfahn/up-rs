@@ -44,14 +44,10 @@ const fn prune_default() -> bool {
     false
 }
 
-// TODO(gib): Pass by reference instead.
-#[allow(clippy::needless_pass_by_value)]
-pub(crate) fn run(configs: Vec<GitConfig>) -> Result<()> {
-    // TODO(gib): run them in parallel.
-    // TODO(gib): continue even if one errors.
+pub(crate) fn run(configs: &[GitConfig]) -> Result<()> {
     let errors: Vec<_> = configs
         .par_iter()
-        .map(|c| update::update(c))
+        .map(update::update)
         .filter_map(Result::err)
         .collect();
     if errors.is_empty() {

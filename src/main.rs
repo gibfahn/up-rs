@@ -6,8 +6,6 @@
 //! being useful for maintaining large CI fleets, it is designed for a developer
 //! to use to manage the machines they regularly use.
 
-// TODO(gib): Good rust coverage checker (tarpaulin?)
-
 // #![feature(external_doc)]
 // #![doc(include = "../README.md")]
 
@@ -56,8 +54,6 @@ fn main() -> Result<()> {
         .fuse();
     let stderr_async_drain = slog_async::Async::new(stderr_drain).build().fuse();
 
-    // TODO(gib): Parse input &args.log_level and set filter level.
-    // TODO(gib): Update --help text to note how you set the log level.
     let stderr_level_filter = LevelFilter::new(stderr_async_drain, args.log_level);
 
     let should_log_to_file = match &args.log_dir {

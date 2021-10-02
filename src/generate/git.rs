@@ -25,7 +25,7 @@ use crate::{
 pub fn run(generate_git_configs: &[GenerateGitConfig]) -> Result<()> {
     let errors: Vec<_> = generate_git_configs
         .par_iter()
-        .map(|config| run_single(config))
+        .map(run_single)
         .filter_map(Result::err)
         .collect();
     if errors.is_empty() {
@@ -57,7 +57,7 @@ pub fn run_single(generate_git_config: &GenerateGitConfig) -> Result<()> {
             &generate_git_config.remote_order,
         )?);
     }
-    // TODO(gib): keep old branch names.
+
     git_configs.sort_unstable_by(|c1, c2| c1.path.cmp(&c2.path));
     let toml_configs = git_configs
         .into_iter()

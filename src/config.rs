@@ -23,11 +23,8 @@ pub struct UpConfig {
     pub tasks: Option<Vec<String>>,
 }
 
-// TODO(gib): Work out the data structure for the toml files.
-// TODO(gib): Work out how to make that structure easily accessible for users.
 // TODO(gib): Provide a way for users to easily validate their toml files.
-// TODO(gib): these should be overridable with command-line options (especially
-// the env).
+// TODO(gib): these should be overridable with command-line options (especially the env).
 /// Basic config, doesn't parse the full set of update scripts.
 #[derive(Default, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

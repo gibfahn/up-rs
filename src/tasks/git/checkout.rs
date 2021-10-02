@@ -1,4 +1,4 @@
-use std::str;
+use std::{convert::Into, str};
 
 use color_eyre::eyre::{bail, eyre, Result};
 use git2::{
@@ -146,7 +146,7 @@ fn force_checkout_head(repo: &Repository) -> Result<()> {
 }
 
 pub(super) fn needs_checkout(repo: &Repository, branch_name: &str) -> bool {
-    match repo.head().map_err(|e| e.into()).and_then(|h| {
+    match repo.head().map_err(Into::into).and_then(|h| {
         h.shorthand()
             .map(ToOwned::to_owned)
             .ok_or_else(|| eyre!("Current branch is not valid UTF-8"))

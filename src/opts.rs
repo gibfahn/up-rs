@@ -49,7 +49,6 @@ For debugging, run with `RUST_LIB_BACKTRACE=1` to show error/panic traces.
 #[derive(Debug, Clap)]
 #[clap(version = env!("CARGO_PKG_VERSION"), global_setting = AppSettings::ColoredHelp)]
 pub struct Opts {
-    // TODO(gib): Improve help text to cover env_logger setup.
     /// Set the logging level explicitly (options: Off, Error, Warn, Info,
     /// Debug, Trace).
     #[clap(long, short = 'l', default_value = "info", env = "LOG_LEVEL", parse(try_from_str = from_level))]
@@ -93,7 +92,6 @@ pub(crate) enum SubCommand {
     /// Run the update scripts. If you don't provide a subcommand this is the default action.
     /// If you want to pass Run args you will need to specify the subcommand.
     Run(RunOptions),
-    // TODO(gib): Work out how to do clap's help and long_help in clap.
     /// Symlink your dotfiles from a git repo to your home directory.
     Link(LinkOptions),
     /// Clone or update a repo at a path.
@@ -123,7 +121,6 @@ pub(crate) struct RunOptions {
     /// that is linked into ~.
     #[clap(short = 'p', default_value = FALLBACK_CONFIG_PATH)]
     pub(crate) fallback_path: String,
-    // TODO(gib): don't include update specific options in the generic options section.
     /// Optionally pass one or more tasks to run. The default is to run all
     /// tasks.
     #[clap(long)]
@@ -227,7 +224,6 @@ pub struct GenerateGitConfig {
     /// Order to save remotes, other remotes will be included after those listed here.
     #[clap(long)]
     pub(crate) remote_order: Vec<String>,
-    // TODO(gib): add a check option that errors if not up to date.
 }
 
 #[derive(Debug, Clap, Serialize, Deserialize)]

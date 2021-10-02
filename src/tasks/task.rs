@@ -163,7 +163,7 @@ impl Task {
                         .clone()
                         .try_into::<Vec<GitConfig>>()?;
                     data.resolve_env(env_fn)?;
-                    tasks::git::run(data)
+                    tasks::git::run(&data)
                 }
                 "generate_git" => {
                     let mut data = data

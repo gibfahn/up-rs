@@ -55,7 +55,7 @@ fn real_clone() {
     // Clone again to the same directory, different branch.
     {
         let cmd_output =
-            testutils::run_cmd(&mut up_git_cmd(&git_path, &temp_dir).args(&["--branch", "test"]));
+            testutils::run_cmd(up_git_cmd(&git_path, &temp_dir).args(&["--branch", "test"]));
         assert_eq!(cmd_output.status.success(), true,);
         check_repo(
             &git_path,
