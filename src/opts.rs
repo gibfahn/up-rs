@@ -1,6 +1,6 @@
 use std::{path::PathBuf, str::FromStr};
 
-use clap::{AppSettings, ArgEnum, Clap};
+use clap::{AppSettings, ArgEnum, Clap, ValueHint};
 use clap_generate::Shell;
 use color_eyre::eyre::{eyre, Result};
 use serde_derive::{Deserialize, Serialize};
@@ -55,7 +55,7 @@ pub struct Opts {
     pub log_level: Level,
     /// Write file logs to directory. Default: $TMPDIR/up-rs/logs. Set to empty
     /// to disable file logging.
-    #[clap(long)]
+    #[clap(long, value_hint = ValueHint::DirPath)]
     pub log_dir: Option<PathBuf>,
     /// Set the file logging level explicitly (options: Off, Error, Warn, Info,
     /// Debug, Trace).
@@ -65,7 +65,7 @@ pub struct Opts {
     #[clap(long, default_value = "auto", case_insensitive = true, arg_enum)]
     pub color: Color,
     /// Path to the up.toml file for up.
-    #[clap(long, short = 'c', default_value = "$XDG_CONFIG_HOME/up/up.toml")]
+    #[clap(long, short = 'c', default_value = "$XDG_CONFIG_HOME/up/up.toml", value_hint = ValueHint::FilePath)]
     pub(crate) config: String,
     #[clap(subcommand)]
     pub(crate) cmd: Option<SubCommand>,
@@ -114,12 +114,12 @@ pub(crate) struct RunOptions {
     #[clap(long)]
     pub(crate) bootstrap: bool,
     /// Fallback git repo URL to download to get the config.
-    #[clap(short = 'f')]
+    #[clap(short = 'f', value_hint = ValueHint::Url)]
     pub(crate) fallback_url: Option<String>,
     /// Fallback path inside the git repo to get the config.
     /// The default path assumes your fallback_url points to a dotfiles repo
     /// that is linked into ~.
-    #[clap(short = 'p', default_value = FALLBACK_CONFIG_PATH)]
+    #[clap(short = 'p', default_value = FALLBACK_CONFIG_PATH, value_hint = ValueHint::FilePath)]
     pub(crate) fallback_path: String,
     /// Optionally pass one or more tasks to run. The default is to run all
     /// tasks.
@@ -130,23 +130,23 @@ pub(crate) struct RunOptions {
 #[derive(Debug, Clap, Default, Serialize, Deserialize)]
 pub(crate) struct LinkOptions {
     /// Path where your dotfiles are kept (hopefully in source control).
-    #[clap(short = 'f', long = "from", default_value = "~/code/dotfiles")]
+    #[clap(short = 'f', long = "from", default_value = "~/code/dotfiles", value_hint = ValueHint::DirPath)]
     pub(crate) from_dir: String,
     /// Path to link them to.
-    #[clap(short = 't', long = "to", default_value = "~")]
+    #[clap(short = 't', long = "to", default_value = "~", value_hint = ValueHint::DirPath)]
     pub(crate) to_dir: String,
     /// Path at which to store backups of overwritten files.
-    #[clap(short = 'b', long = "backup", default_value = "~/backup")]
+    #[clap(short = 'b', long = "backup", default_value = "~/backup", value_hint = ValueHint::DirPath)]
     pub(crate) backup_dir: String,
 }
 
 #[derive(Debug, Default, Clap)]
 pub struct GitOptions {
     /// URL of git repo to download.
-    #[clap(long)]
+    #[clap(long, value_hint = ValueHint::Url)]
     pub git_url: String,
     /// Path to download git repo to.
-    #[clap(long)]
+    #[clap(long, value_hint = ValueHint::DirPath)]
     pub git_path: String,
     /// Remote to set/update.
     #[clap(long, default_value = crate::tasks::git::DEFAULT_REMOTE_NAME)]
@@ -172,7 +172,7 @@ pub(crate) struct GenerateOptions {
 #[derive(Debug, Clap, Serialize, Deserialize)]
 pub(crate) struct UpdateSelfOptions {
     /// URL to download update from.
-    #[clap(long, default_value = SELF_UPDATE_URL)]
+    #[clap(long, default_value = SELF_UPDATE_URL, value_hint = ValueHint::Url)]
     pub(crate) url: String,
     /// Set to update self even if it seems to be a development install.
     /// Assumes a dev install when the realpath of the current binary is in a
@@ -208,10 +208,10 @@ pub(crate) enum GenerateLib {
 #[derive(Debug, Clap, Serialize, Deserialize)]
 pub struct GenerateGitConfig {
     /// Path to toml file to update.
-    #[clap(long, parse(from_str))]
+    #[clap(long, parse(from_str), value_hint = ValueHint::FilePath)]
     pub(crate) path: PathBuf,
     /// Paths to search within.
-    #[clap(long, parse(from_str), default_value = "~")]
+    #[clap(long, parse(from_str), default_value = "~", value_hint = ValueHint::DirPath)]
     pub(crate) search_paths: Vec<PathBuf>,
     /// Exclude paths containing this value. e.g. '/tmp/' to exclude anything in
     /// a tmp dir.
@@ -229,6 +229,6 @@ pub struct GenerateGitConfig {
 #[derive(Debug, Clap, Serialize, Deserialize)]
 pub struct GenerateDefaultsConfig {
     /// Path to toml file to update.
-    #[clap(long, parse(from_str))]
+    #[clap(long, parse(from_str), value_hint = ValueHint::FilePath)]
     pub(crate) path: PathBuf,
 }
