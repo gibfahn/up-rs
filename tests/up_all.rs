@@ -31,9 +31,8 @@ fn up_passing() {
         .iter(),
     );
     let cmd_output = testutils::run_cmd(&mut cmd);
-    assert_eq!(
+    assert!(
         cmd_output.status.success(),
-        true,
         "\n Up command should pass successfully.",
     );
 
