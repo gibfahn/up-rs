@@ -8,6 +8,7 @@ use std::{
 
 use color_eyre::eyre::{bail, eyre, Context, Result};
 use displaydoc::Display;
+use itertools::Itertools;
 use log::{debug, error, info, trace, warn};
 use rayon::prelude::*;
 use thiserror::Error;
@@ -25,6 +26,13 @@ pub mod link;
 pub mod task;
 pub mod update_self;
 
+// TODO(gib): If there's only one task left, stream output directly to the
+// console and run sync.
+
+// TODO(gib): Use https://lib.rs/crates/indicatif for progress bars.
+
+// TODO(gib): use tui Terminal UI lib (https://crates.io/keywords/tui) for better UI.
+
 pub trait ResolveEnv {
     /// Expand env vars in `self` by running `enf_fn()` on its component
     /// strings.
@@ -39,13 +47,44 @@ pub trait ResolveEnv {
     }
 }
 
+/// What to do with the tasks.
+#[derive(Debug, Clone, Copy)]
+pub enum TasksAction {
+    /// Run tasks.
+    Run,
+    /// Just list the matching tasks.
+    List,
+}
+
+/// Directory in which to find the tasks.
+#[derive(Debug, Clone, Copy)]
+pub enum TasksDir {
+    /// Normal tasks to execute.
+    Tasks,
+    /// Generation tasks (that generate your main tasks).
+    GenerateTasks,
+}
+
+impl TasksDir {
+    fn to_dir_name(self) -> String {
+        match self {
+            TasksDir::Tasks => "tasks".to_owned(),
+            TasksDir::GenerateTasks => "generate_tasks".to_owned(),
+        }
+    }
+}
+
 /// Run a set of tasks specified in a subdir of the directory containing the up
 /// config.
-pub fn run(config: &config::UpConfig, tasks_dirname: &str) -> Result<()> {
+pub fn run(
+    config: &config::UpConfig,
+    tasks_dirname: TasksDir,
+    tasks_action: TasksAction,
+) -> Result<()> {
     // TODO(gib): Handle missing dir & move into config.
     let mut tasks_dir = config.up_toml_path.as_ref().ok_or(E::None {})?.clone();
     tasks_dir.pop();
-    tasks_dir.push(tasks_dirname);
+    tasks_dir.push(tasks_dirname.to_dir_name());
 
     let env = get_env(
         config.config_toml.inherit_env.as_ref(),
@@ -71,6 +110,7 @@ pub fn run(config: &config::UpConfig, tasks_dirname: &str) -> Result<()> {
 
     let filter_tasks_set: Option<HashSet<String>> =
         config.tasks.clone().map(|v| v.into_iter().collect());
+    debug!("Filter tasks set: {:?}", &filter_tasks_set);
 
     let mut tasks: HashMap<String, task::Task> = HashMap::new();
     for entry in tasks_dir.read_dir().map_err(|e| E::ReadDir {
@@ -103,7 +143,7 @@ pub fn run(config: &config::UpConfig, tasks_dirname: &str) -> Result<()> {
         tasks.insert(task.name.clone(), task);
     }
 
-    if tasks.values().any(|t| t.config.needs_sudo) {
+    if matches!(tasks_action, TasksAction::Run) && tasks.values().any(|t| t.config.needs_sudo) {
         // TODO(gib): this only lasts for 5 minutes.
         debug!("Prompting for superuser privileges with 'sudo -v'");
         Command::new("sudo").arg("-v").output()?;
@@ -112,7 +152,11 @@ pub fn run(config: &config::UpConfig, tasks_dirname: &str) -> Result<()> {
     debug!("Task count: {:?}", tasks.len());
     trace!("Task list: {:#?}", tasks);
 
-    run_tasks(bootstrap_tasks, tasks, &env)
+    match tasks_action {
+        TasksAction::List => println!("{}", tasks.keys().join("\n")),
+        TasksAction::Run => run_tasks(bootstrap_tasks, tasks, &env)?,
+    }
+    Ok(())
 }
 
 fn run_tasks(
@@ -135,7 +179,6 @@ fn run_tasks(
         }
     }
 
-    // TODO(gib): use tui Terminal UI lib (https://crates.io/keywords/tui) for better UI.
     let tasks = tasks
         .into_par_iter()
         .filter(|(_, task)| task.config.auto_run.unwrap_or(true))

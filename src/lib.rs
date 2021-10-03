@@ -16,6 +16,7 @@
 use color_eyre::eyre::Result;
 use log::trace;
 use opts::GenerateLib;
+use tasks::{TasksAction, TasksDir};
 
 use crate::{
     config::UpConfig,
@@ -27,7 +28,6 @@ mod env;
 mod generate;
 pub mod opts;
 pub mod tasks;
-pub mod update;
 
 /// Run `up_rs` with provided [Opts][] struct.
 ///
@@ -71,14 +71,18 @@ pub fn run(opts: Opts) -> Result<()> {
         },
         Some(SubCommand::Run(ref _cmd_opts)) => {
             let config = UpConfig::from(opts)?;
-            update::update(&config)?;
+            tasks::run(&config, TasksDir::Tasks, TasksAction::Run)?;
         }
         Some(SubCommand::Completions(ref cmd_opts)) => {
             tasks::completions::run(cmd_opts)?;
         }
+        Some(SubCommand::List(ref _cmd_opts)) => {
+            let config = UpConfig::from(opts)?;
+            tasks::run(&config, TasksDir::Tasks, TasksAction::List)?;
+        }
         None => {
             let config = UpConfig::from(opts)?;
-            update::update(&config)?;
+            tasks::run(&config, TasksDir::Tasks, TasksAction::Run)?;
         }
     }
     Ok(())

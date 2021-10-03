@@ -4,7 +4,7 @@ use testutils::assert;
 
 /// Run a full up with a bunch of configuration and check things work.
 #[test]
-fn up_passing() {
+fn up_run_passing() {
     let temp_dir = testutils::temp_dir(file!(), testutils::function_name!()).unwrap();
 
     testutils::copy_all(

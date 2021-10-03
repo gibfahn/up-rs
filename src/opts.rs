@@ -105,6 +105,8 @@ pub(crate) enum SubCommand {
     Self_(UpdateSelfOptions),
     /// Generate shell completions to stdout.
     Completions(CompletionsOptions),
+    /// List available tasks.
+    List(RunOptions),
 }
 
 #[derive(Debug, Clap, Default)]
@@ -123,7 +125,7 @@ pub(crate) struct RunOptions {
     pub(crate) fallback_path: String,
     /// Optionally pass one or more tasks to run. The default is to run all
     /// tasks.
-    #[clap(long)]
+    #[clap(long, multiple_occurrences(true))]
     pub(crate) tasks: Option<Vec<String>>,
 }
 

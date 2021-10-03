@@ -132,7 +132,7 @@ fn real_clone() {
         // This time try to prune.
         cmd.args(&["--branch", "test", "--prune"]);
         let cmd_output = testutils::run_cmd(&mut cmd);
-        assert_eq!(cmd_output.status.success(), true,);
+        assert!(cmd_output.status.success());
         check_repo(
             &git_path,
             "b3cbd5bbd7e81436d2eee04537ea2b4c0cad4cdf",

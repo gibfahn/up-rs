@@ -46,7 +46,7 @@ impl UpConfig {
         let mut config_toml = ConfigToml::default();
 
         let run_options = match args.cmd {
-            Some(SubCommand::Run(run_options)) => run_options,
+            Some(SubCommand::Run(task_opts) | SubCommand::List(task_opts)) => task_opts,
             _ => RunOptions::default(),
         };
 
