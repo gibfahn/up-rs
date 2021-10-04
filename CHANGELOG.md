@@ -1,3 +1,19 @@
+<a name="0.10.0"></a>
+## [0.10.0][] (2021-10-04)
+
+
+#### Features
+
+* **list:**  add an `up list` command ([510e83a7](https://github.com/gibfahn/up-rs/commit/510e83a77001ab592d5ac8e351bc5195b479d39a))
+
+#### Bug Fixes
+
+* **completions:**
+  *  better shell completions using ValueHint ([2536528c](https://github.com/gibfahn/up-rs/commit/2536528c31d12c63e92e2e52a55e0a6fb7c8d7eb))
+  *  use up as binary name not up-rs ([9097807c](https://github.com/gibfahn/up-rs/commit/9097807c86251ee9829c71608e8b41cd2c2709b3))
+
+
+
 <a name="0.9.5"></a>
 ## [0.9.5][] (2021-09-24)
 
@@ -410,3 +426,4 @@
 [0.9.3]: https://github.com/gibfahn/up-rs/releases/tag/0.9.3
 [0.9.4]: https://github.com/gibfahn/up-rs/releases/tag/0.9.4
 [0.9.5]: https://github.com/gibfahn/up-rs/releases/tag/0.9.5
+[0.10.0]: https://github.com/gibfahn/up-rs/releases/tag/0.10.0
