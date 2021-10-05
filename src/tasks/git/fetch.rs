@@ -1,3 +1,5 @@
+use std::{thread, time::Duration};
+
 use color_eyre::eyre::Result;
 use git2::{Cred, CredentialType, ErrorClass, ErrorCode, Remote, RemoteCallbacks, Repository};
 use log::{debug, warn};
@@ -5,7 +7,9 @@ use log::{debug, warn};
 use crate::tasks::git::{branch::shorten_branch_ref, errors::GitError as E};
 
 /// Number of times to try authenticating when fetching.
-const AUTH_RETRY_COUNT: usize = 6;
+const AUTH_RETRY_COUNT: usize = 10;
+/// Length of time to sleep after multiple fetch failures.
+const RETRY_SLEEP_INTERVAL_S: u64 = 2;
 
 /// Prepare the remote authentication callbacks for fetching.
 ///
@@ -14,6 +18,9 @@ pub(super) fn remote_callbacks(count: &mut usize) -> RemoteCallbacks {
     let mut remote_callbacks = RemoteCallbacks::new();
     remote_callbacks.credentials(move |url, username_from_url, allowed_types| {
         *count += 1;
+        if *count > 2 {
+            thread::sleep(Duration::from_secs(RETRY_SLEEP_INTERVAL_S));
+        }
         if *count > AUTH_RETRY_COUNT {
             let extra = if allowed_types.contains(CredentialType::SSH_KEY) {
                 // On macOS ssh-add takes a -K argument to automatically add the ssh key's password
