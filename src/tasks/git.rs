@@ -10,7 +10,10 @@ use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
 
 use self::GitTaskError as E;
-use crate::{opts::GitOptions, tasks::ResolveEnv};
+use crate::{
+    opts::GitOptions,
+    tasks::{ResolveEnv, TaskError},
+};
 
 pub mod branch;
 pub mod checkout;
@@ -78,9 +81,9 @@ impl From<GitOptions> for GitConfig {
 }
 
 impl ResolveEnv for Vec<GitConfig> {
-    fn resolve_env<F>(&mut self, env_fn: F) -> Result<()>
+    fn resolve_env<F>(&mut self, env_fn: F) -> Result<(), TaskError>
     where
-        F: Fn(&str) -> Result<String>,
+        F: Fn(&str) -> Result<String, TaskError>,
     {
         for config in self.iter_mut() {
             if let Some(branch) = config.branch.as_ref() {

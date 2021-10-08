@@ -6,7 +6,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use color_eyre::eyre::{bail, eyre, Context, Result};
+use color_eyre::eyre::{bail, eyre, Result};
 use displaydoc::Display;
 use itertools::Itertools;
 use log::{debug, error, info, trace, warn};
@@ -38,10 +38,10 @@ pub trait ResolveEnv {
     /// strings.
     ///
     /// # Errors
-    /// `resolve_env()` should return any errors returned by the `enf_fn()`.
-    fn resolve_env<F>(&mut self, _env_fn: F) -> Result<()>
+    /// `resolve_env()` should return any errors returned by the `env_fn()`.
+    fn resolve_env<F>(&mut self, _env_fn: F) -> Result<(), E>
     where
-        F: Fn(&str) -> Result<String>,
+        F: Fn(&str) -> Result<String, E>,
     {
         Ok(())
     }
@@ -190,13 +190,10 @@ fn run_tasks(
     let mut tasks_skipped = Vec::new();
     let mut tasks_failed = Vec::new();
     let mut tasks_incomplete = Vec::new();
-    let mut task_errors: Vec<color_eyre::eyre::Error> = Vec::new();
 
-    for mut task in tasks {
+    for task in tasks {
         match task.status {
-            TaskStatus::Failed(ref mut e) => {
-                let extracted_error = std::mem::replace(e, eyre!(""));
-                task_errors.push(extracted_error);
+            TaskStatus::Failed(_) => {
                 tasks_failed.push(task);
             }
             TaskStatus::Passed => tasks_passed.push(task),
@@ -226,20 +223,20 @@ fn run_tasks(
     }
 
     if !tasks_failed.is_empty() {
+        error!("One or more tasks failed, exiting.");
+
         error!(
             "Tasks failed: {:#?}",
             tasks_failed.iter().map(|t| &t.name).collect::<Vec<_>>()
         );
-    }
-    if !task_errors.is_empty() {
-        // Error out.
-        error!("One or more tasks failed, exiting.");
-        return Err(eyre!("")).with_context(|| {
-            let task_errors_string = task_errors
-                .into_iter()
-                .fold(String::new(), |acc, e| acc + &format!("\n- {:?}", e));
-            eyre!("Task errors: {}", task_errors_string)
-        });
+
+        tasks_failed
+            .into_iter()
+            .filter_map(|t| match t.status {
+                TaskStatus::Failed(e) => Some(e),
+                _ => None,
+            })
+            .fold(Err(eyre!("Task Errors:")), color_eyre::Help::error)?;
     }
 
     Ok(())
@@ -271,6 +268,12 @@ fn run_task(mut task: Task, env: &HashMap<String, String>) -> Task {
 #[derive(Error, Debug, Display)]
 /// Errors thrown by this file.
 pub enum TaskError {
+    /// Task '{name}' {lib} failed.
+    TaskError {
+        source: color_eyre::eyre::Error,
+        lib: String,
+        name: String,
+    },
     /// Error walking directory '{path}':
     ReadDir { path: PathBuf, source: io::Error },
     /// Error reading file '{path}':
@@ -280,6 +283,8 @@ pub enum TaskError {
         var: String,
         source: color_eyre::eyre::Error,
     },
+    /// Commmand was empty.
+    EmptyCmd,
     /// Task '{name}' had no run command.
     MissingCmd { name: String },
     /// Task '{name}' {command_type} failed. Command: {cmd:?}.
@@ -287,6 +292,12 @@ pub enum TaskError {
         command_type: CommandType,
         name: String,
         source: io::Error,
+        cmd: Vec<String>,
+    },
+    /// Task '{name}' {command_type} failed. Command: {cmd:?}.
+    CmdNonZero {
+        command_type: CommandType,
+        name: String,
         cmd: Vec<String>,
     },
     /// Unexpectedly empty option found.
@@ -303,4 +314,6 @@ pub enum TaskError {
     },
     /// Task {task} must have data.
     TaskDataRequired { task: String },
+    /// Failed to parse the config.
+    DeserializeError { source: toml::de::Error },
 }

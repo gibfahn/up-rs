@@ -11,12 +11,15 @@ use log::{debug, info, trace, warn};
 use thiserror::Error;
 use walkdir::{DirEntry, WalkDir};
 
-use crate::{opts::LinkOptions, tasks::ResolveEnv};
+use crate::{
+    opts::LinkOptions,
+    tasks::{ResolveEnv, TaskError},
+};
 
 impl ResolveEnv for LinkOptions {
-    fn resolve_env<F>(&mut self, env_fn: F) -> Result<()>
+    fn resolve_env<F>(&mut self, env_fn: F) -> Result<(), TaskError>
     where
-        F: Fn(&str) -> Result<String>,
+        F: Fn(&str) -> Result<String, TaskError>,
     {
         self.from_dir = env_fn(&self.from_dir)?;
         self.to_dir = env_fn(&self.to_dir)?;

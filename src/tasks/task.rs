@@ -7,7 +7,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use color_eyre::eyre::{bail, eyre, Error, Result};
+use color_eyre::eyre::{eyre, Result};
 use log::{debug, info, log, trace, Level};
 use serde_derive::{Deserialize, Serialize};
 
@@ -27,7 +27,7 @@ pub enum TaskStatus {
     /// Completed successfully.
     Passed,
     /// Completed unsuccessfully.
-    Failed(Error),
+    Failed(E),
 }
 
 #[derive(Debug)]
@@ -127,7 +127,7 @@ impl Task {
 
     pub fn run<F>(&mut self, env_fn: F, env: &HashMap<String, String>)
     where
-        F: Fn(&str) -> Result<String>,
+        F: Fn(&str) -> Result<String, E>,
     {
         match self.try_run(env_fn, env) {
             Ok(status) => self.status = status,
@@ -135,9 +135,11 @@ impl Task {
         }
     }
 
-    pub fn try_run<F>(&mut self, env_fn: F, env: &HashMap<String, String>) -> Result<TaskStatus>
+    // TODO(gib): shorten function (maybe with a macro?)
+    #[allow(clippy::too_many_lines)]
+    pub fn try_run<F>(&mut self, env_fn: F, env: &HashMap<String, String>) -> Result<TaskStatus, E>
     where
-        F: Fn(&str) -> Result<String>,
+        F: Fn(&str) -> Result<String, E>,
     {
         info!("Running task '{}'", &self.name);
 
@@ -151,7 +153,8 @@ impl Task {
                             task: self.name.clone(),
                         })?
                         .clone()
-                        .try_into::<LinkOptions>()?;
+                        .try_into::<LinkOptions>()
+                        .map_err(|e| E::DeserializeError { source: e })?;
                     data.resolve_env(env_fn)?;
                     tasks::link::run(data)
                 }
@@ -161,7 +164,8 @@ impl Task {
                             task: self.name.clone(),
                         })?
                         .clone()
-                        .try_into::<Vec<GitConfig>>()?;
+                        .try_into::<Vec<GitConfig>>()
+                        .map_err(|e| E::DeserializeError { source: e })?;
                     data.resolve_env(env_fn)?;
                     tasks::git::run(&data)
                 }
@@ -171,7 +175,8 @@ impl Task {
                             task: self.name.clone(),
                         })?
                         .clone()
-                        .try_into::<Vec<GenerateGitConfig>>()?;
+                        .try_into::<Vec<GenerateGitConfig>>()
+                        .map_err(|e| E::DeserializeError { source: e })?;
                     data.resolve_env(env_fn)?;
                     generate::git::run(&data)
                 }
@@ -181,13 +186,17 @@ impl Task {
                             task: self.name.clone(),
                         })?
                         .clone()
-                        .try_into::<DefaultsConfig>()?;
+                        .try_into::<DefaultsConfig>()
+                        .map_err(|e| E::DeserializeError { source: e })?;
                     data.resolve_env(env_fn)?;
                     tasks::defaults::run(data)
                 }
                 "self" => {
                     let options = if let Some(raw_data) = self.config.data.as_ref() {
-                        let mut raw_opts = raw_data.clone().try_into::<UpdateSelfOptions>()?;
+                        let mut raw_opts = raw_data
+                            .clone()
+                            .try_into::<UpdateSelfOptions>()
+                            .map_err(|e| E::DeserializeError { source: e })?;
                         raw_opts.resolve_env(env_fn)?;
                         raw_opts
                     } else {
@@ -196,7 +205,12 @@ impl Task {
                     tasks::update_self::run(&options)
                 }
                 _ => Err(eyre!("This run_lib is invalid or not yet implemented.")),
-            }?;
+            }
+            .map_err(|e| E::TaskError {
+                name: self.name.clone(),
+                lib: lib.to_string(),
+                source: e,
+            })?;
             return Ok(TaskStatus::Passed);
         }
 
@@ -228,12 +242,16 @@ impl Task {
             if self.run_command(CommandType::Run, &cmd, env)? {
                 return Ok(TaskStatus::Passed);
             }
-            return Ok(TaskStatus::Failed(eyre!("Task {} failed.", self.name)));
+            return Ok(TaskStatus::Failed(E::CmdNonZero {
+                command_type: CommandType::Run,
+                name: self.name.clone(),
+                cmd,
+            }));
         }
 
-        bail!(E::MissingCmd {
-            name: self.name.clone()
-        });
+        Err(E::MissingCmd {
+            name: self.name.clone(),
+        })
     }
 
     // TODO(gib): Error should include an easy way to see the task logs.
@@ -242,7 +260,7 @@ impl Task {
         command_type: CommandType,
         cmd: &[String],
         env: &HashMap<String, String>,
-    ) -> Result<bool> {
+    ) -> Result<bool, E> {
         let mut command = Self::get_command(cmd, env)?;
 
         let now = Instant::now();
@@ -259,12 +277,9 @@ impl Task {
         Ok(success)
     }
 
-    pub fn get_command(cmd: &[String], env: &HashMap<String, String>) -> Result<Command> {
+    pub fn get_command(cmd: &[String], env: &HashMap<String, String>) -> Result<Command, E> {
         // TODO(gib): set current dir.
-        let mut command = Command::new(
-            &cmd.get(0)
-                .ok_or_else(|| eyre!("Task '{}' command was empty."))?,
-        );
+        let mut command = Command::new(&cmd.get(0).ok_or(E::EmptyCmd)?);
         command
             .args(cmd.get(1..).unwrap_or(&[]))
             .env_clear()

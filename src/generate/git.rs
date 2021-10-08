@@ -18,7 +18,7 @@ use crate::{
     tasks::{
         git::{GitConfig, GitRemote},
         task::Task,
-        ResolveEnv,
+        ResolveEnv, TaskError,
     },
 };
 
@@ -79,9 +79,9 @@ pub fn run_single(generate_git_config: &GenerateGitConfig) -> Result<()> {
 // False-positives on Vec::new(), see https://github.com/rust-lang/rust-clippy/issues/3410
 #[allow(clippy::use_self)]
 impl ResolveEnv for Vec<GenerateGitConfig> {
-    fn resolve_env<F>(&mut self, env_fn: F) -> Result<()>
+    fn resolve_env<F>(&mut self, env_fn: F) -> Result<(), TaskError>
     where
-        F: Fn(&str) -> Result<String>,
+        F: Fn(&str) -> Result<String, TaskError>,
     {
         for config in self.iter_mut() {
             config.path = PathBuf::from(env_fn(&config.path.to_string_lossy())?);
