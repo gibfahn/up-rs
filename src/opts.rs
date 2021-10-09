@@ -28,13 +28,9 @@ config directory. It handles linking configuration files into the right location
 scripts to make sure the tools you need are installed and up to date. It is designed to complete
 common bootstrapping tasks without dependencies, so you can bootstrap a new machine by:
 
-```shell
+❯ curl --create-dirs -Lo ~/bin/up https://github.com/gibfahn/up-rs/releases/latest/download/up-$(uname) && chmod +x ~/bin/up
 
-curl --create-dirs -Lo ~/bin/up https://github.com/gibfahn/up-rs/releases/latest/download/up-$(uname) && chmod +x ~/bin/up
-
-~/bin/up run --bootstrap --fallback-url https://github.com/gibfahn/dot
-
-```
+❯ ~/bin/up run --bootstrap --fallback-url https://github.com/gibfahn/dot
 
 Running `up` without a subcommand runs `up run` with no parameters, which is useful for
 post-bootstrapping, when you want to just run all your setup steps again, to make sure
