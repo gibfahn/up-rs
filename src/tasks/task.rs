@@ -135,8 +135,6 @@ impl Task {
         }
     }
 
-    // TODO(gib): shorten function (maybe with a macro?)
-    #[allow(clippy::too_many_lines)]
     pub fn try_run<F>(&mut self, env_fn: F, env: &HashMap<String, String>) -> Result<TaskStatus, E>
     where
         F: Fn(&str) -> Result<String, E>,
@@ -148,55 +146,33 @@ impl Task {
 
             match lib.as_str() {
                 "link" => {
-                    let mut data: LinkOptions =
-                        serde_yaml::from_value(maybe_data.ok_or_else(|| E::TaskDataRequired {
-                            task: self.name.clone(),
-                        })?)
-                        .map_err(|e| E::DeserializeError { source: e })?;
-                    data.resolve_env(env_fn)?;
+                    let data: LinkOptions =
+                        parse_task_config(maybe_data, &self.name, false, env_fn)?;
                     tasks::link::run(data)
                 }
 
                 "git" => {
-                    let mut data: Vec<GitConfig> =
-                        serde_yaml::from_value(maybe_data.ok_or_else(|| E::TaskDataRequired {
-                            task: self.name.clone(),
-                        })?)
-                        .map_err(|e| E::DeserializeError { source: e })?;
-                    data.resolve_env(env_fn)?;
+                    let data: Vec<GitConfig> =
+                        parse_task_config(maybe_data, &self.name, false, env_fn)?;
                     tasks::git::run(&data)
                 }
 
                 "generate_git" => {
-                    let mut data: Vec<GenerateGitConfig> =
-                        serde_yaml::from_value(maybe_data.ok_or_else(|| E::TaskDataRequired {
-                            task: self.name.clone(),
-                        })?)
-                        .map_err(|e| E::DeserializeError { source: e })?;
-                    data.resolve_env(env_fn)?;
+                    let data: Vec<GenerateGitConfig> =
+                        parse_task_config(maybe_data, &self.name, false, env_fn)?;
                     generate::git::run(&data)
                 }
 
                 "defaults" => {
-                    let mut data: DefaultsConfig =
-                        serde_yaml::from_value(maybe_data.ok_or_else(|| E::TaskDataRequired {
-                            task: self.name.clone(),
-                        })?)
-                        .map_err(|e| E::DeserializeError { source: e })?;
-                    data.resolve_env(env_fn)?;
+                    let data: DefaultsConfig =
+                        parse_task_config(maybe_data, &self.name, false, env_fn)?;
                     tasks::defaults::run(data)
                 }
 
                 "self" => {
-                    let options: UpdateSelfOptions = if let Some(raw_data) = maybe_data {
-                        let mut raw_opts: UpdateSelfOptions = serde_yaml::from_value(raw_data)
-                            .map_err(|e| E::DeserializeError { source: e })?;
-                        raw_opts.resolve_env(env_fn)?;
-                        raw_opts
-                    } else {
-                        UpdateSelfOptions::default()
-                    };
-                    tasks::update_self::run(&options)
+                    let data: UpdateSelfOptions =
+                        parse_task_config(maybe_data, &self.name, true, env_fn)?;
+                    tasks::update_self::run(&data)
                 }
 
                 _ => Err(eyre!("This run_lib is invalid or not yet implemented.")),
@@ -331,4 +307,32 @@ impl Task {
             );
         }
     }
+}
+
+/// Convert a task's `data:` block into a task config.
+/// Set `has_default` to `true` if the task should fall back to `Default::default()`, or `false` if
+/// it should error when no value was passed.
+fn parse_task_config<F, T: ResolveEnv + Default + for<'de> serde::Deserialize<'de>>(
+    maybe_data: Option<serde_yaml::Value>,
+    task_name: &str,
+    has_default: bool,
+    env_fn: F,
+) -> Result<T, E>
+where
+    F: Fn(&str) -> Result<String, E>,
+{
+    let data = if let Some(data) = maybe_data {
+        data
+    } else if has_default {
+        return Ok(T::default());
+    } else {
+        return Err(E::TaskDataRequired {
+            task: task_name.to_string(),
+        });
+    };
+
+    let mut raw_opts: T =
+        serde_yaml::from_value(data).map_err(|e| E::DeserializeError { source: e })?;
+    raw_opts.resolve_env(env_fn)?;
+    Ok(raw_opts)
 }
