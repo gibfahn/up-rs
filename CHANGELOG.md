@@ -1,3 +1,14 @@
+<a name="0.11.0"></a>
+## [0.11.0][] (2021-10-18)
+
+
+#### Bug Fixes
+
+* **git:**  wait longer between retries with fetch failures ([288fadca](https://github.com/gibfahn/up-rs/commit/288fadcaacb023f63b7070fe4d9f78dd0a7eabfc))
+* **tasks:**  nicer error messages on task failure ([7b8eee2e](https://github.com/gibfahn/up-rs/commit/7b8eee2e9536a701680a37918e5d54baf20cc61b))
+
+
+
 <a name="0.10.0"></a>
 ## [0.10.0][] (2021-10-04)
 
@@ -427,3 +438,4 @@
 [0.9.4]: https://github.com/gibfahn/up-rs/releases/tag/0.9.4
 [0.9.5]: https://github.com/gibfahn/up-rs/releases/tag/0.9.5
 [0.10.0]: https://github.com/gibfahn/up-rs/releases/tag/0.10.0
+[0.11.0]: https://github.com/gibfahn/up-rs/releases/tag/0.11.0
