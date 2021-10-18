@@ -82,13 +82,13 @@ pub fn run(
     tasks_action: TasksAction,
 ) -> Result<()> {
     // TODO(gib): Handle missing dir & move into config.
-    let mut tasks_dir = config.up_toml_path.as_ref().ok_or(E::None {})?.clone();
+    let mut tasks_dir = config.up_yaml_path.as_ref().ok_or(E::None {})?.clone();
     tasks_dir.pop();
     tasks_dir.push(tasks_dirname.to_dir_name());
 
     let env = get_env(
-        config.config_toml.inherit_env.as_ref(),
-        config.config_toml.env.as_ref(),
+        config.config_yaml.inherit_env.as_ref(),
+        config.config_yaml.env.as_ref(),
     )?;
 
     // If in macOS, don't let the display sleep until the command exits.
@@ -99,7 +99,7 @@ pub fn run(
 
     // TODO(gib): Handle and filter by constraints.
 
-    let mut bootstrap_tasks = match (config.bootstrap, &config.config_toml.bootstrap_tasks) {
+    let mut bootstrap_tasks = match (config.bootstrap, &config.config_yaml.bootstrap_tasks) {
         (false, _) => Ok(Vec::new()),
         (true, None) => Err(eyre!(
             "Bootstrap flag set but no bootstrap_tasks specified in config."
@@ -278,7 +278,7 @@ pub enum TaskError {
     ReadDir { path: PathBuf, source: io::Error },
     /// Error reading file '{path}':
     ReadFile { path: PathBuf, source: io::Error },
-    /// Env lookup error, please define '{var}' in your up.toml:"
+    /// Env lookup error, please define '{var}' in your up.yaml:"
     EnvLookup {
         var: String,
         source: color_eyre::eyre::Error,
@@ -302,12 +302,12 @@ pub enum TaskError {
     },
     /// Unexpectedly empty option found.
     None {},
-    /// Invalid toml at '{path}':
-    InvalidToml {
+    /// Invalid yaml at '{path}':
+    InvalidYaml {
         path: PathBuf,
-        source: toml::de::Error,
+        source: serde_yaml::Error,
     },
-    /// Env lookup error, please define '{var}' in your up.toml
+    /// Env lookup error, please define '{var}' in your up.yaml
     ResolveEnv {
         var: String,
         source: color_eyre::eyre::Error,
@@ -315,5 +315,5 @@ pub enum TaskError {
     /// Task {task} must have data.
     TaskDataRequired { task: String },
     /// Failed to parse the config.
-    DeserializeError { source: toml::de::Error },
+    DeserializeError { source: serde_yaml::Error },
 }

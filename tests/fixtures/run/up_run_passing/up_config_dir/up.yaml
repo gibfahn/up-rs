@@ -1,0 +1,9 @@
+# Set by test runner.
+inherit_env: [
+  # link.yaml
+  "link_from_dir",
+  "link_to_dir",
+
+  # *_self_cmd.yaml
+  "up_binary_path",
+]

@@ -64,10 +64,10 @@ pub struct TaskConfig {
     /// This will allow all subtasks that up executes in this iteration.
     #[serde(default = "default_false")]
     pub needs_sudo: bool,
-    // This field must be the last one in order for the toml serializer in the generate functions
+    // This field must be the last one in order for the yaml serializer in the generate functions
     // to be able to serialise it properly.
     /// Set of data provided to the Run library.
-    pub data: Option<toml::Value>,
+    pub data: Option<serde_yaml::Value>,
 }
 
 /// Used for serde defaults above.
@@ -78,9 +78,9 @@ const fn default_false() -> bool {
 /// Shell commands we run.
 #[derive(Debug, Clone, Copy)]
 pub enum CommandType {
-    /// check_cmd field in the toml.
+    /// check_cmd field in the yaml.
     Check,
-    /// run_cmd field in the toml.
+    /// run_cmd field in the yaml.
     Run,
 }
 
@@ -101,7 +101,7 @@ impl Task {
             source: e,
         })?;
         trace!("Task '{:?}' contents: <<<{}>>>", &path, &s);
-        let config = toml::from_str::<TaskConfig>(&s).map_err(|e| E::InvalidToml {
+        let config = serde_yaml::from_str::<TaskConfig>(&s).map_err(|e| E::InvalidYaml {
             path: path.to_owned(),
             source: e,
         })?;
@@ -144,58 +144,52 @@ impl Task {
         info!("Running task '{}'", &self.name);
 
         if let Some(lib) = &self.config.run_lib {
-            let data = self.config.data.as_ref();
+            let maybe_data = self.config.data.as_ref().cloned();
 
             match lib.as_str() {
                 "link" => {
-                    let mut data = data
-                        .ok_or_else(|| E::TaskDataRequired {
+                    let mut data: LinkOptions =
+                        serde_yaml::from_value(maybe_data.ok_or_else(|| E::TaskDataRequired {
                             task: self.name.clone(),
-                        })?
-                        .clone()
-                        .try_into::<LinkOptions>()
+                        })?)
                         .map_err(|e| E::DeserializeError { source: e })?;
                     data.resolve_env(env_fn)?;
                     tasks::link::run(data)
                 }
+
                 "git" => {
-                    let mut data = data
-                        .ok_or_else(|| E::TaskDataRequired {
+                    let mut data: Vec<GitConfig> =
+                        serde_yaml::from_value(maybe_data.ok_or_else(|| E::TaskDataRequired {
                             task: self.name.clone(),
-                        })?
-                        .clone()
-                        .try_into::<Vec<GitConfig>>()
+                        })?)
                         .map_err(|e| E::DeserializeError { source: e })?;
                     data.resolve_env(env_fn)?;
                     tasks::git::run(&data)
                 }
+
                 "generate_git" => {
-                    let mut data = data
-                        .ok_or_else(|| E::TaskDataRequired {
+                    let mut data: Vec<GenerateGitConfig> =
+                        serde_yaml::from_value(maybe_data.ok_or_else(|| E::TaskDataRequired {
                             task: self.name.clone(),
-                        })?
-                        .clone()
-                        .try_into::<Vec<GenerateGitConfig>>()
+                        })?)
                         .map_err(|e| E::DeserializeError { source: e })?;
                     data.resolve_env(env_fn)?;
                     generate::git::run(&data)
                 }
+
                 "defaults" => {
-                    let mut data = data
-                        .ok_or_else(|| E::TaskDataRequired {
+                    let mut data: DefaultsConfig =
+                        serde_yaml::from_value(maybe_data.ok_or_else(|| E::TaskDataRequired {
                             task: self.name.clone(),
-                        })?
-                        .clone()
-                        .try_into::<DefaultsConfig>()
+                        })?)
                         .map_err(|e| E::DeserializeError { source: e })?;
                     data.resolve_env(env_fn)?;
                     tasks::defaults::run(data)
                 }
+
                 "self" => {
-                    let options = if let Some(raw_data) = self.config.data.as_ref() {
-                        let mut raw_opts = raw_data
-                            .clone()
-                            .try_into::<UpdateSelfOptions>()
+                    let options: UpdateSelfOptions = if let Some(raw_data) = maybe_data {
+                        let mut raw_opts: UpdateSelfOptions = serde_yaml::from_value(raw_data)
                             .map_err(|e| E::DeserializeError { source: e })?;
                         raw_opts.resolve_env(env_fn)?;
                         raw_opts
@@ -204,6 +198,7 @@ impl Task {
                     };
                     tasks::update_self::run(&options)
                 }
+
                 _ => Err(eyre!("This run_lib is invalid or not yet implemented.")),
             }
             .map_err(|e| E::TaskError {

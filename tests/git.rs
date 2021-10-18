@@ -9,9 +9,8 @@ fn missing_args() {
     let mut cmd = testutils::up_cmd(&temp_dir);
     cmd.args(["git"].iter());
     let cmd_output = testutils::run_cmd(&mut cmd);
-    assert_eq!(
-        cmd_output.status.success(),
-        false,
+    assert!(
+        !cmd_output.status.success(),
         "\n No args should fail the command.",
     );
 }
@@ -38,7 +37,7 @@ fn real_clone() {
     // Clone to directory.
     {
         let cmd_output = testutils::run_cmd(&mut up_git_cmd(&git_path, &temp_dir));
-        assert_eq!(cmd_output.status.success(), true,);
+        assert!(cmd_output.status.success());
         assert::file(&git_pathbuf.join("README"), "Hello World!\n");
         check_repo(
             &git_path,
@@ -56,7 +55,7 @@ fn real_clone() {
     {
         let cmd_output =
             testutils::run_cmd(up_git_cmd(&git_path, &temp_dir).args(&["--branch", "test"]));
-        assert_eq!(cmd_output.status.success(), true,);
+        assert!(cmd_output.status.success());
         check_repo(
             &git_path,
             "b3cbd5bbd7e81436d2eee04537ea2b4c0cad4cdf",
@@ -104,7 +103,7 @@ fn real_clone() {
         let mut cmd = up_git_cmd(&git_path, &temp_dir);
         cmd.args(&["--branch", "test"]);
         let cmd_output = testutils::run_cmd(&mut cmd);
-        assert_eq!(cmd_output.status.success(), true,);
+        assert!(cmd_output.status.success());
         check_repo(
             &git_path,
             "b3cbd5bbd7e81436d2eee04537ea2b4c0cad4cdf",

@@ -26,7 +26,7 @@ fn up_run_passing() {
     cmd.args(
         [
             "--config",
-            temp_dir.join("up_config_dir/up.toml").to_str().unwrap(),
+            temp_dir.join("up_config_dir/up.yaml").to_str().unwrap(),
         ]
         .iter(),
     );

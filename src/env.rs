@@ -107,7 +107,7 @@ pub fn get_env(
 #[derive(Error, Debug, Display)]
 /// Errors thrown by this file.
 pub enum EnvError {
-    /// Env lookup error, please define '{var}' in your up.toml:"
+    /// Env lookup error, please define '{var}' in your up.yaml:"
     EnvLookup {
         var: String,
         source: color_eyre::eyre::Error,

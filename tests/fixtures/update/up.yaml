@@ -1,0 +1,5 @@
+# Invalid yaml shouldn't work.
+
+  update:
+# Weird indent.
+invalid_key: 'foo'

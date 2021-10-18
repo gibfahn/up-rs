@@ -59,15 +59,13 @@ pub fn run_single(generate_git_config: &GenerateGitConfig) -> Result<()> {
     }
 
     git_configs.sort_unstable_by(|c1, c2| c1.path.cmp(&c2.path));
-    let toml_configs = git_configs
-        .into_iter()
-        .map(toml::Value::try_from)
-        .collect::<Result<Vec<_>, _>>()?;
-    git_task.config.data = Some(toml_configs.into());
+
+    git_task.config.data = Some(serde_yaml::to_value(git_configs)?);
+
     debug!("New git config: {:?}", git_task);
     let mut serialized_task = GENERATED_PRELUDE_COMMENT.to_owned();
-    serialized_task.push_str(&toml::to_string_pretty(&git_task.config)?);
-    trace!("New toml file: <<<{}>>>", serialized_task);
+    serialized_task.push_str(&serde_yaml::to_string(&git_task.config)?);
+    trace!("New yaml file: <<<{}>>>", serialized_task);
     fs::write(&generate_git_config.path, serialized_task)?;
     info!(
         "Git repo layout generated for task '{}' and written to '{:?}'",

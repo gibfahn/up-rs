@@ -1,1 +1,0 @@
-check_cmd = ["${up_binary_path}", "--version"]

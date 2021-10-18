@@ -62,7 +62,7 @@ pub fn run(opts: Opts) -> Result<()> {
             Some(GenerateLib::Defaults(ref defaults_opts)) => {
                 trace!("Options: {:?}", defaults_opts);
                 // TODO(gib): implement defaults generation.
-                unimplemented!("Allow generating defaults toml.");
+                unimplemented!("Allow generating defaults yaml.");
             }
             None => {
                 let config = UpConfig::from(opts)?;

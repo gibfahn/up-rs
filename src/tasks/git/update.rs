@@ -62,7 +62,7 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
     let mut repo = match Repository::open(&git_path) {
         Ok(repo) => repo,
         Err(e) => {
-            if let ErrorCode::NotFound = e.code() {
+            if e.code() == ErrorCode::NotFound {
                 newly_created_repo = true;
                 Repository::init(&git_path)?
             } else {

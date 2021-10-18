@@ -1,0 +1,6 @@
+run_lib: "link"
+
+data:
+  from_dir: "$link_from_dir"
+  to_dir: "$link_to_dir"
+  backup_dir: "$link_from_dir/backup"

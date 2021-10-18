@@ -28,7 +28,7 @@ use crate::tasks::{defaults::DefaultsError as E, ResolveEnv};
 impl ResolveEnv for DefaultsConfig {}
 
 #[derive(Debug, Default, Serialize, Deserialize)]
-pub struct DefaultsConfig(HashMap<String, HashMap<String, toml::Value>>);
+pub struct DefaultsConfig(HashMap<String, HashMap<String, serde_yaml::Value>>);
 
 // TODO(gib): Pass by reference instead.
 #[allow(clippy::needless_pass_by_value)]
@@ -37,41 +37,37 @@ pub(crate) fn run(config: DefaultsConfig) -> Result<()> {
     for (domain, preferences) in config.0 {
         for (pref_key, requested_value) in preferences {
             debug!(
-                "Domains: Checking {} {} -> {}",
+                "Domains: Checking {} {} -> {:?}",
                 domain, pref_key, requested_value
             );
-            let current_value = read_default_to_toml_value(&domain, &pref_key)?;
+            let current_value = read_default_to_yaml_value(&domain, &pref_key)?;
             debug!("Current value: '{:?}'", current_value);
-            trace!(
-                "Requested type: '{}', value: '{}'",
-                requested_value.type_str(),
-                value_to_string(&requested_value)?,
-            );
+            trace!("Requested value: '{}'", value_to_string(&requested_value)?,);
             if current_value.as_ref() == Some(&requested_value) {
                 debug!("Already set, continuing...");
                 continue;
             }
-            write_default_to_toml_value(&domain, &pref_key, &requested_value)?;
+            write_default_to_yaml_value(&domain, &pref_key, &requested_value)?;
         }
     }
     Ok(())
 }
 
-fn write_default_to_toml_value(
+fn write_default_to_yaml_value(
     domain: &str,
     pref_key: &str,
-    requested_value: &toml::Value,
+    requested_value: &serde_yaml::Value,
 ) -> Result<()> {
     // TODO(gib): Allow using array-add and dict-add.
     let defaults_type = match requested_value {
-        toml::Value::Float(_) => "float",
-        toml::Value::Array(_) => "array",
-        toml::Value::String(_) => "string",
-        toml::Value::Table(_) => "dict",
-        toml::Value::Integer(_) => "integer",
-        toml::Value::Boolean(_) => "boolean",
-        toml::Value::Datetime(_) => {
-            bail!(eyre!("Can't set DateTime values, set to string instead."))
+        serde_yaml::Value::Sequence(_) => "array",
+        serde_yaml::Value::String(_) => "string",
+        serde_yaml::Value::Mapping(_) => "dict",
+        serde_yaml::Value::Number(n) if n.is_i64() => "integer",
+        serde_yaml::Value::Number(_) => "float",
+        serde_yaml::Value::Bool(_) => "boolean",
+        serde_yaml::Value::Null => {
+            bail!(eyre!("Can't set null values."))
         }
     };
     run_defaults(&[
@@ -79,23 +75,22 @@ fn write_default_to_toml_value(
         domain,
         pref_key,
         &format!("-{}", defaults_type),
-        // TODO(gib): Handle arrays and dicts properly (is Plist the same as TOML?).
+        // TODO(gib): Handle arrays and dicts properly (is Plist the same as YAML?).
         // https://github.com/ebarnard/rust-plist/issues/54
-        // toml::from_str::<plist::Value>(&requested_value.to_string())?,
+        // serde_yaml::from_str::<plist::Value>(&requested_value.to_string())?,
         &value_to_string(requested_value)?,
     ])?;
     Ok(())
 }
 
-fn read_default_to_toml_value(domain: &str, pref_key: &str) -> Result<Option<toml::Value>> {
+fn read_default_to_yaml_value(domain: &str, pref_key: &str) -> Result<Option<serde_yaml::Value>> {
     let current_type = read_type(domain, pref_key)?;
     let current_value = read_default(domain, pref_key)?;
     match (current_type.as_ref(), current_value.as_ref()) {
-        ("boolean", "0") => Ok(Some(toml::Value::Boolean(false))),
-        ("boolean", "1") => Ok(Some(toml::Value::Boolean(true))),
-        ("integer", _) => Ok(Some(toml::Value::Integer(current_value.parse()?))),
-        ("float", _) => Ok(Some(toml::Value::Float(current_value.parse()?))),
-        ("string", _) => Ok(Some(toml::Value::String(current_value))),
+        ("boolean", "0") => Ok(Some(serde_yaml::Value::Bool(false))),
+        ("boolean", "1") => Ok(Some(serde_yaml::Value::Bool(true))),
+        ("integer" | "float", _) => Ok(Some(serde_yaml::from_str(&current_value)?)),
+        ("string", _) => Ok(Some(serde_yaml::Value::String(current_value))),
         ("", "") => Ok(None),
         _ => Err(eyre!(
             "Unable to parse value: '{}' of type '{}'",
@@ -159,21 +154,21 @@ fn defaults_cmd_for_printing(args: &[&str]) -> String {
         })
 }
 
-/// Convert a toml value to the string representation.
+/// Convert a yaml value to the string representation.
 ///
 /// If the value is already a String, then `value.to_string()` will add quotes around it, so:
-/// If value was `toml::Value::String("some_value")`, then `value.to_string()` would return
+/// If value was `serde_yaml::Value::String("some_value")`, then `value.to_string()` would return
 /// `"some_value"`.
-fn value_to_string(value: &toml::Value) -> Result<String> {
-    if value.is_str() {
+fn value_to_string(value: &serde_yaml::Value) -> Result<String> {
+    if value.is_string() {
         Ok(value
             .as_str()
             .map(std::borrow::ToOwned::to_owned)
             .ok_or_else(|| E::UnexpectedStringError {
-                value: value.to_string(),
+                value: serde_yaml::to_string(value),
             })?)
     } else {
-        Ok(value.to_string())
+        Ok(serde_yaml::to_string(value)?)
     }
 }
 
@@ -191,6 +186,11 @@ pub enum DefaultsError {
         stderr: String,
         status: ExitStatus,
     },
-    /// Toml value claimed to be a string but failed to convert to one: '{value}'.
-    UnexpectedStringError { value: String },
+    /// Yaml value claimed to be a string but failed to convert to one: '{value:?}'.
+    UnexpectedStringError {
+        value: Result<String, serde_yaml::Error>,
+    },
+
+    /// Yaml value claimed to be a string but failed to convert to one: '{value}'.
+    UnexpectedNumberError { value: String },
 }

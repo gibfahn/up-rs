@@ -6,7 +6,7 @@ use color_eyre::eyre::{eyre, Result};
 use serde_derive::{Deserialize, Serialize};
 use slog::Level;
 
-pub(crate) const FALLBACK_CONFIG_PATH: &str = "dotfiles/.config/up/up.toml";
+pub(crate) const FALLBACK_CONFIG_PATH: &str = "dotfiles/.config/up/up.yaml";
 pub(crate) const LATEST_RELEASE_URL: &str =
     "https://api.github.com/repos/gibfahn/up-rs/releases/latest";
 #[cfg(target_os = "linux")]
@@ -22,6 +22,7 @@ pub fn parse() -> Opts {
     Opts::parse()
 }
 
+#[allow(clippy::doc_markdown)] // We want the bare URL here as it's part of a code snippet.
 /**
 Up is a tool to help you manage your developer machine. `up run` runs the tasks defined in its
 config directory. It handles linking configuration files into the right locations, and running
@@ -60,8 +61,8 @@ pub struct Opts {
     /// Whether to color terminal output.
     #[clap(long, default_value = "auto", case_insensitive = true, arg_enum)]
     pub color: Color,
-    /// Path to the up.toml file for up.
-    #[clap(long, short = 'c', default_value = "$XDG_CONFIG_HOME/up/up.toml", value_hint = ValueHint::FilePath)]
+    /// Path to the up.yaml file for up.
+    #[clap(long, short = 'c', default_value = "$XDG_CONFIG_HOME/up/up.yaml", value_hint = ValueHint::FilePath)]
     pub(crate) config: String,
     #[clap(subcommand)]
     pub(crate) cmd: Option<SubCommand>,
@@ -205,7 +206,7 @@ pub(crate) enum GenerateLib {
 
 #[derive(Debug, Clap, Serialize, Deserialize)]
 pub struct GenerateGitConfig {
-    /// Path to toml file to update.
+    /// Path to yaml file to update.
     #[clap(long, parse(from_str), value_hint = ValueHint::FilePath)]
     pub(crate) path: PathBuf,
     /// Paths to search within.
@@ -226,7 +227,7 @@ pub struct GenerateGitConfig {
 
 #[derive(Debug, Clap, Serialize, Deserialize)]
 pub struct GenerateDefaultsConfig {
-    /// Path to toml file to update.
+    /// Path to yaml file to update.
     #[clap(long, parse(from_str), value_hint = ValueHint::FilePath)]
     pub(crate) path: PathBuf,
 }
