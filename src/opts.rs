@@ -95,7 +95,7 @@ pub(crate) enum SubCommand {
     Git(GitOptions),
     // TODO(gib): Implement this.
     /// Set macOS defaults in plist files (not yet implemented).
-    Defaults {},
+    Defaults(DefaultsOptions),
     /// Generate up config from current system state.
     Generate(GenerateOptions),
     /// Update the up CLI itself.
@@ -230,4 +230,28 @@ pub struct GenerateDefaultsConfig {
     /// Path to yaml file to update.
     #[clap(long, parse(from_str), value_hint = ValueHint::FilePath)]
     pub(crate) path: PathBuf,
+}
+
+#[derive(Debug, Clap, Serialize, Deserialize)]
+pub struct DefaultsOptions {
+    /// Defaults action to take.
+    #[clap(subcommand)]
+    pub(crate) subcommand: DefaultsSubcommand,
+}
+
+#[derive(Debug, Clap, Serialize, Deserialize)]
+pub enum DefaultsSubcommand {
+    /// Read a defaults option and print it to the stdout as yaml.
+    Read(DefaultsReadOptions),
+}
+
+#[derive(Debug, Clap, Serialize, Deserialize)]
+pub struct DefaultsReadOptions {
+    /// Read from the global domain. If you set this, do not also pass a domain argument.
+    #[clap(short = 'g', long = "globalDomain")]
+    pub(crate) global_domain: bool,
+    /// Defaults domain to print.
+    pub(crate) domain: Option<String>,
+    /// Defaults key to print.
+    pub(crate) key: Option<String>,
 }

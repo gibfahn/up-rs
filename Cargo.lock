@@ -954,9 +954,8 @@ checksum = "7c9b1041b4387893b91ee6746cddfc28516aff326a3519fb2adf820932c5e6cb"
 
 [[package]]
 name = "plist"
-version = "1.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a38d026d73eeaf2ade76309d0c65db5a35ecf649e3cec428db316243ea9d6711"
+version = "1.2.2"
+source = "git+https://github.com/gibfahn/rust-plist?branch=70-dictionary-serialization#97527527f2c189a49247295b55ff6def1d3394ab"
 dependencies = [
  "base64",
  "chrono",

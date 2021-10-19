@@ -45,7 +45,7 @@ rayon = "1.5.1"
 reqwest = { version = "0.11.4", features = ["blocking", "json"] }
 semver = "1.0.4"
 ring = "0.16.20"
-plist = "1.2.1"
+plist = { git = "https://github.com/gibfahn/rust-plist", branch = "70-dictionary-serialization" }
 clap = "3.0.0-beta.4"
 color-eyre = "0.5.11"
 clap_generate = "3.0.0-beta.4"

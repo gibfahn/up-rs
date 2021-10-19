@@ -15,8 +15,8 @@
 )]
 use color_eyre::eyre::Result;
 use log::trace;
-use opts::GenerateLib;
-use tasks::{TasksAction, TasksDir};
+use opts::{DefaultsSubcommand, GenerateLib};
+use tasks::{defaults, TasksAction, TasksDir};
 
 use crate::{
     config::UpConfig,
@@ -48,10 +48,9 @@ pub fn run(opts: Opts) -> Result<()> {
         Some(SubCommand::Git(git_options)) => {
             tasks::git::update::update(&git_options.into())?;
         }
-        Some(SubCommand::Defaults {}) => {
-            // TODO(gib): implement defaults setting.
-            unimplemented!("Not yet implemented.");
-        }
+        Some(SubCommand::Defaults(defaults_options)) => match defaults_options.subcommand {
+            DefaultsSubcommand::Read(defaults_read_opts) => defaults::read(defaults_read_opts)?,
+        },
         Some(SubCommand::Self_(cmd_opts)) => {
             tasks::update_self::run(&cmd_opts)?;
         }

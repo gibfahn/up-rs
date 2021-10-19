@@ -14,6 +14,7 @@ const DEFAULTS_CMD_PATH: &str = "/usr/bin/defaults";
 
 use std::{
     collections::HashMap,
+    path::PathBuf,
     process::{Command, ExitStatus},
 };
 
@@ -23,7 +24,10 @@ use log::{debug, trace};
 use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::tasks::{defaults::DefaultsError as E, ResolveEnv};
+use crate::{
+    opts::DefaultsReadOptions,
+    tasks::{defaults::DefaultsError as E, ResolveEnv},
+};
 
 impl ResolveEnv for DefaultsConfig {}
 
@@ -193,4 +197,138 @@ pub enum DefaultsError {
 
     /// Yaml value claimed to be a string but failed to convert to one: '{value}'.
     UnexpectedNumberError { value: String },
+
+    /**
+    The '-g' flag was set, so not expecting both a domain and a key to be passed.
+    Domain: {domain:?}
+    Key: {key:?}
+    */
+    TooManyArgumentsError {
+        domain: Option<String>,
+        key: Option<String>,
+    },
+
+    /// Unable to find user's home directory.
+    MissingHomeDirError,
+
+    /// Failed to read Plist file {path}.
+    PlistReadError { path: PathBuf, source: plist::Error },
+
+    /**
+    Expected to find a plist dictionary, but found a {plist_type} instead.
+    Domain: {domain:?}
+    Key: {key:?}
+    */
+    NotADictionaryError {
+        domain: Option<String>,
+        key: String,
+        plist_type: &'static str,
+    },
+
+    /**
+    Key not present in plist for this domain.
+    Domain: {domain:?}
+    Key: {key:?}
+    */
+    MissingKey { domain: Option<String>, key: String },
+
+    /**
+    Failed to serialize plist to yaml.
+    Domain: {domain:?}
+    Key: {key:?}
+    */
+    SerializationFailed {
+        domain: Option<String>,
+        key: Option<String>,
+        source: serde_yaml::Error,
+    },
+
+    /// XXX
+    ExpectedYamlString,
+}
+
+// XXX(gib): binary vs text format for plist writing.
+pub(crate) fn read(defaults_read_opts: DefaultsReadOptions) -> Result<(), E> {
+    let (domain, key) = if defaults_read_opts.global_domain {
+        if defaults_read_opts.key.is_some() {
+            return Err(E::TooManyArgumentsError {
+                domain: defaults_read_opts.domain,
+                key: defaults_read_opts.key,
+            });
+        }
+        (Some("NSGlobalDomain".to_owned()), defaults_read_opts.domain)
+    } else {
+        (defaults_read_opts.domain, defaults_read_opts.key)
+    };
+    debug!("Domain: {:?}, Key: {:?}", domain, key);
+    let plist_path = plist_path(&domain, defaults_read_opts.global_domain)?;
+    debug!("Plist path: {:?}", plist_path);
+
+    let plist: plist::Value = plist::from_file(&plist_path).map_err(|e| E::PlistReadError {
+        path: plist_path,
+        source: e,
+    })?;
+    trace!("Plist: {:?}", plist);
+
+    let value = match key.as_ref() {
+        Some(key) => plist
+            .as_dictionary()
+            .ok_or_else(|| E::NotADictionaryError {
+                domain: domain.clone(),
+                key: key.to_string(),
+                plist_type: get_plist_value_type(&plist),
+            })?
+            .get(key)
+            .ok_or_else(|| E::MissingKey {
+                domain: domain.clone(),
+                key: key.to_string(),
+            })?,
+        None => &plist,
+    };
+
+    print!(
+        "{}",
+        serde_yaml::to_string(value)
+            .map_err(|e| E::SerializationFailed {
+                domain,
+                key,
+                source: e
+            })?
+            .strip_prefix("---\n")
+            .ok_or(E::ExpectedYamlString {})?
+    );
+    Ok(())
+}
+
+fn get_plist_value_type(plist: &plist::Value) -> &'static str {
+    match plist {
+        p if p.as_array().is_some() => "array",
+        p if p.as_boolean().is_some() => "boolean",
+        p if p.as_date().is_some() => "date",
+        p if p.as_real().is_some() => "real",
+        p if p.as_signed_integer().is_some() => "signed_integer",
+        p if p.as_unsigned_integer().is_some() => "unsigned_integer",
+        p if p.as_string().is_some() => "string",
+        p if p.as_dictionary().is_some() => "dictionary",
+        p if p.as_data().is_some() => "data",
+        _ => "unknown",
+    }
+}
+
+fn plist_path(domain: &Option<String>, global_domain: bool) -> Result<PathBuf, E> {
+    let plist_file = match domain.as_ref() {
+        Some(domain) if matches!(domain.chars().next(), Some('/')) => {
+            return Ok(PathBuf::from(domain))
+        }
+        Some(domain) if global_domain || domain == "NSGlobalDomain" => {
+            ".GlobalPreferences.plist".to_owned()
+        }
+        Some(domain) => {
+            format!("{}.plist", domain)
+        }
+        None => todo!(),
+    };
+    let mut plist_path = dirs::home_dir().ok_or(E::MissingHomeDirError)?;
+    plist_path.extend(&["Library", "Preferences", &plist_file]);
+    Ok(plist_path)
 }
