@@ -19,7 +19,7 @@ use std::{
     io,
     os::unix,
     path::PathBuf,
-    time::Instant,
+    time::{Duration, Instant},
 };
 
 use chrono::Utc;
@@ -30,19 +30,25 @@ use slog::{o, Drain, Duplicate, FnValue, LevelFilter, Logger};
 use thiserror::Error;
 use up_rs::opts::Color;
 
+/// Env vars to avoid printing when we log the current environment.
+const IGNORED_ENV_VARS: [&str; 1] = [
+    // Ignored because it's over 9,000 chars long, and irrelevant for up command debugging.
+    "LS_COLORS",
+];
+
 fn main() -> Result<()> {
     // Get starting time.
     let now = Instant::now();
 
     color_eyre::install()?;
 
-    let args = up_rs::opts::parse();
+    let opts = up_rs::opts::parse();
 
     // TODO(gib): Don't need dates in stderr as we have them in file logger.
     // Create stderr logger.
     let stderr_decorator_builder = slog_term::TermDecorator::new().stderr();
 
-    let stderr_decorator = match &args.color {
+    let stderr_decorator = match &opts.color {
         Color::Auto => stderr_decorator_builder,
         Color::Always => stderr_decorator_builder.force_color(),
         Color::Never => stderr_decorator_builder.force_plain(),
@@ -54,9 +60,9 @@ fn main() -> Result<()> {
         .fuse();
     let stderr_async_drain = slog_async::Async::new(stderr_drain).build().fuse();
 
-    let stderr_level_filter = LevelFilter::new(stderr_async_drain, args.log_level);
+    let stderr_level_filter = LevelFilter::new(stderr_async_drain, opts.log_level);
 
-    let should_log_to_file = match &args.log_dir {
+    let should_log_to_file = match &opts.log_dir {
         Some(p) if p == &PathBuf::new() => false,
         Some(_) | None => true,
     };
@@ -68,7 +74,7 @@ fn main() -> Result<()> {
             log_path,
             log_path_link,
             log_file,
-        } = get_log_path_file(args.log_dir.as_ref())
+        } = get_log_path_file(opts.log_dir.as_ref())
             .map_err(|e| MainError::LogFileSetupFailed { source: e })?;
         log_paths_opt = Some((log_path, log_path_link));
 
@@ -88,7 +94,7 @@ fn main() -> Result<()> {
 
     #[allow(clippy::option_if_let_else)]
     let root_logger = if let Some(file_drain) = file_drain {
-        let file_level_filter = LevelFilter::new(file_drain, args.file_log_level);
+        let file_level_filter = LevelFilter::new(file_drain, opts.file_log_level);
         Logger::root(
             Duplicate::new(stderr_level_filter, file_level_filter).fuse(),
             log_kv_pairs,
@@ -113,12 +119,22 @@ fn main() -> Result<()> {
         );
     }
 
-    trace!("Received args: {:#?}", args);
-    trace!("Current env: {:?}", env::vars().collect::<Vec<_>>());
+    trace!("Received args: {:#?}", opts);
+    trace!(
+        "Current env: {:?}",
+        env::vars()
+            .filter(|(k, _v)| !IGNORED_ENV_VARS.contains(&k.as_str()))
+            .collect::<Vec<_>>()
+    );
 
-    up_rs::run(args)?;
+    up_rs::run(opts)?;
 
-    info!("Up-rs ran successfully in {:?}", now.elapsed());
+    // No need to log the time we took to run by default unless it actually took some time.
+    if now.elapsed() > Duration::from_secs(10) {
+        info!("Up-rs ran successfully in {:?}", now.elapsed());
+    } else {
+        debug!("Up-rs ran successfully in {:?}", now.elapsed());
+    }
     trace!("Finished up.");
     Ok(())
 }
