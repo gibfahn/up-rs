@@ -25,7 +25,7 @@ use std::{
 use chrono::Utc;
 use color_eyre::eyre::{bail, Result};
 use displaydoc::Display;
-use log::{info, trace};
+use log::{debug, info, trace};
 use slog::{o, Drain, Duplicate, FnValue, LevelFilter, Logger};
 use thiserror::Error;
 use up_rs::opts::Color;
