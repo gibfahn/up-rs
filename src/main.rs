@@ -106,7 +106,7 @@ fn main() -> Result<()> {
 
     trace!("Starting up.");
     if let Some((log_path, log_path_link)) = log_paths_opt {
-        info!(
+        debug!(
             "Writing full logs to {} (symlink to '{}')",
             &log_path_link.display(),
             &log_path.display()

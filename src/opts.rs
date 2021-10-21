@@ -42,6 +42,7 @@ There are also a number of libraries built into up, that can be accessed directl
 up task configs, e.g. `up link` to link dotfiles.
 
 For debugging, run with `RUST_LIB_BACKTRACE=1` to show error/panic traces.
+Logs from the latest run are available at $TMPDIR/up-rs/logs/up-rs_latest.log by default.
 */
 #[derive(Debug, Clap)]
 #[clap(version = env!("CARGO_PKG_VERSION"), global_setting = AppSettings::ColoredHelp)]
