@@ -195,6 +195,8 @@ mod yaml_paths_tests {
     /// modify the shared test environment.
     #[test]
     fn get_yaml_paths() {
+        let orig_home = env::var("HOME").unwrap();
+
         // Set up paths.
         let default_path = "$XDG_CONFIG_HOME/up/up.yaml";
         let fake_home_1 = testutils::fixtures_dir().join("fake_home_dir_with_upconfig");
@@ -251,5 +253,7 @@ mod yaml_paths_tests {
         // // Default arg, i.e. not passed.
         // let config_path = UpConfig::get_up_yaml_path(default_path);
         // assert!(config_path.is_err(), "UpConfig path: {:?}", config_path);
+
+        env::set_var("HOME", orig_home);
     }
 }

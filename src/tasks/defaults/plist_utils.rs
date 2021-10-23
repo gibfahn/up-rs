@@ -5,40 +5,74 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use log::{debug, info, trace};
+use log::{debug, info, trace, warn};
 use plist::Dictionary;
 
 use crate::tasks::defaults::DefaultsError as E;
 
-/// Get the path to the plist file given a domain.
-/// If the `global_domain` flag is set, the domain is ignored (assumed to be None).
-/// If the domain is a path to a file, that file is returned directly.
-/// Otherwise returns `~/Library/Preferences/{domain}.plist`, or
-/// `~/Library/Preferences/.GlobalPreferences.plist` for the global domain.
+/**
+Get the path to the plist file given a domain.
+
+This function does not handle `sudo` (root preferences, probably at /Library/Preferences/).
+
+## Preferences Locations
+
+Working out the rules for preferences was fairly complex, but if you run `defaults domains` then you can work out which plist files are actually being read on the machine.
+
+As far as I can tell, the rules are:
+
+- `NSGlobalDomain` -> `~/Library/Preferences/.GlobalPreferences.plist`
+- `~/Library/Containers/{domain}/Data/Library/Preferences/{domain}.plist` if it exists.
+- `~/Library/Preferences/{domain}.plist`
+
+If none of these exist then create `~/Library/Preferences/{domain}.plist`.
+
+Note that `defaults domains` actually prints out `~/Library/Containers/{*}/Data/Library/Preferences/{*}.plist` (i.e. any plist file name inside a container folder), but `defaults read` only actually checks `~/Library/Containers/{domain}/Data/Library/Preferences/{domain}.plist` (a plist file whose name matches the container folder.
+
+### Useful Resources
+
+- [macOS Containers and defaults](https://lapcatsoftware.com/articles/containers.html)
+- [Preference settings: where to find them in Mojave](https://eclecticlight.co/2019/08/28/preference-settings-where-to-find-them-in-mojave/)
+*/
 pub(super) fn plist_path(domain: &str) -> Result<PathBuf, E> {
-    let plist_file = match domain {
-        "NSGlobalDomain" => {
-            ".GlobalPreferences.plist".to_owned()
-        }
-        domain if domain.starts_with('/') => {
-            return Ok(PathBuf::from(domain))
-        }
-        domain
-            // Check whether the domain already has a .plist extension (case-insensitive check).
-            if domain
-                .rsplit('.')
-                .next()
-                .map(|ext| ext.eq_ignore_ascii_case("plist"))
-                == Some(true) =>
-        {
-            domain.to_string()
-        }
-        domain => {
-            format!("{}.plist", domain)
-        }
-    };
-    let mut plist_path = dirs::home_dir().ok_or(E::MissingHomeDir)?;
-    plist_path.extend(&["Library", "Preferences", &plist_file]);
+    // Global Domain -> hardcoded value.
+    if domain == "NSGlobalDomain" {
+        let mut plist_path = dirs::home_dir().ok_or(E::MissingHomeDir)?;
+        plist_path.extend(&["Library", "Preferences", ".GlobalPreferences.plist"]);
+        return Ok(plist_path);
+    }
+    // User passed an absolute path -> use it directly.
+    if domain.starts_with('/') {
+        return Ok(PathBuf::from(domain));
+    }
+
+    // If user passed com.foo.bar.plist, trim it to com.foo.bar
+    let domain = domain.trim_end_matches(".plist");
+    let domain_filename = format!("{}.plist", domain);
+
+    let home_dir = dirs::home_dir().ok_or(E::MissingHomeDir)?;
+
+    let mut sandboxed_plist_path = home_dir.clone();
+    sandboxed_plist_path.extend(&[
+        "Library",
+        "Containers",
+        domain,
+        "Data",
+        "Library",
+        "Preferences",
+        &domain_filename,
+    ]);
+
+    if sandboxed_plist_path.exists() {
+        trace!("Sandboxed plist path exists.");
+        return Ok(sandboxed_plist_path);
+    }
+
+    trace!("Sandboxed plist path does not exist.");
+    let mut plist_path = home_dir;
+    plist_path.extend(&["Library", "Preferences", &domain_filename]);
+
+    // We return this even if it doesn't yet exist.
     Ok(plist_path)
 }
 
@@ -161,6 +195,11 @@ pub(super) fn write_defaults_values(
             to_path: backup_plist_path.clone(),
             source: e,
         })?;
+    } else {
+        warn!(
+            "Defaults plist doesn't exist, creating it: {:?}",
+            plist_path
+        );
     }
 
     if !plist_path_exists || is_binary(&plist_path)? {
@@ -179,4 +218,29 @@ pub(super) fn write_defaults_values(
     trace!("Plist updated at {:?}", &plist_path);
 
     Ok(values_changed)
+}
+
+mod tests {
+
+    #[test]
+    fn plist_path_tests() {
+        {
+            let domain_path = super::plist_path("NSGlobalDomain").unwrap();
+            assert_eq!(
+                dirs::home_dir()
+                    .unwrap()
+                    .join("Library/Preferences/.GlobalPreferences.plist"),
+                domain_path
+            );
+        }
+
+        // TODO(gib): Re-add this once I fix the use of $HOME in
+        // config::yaml_paths_tests::get_yaml_paths(), which affects this test. {
+        //     let domain_path = super::plist_path("com.apple.Safari").unwrap();
+        //     assert_eq!(
+        //         dirs::home_dir().unwrap().join("Library/Containers/com.apple.Safari/Data/Library/
+        // Preferences/com.apple.Safari.plist"),         domain_path
+        //     );
+        // }
+    }
 }
