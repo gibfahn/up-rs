@@ -22,15 +22,17 @@ pub fn parse() -> Opts {
     Opts::parse()
 }
 
+// Don't complain about bare links in my clap document output.
+#[allow(clippy::doc_markdown, rustdoc::bare_urls)]
 /**
 Up is a tool to help you manage your developer machine. `up run` runs the tasks defined in its
 config directory. It handles linking configuration files into the right locations, and running
 scripts to make sure the tools you need are installed and up to date. It is designed to complete
 common bootstrapping tasks without dependencies, so you can bootstrap a new machine by:
 
-    ❯ curl --create-dirs -Lo ~/bin/up https://github.com/gibfahn/up-rs/releases/latest/download/up-$(uname) && chmod +x ~/bin/up
+❯ curl --create-dirs -Lo ~/bin/up https://github.com/gibfahn/up-rs/releases/latest/download/up-$(uname) && chmod +x ~/bin/up
 
-    ❯ ~/bin/up run --bootstrap --fallback-url https://github.com/gibfahn/dot
+❯ ~/bin/up run --bootstrap --fallback-url https://github.com/gibfahn/dot
 
 Running `up` without a subcommand runs `up run` with no parameters, which is useful for
 post-bootstrapping, when you want to just run all your setup steps again, to make sure
@@ -50,10 +52,10 @@ pub struct Opts {
     /// Debug, Trace).
     #[clap(long, short = 'l', default_value = "info", env = "LOG_LEVEL", parse(try_from_str = from_level))]
     pub log_level: Level,
-    /// Write file logs to directory. Default: $TMPDIR/up-rs/logs. Set to empty
-    /// to disable file logging.
+    /// Directory to use for up-rs's own files (e.g. logs, backup files etc). Default:
+    /// $TMPDIR/up-rs.
     #[clap(long, value_hint = ValueHint::DirPath)]
-    pub log_dir: Option<PathBuf>,
+    pub up_dir: Option<PathBuf>,
     /// Set the file logging level explicitly (options: Off, Error, Warn, Info,
     /// Debug, Trace).
     #[clap(long, default_value = "debug", env = "FILE_LOG_LEVEL", parse(try_from_str = from_level))]
@@ -93,8 +95,7 @@ pub(crate) enum SubCommand {
     Link(LinkOptions),
     /// Clone or update a repo at a path.
     Git(GitOptions),
-    // TODO(gib): Implement this.
-    /// Set macOS defaults in plist files (not yet implemented).
+    /// Set macOS defaults in plist files.
     Defaults(DefaultsOptions),
     /// Generate up config from current system state.
     Generate(GenerateOptions),
@@ -134,9 +135,6 @@ pub(crate) struct LinkOptions {
     /// Path to link them to.
     #[clap(short = 't', long = "to", default_value = "~", value_hint = ValueHint::DirPath)]
     pub(crate) to_dir: String,
-    /// Path at which to store backups of overwritten files.
-    #[clap(short = 'b', long = "backup", default_value = "~/backup", value_hint = ValueHint::DirPath)]
-    pub(crate) backup_dir: String,
 }
 
 #[derive(Debug, Default, Clap)]
@@ -243,6 +241,11 @@ pub struct DefaultsOptions {
 pub enum DefaultsSubcommand {
     /// Read a defaults option and print it to the stdout as yaml.
     Read(DefaultsReadOptions),
+    /**
+    Write a yaml-encoded value to a defaults plist file.
+    A domain, key, and value must be provided (you can optionally use `-g` to specify the global domain).
+    */
+    Write(DefaultsWriteOptions),
 }
 
 #[derive(Debug, Clap, Serialize, Deserialize)]
@@ -254,4 +257,17 @@ pub struct DefaultsReadOptions {
     pub(crate) domain: Option<String>,
     /// Defaults key to print.
     pub(crate) key: Option<String>,
+}
+
+#[derive(Debug, Clap, Serialize, Deserialize)]
+pub struct DefaultsWriteOptions {
+    /// Read from the global domain. If you set this, do not also pass a domain argument.
+    #[clap(short = 'g', long = "globalDomain")]
+    pub(crate) global_domain: bool,
+    /// Defaults domain to write to.
+    pub(crate) domain: String,
+    /// Defaults key to write to.
+    pub(crate) key: String,
+    /// Value to write (as a yaml string).
+    pub(crate) value: Option<String>,
 }

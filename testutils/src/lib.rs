@@ -55,8 +55,8 @@ pub fn up_cmd(temp_dir: &Path) -> Command {
     cmd.args(
         [
             "--log-level=trace",
-            "--log-dir",
-            temp_dir.join("logs").to_str().unwrap(),
+            "--up-dir",
+            temp_dir.join("up-rs").to_str().unwrap(),
             "--color=always",
         ]
         .iter(),
@@ -175,4 +175,13 @@ pub fn copy_all(from_dir: &Path, to_dir: &Path) -> Result<()> {
         }
     }
     Ok(())
+}
+
+/// Run defaults command with args provided, check it passed, and return the stdout.
+pub fn run_defaults(args: &[&str]) -> String {
+    let mut cmd = Command::new("defaults");
+    cmd.args(args);
+    let output = run_cmd(&mut cmd);
+    assert!(output.status.success(), "Running {:?} failed.", cmd);
+    String::from_utf8_lossy(&output.stdout).to_string()
 }

@@ -62,26 +62,16 @@ fn main() -> Result<()> {
 
     let stderr_level_filter = LevelFilter::new(stderr_async_drain, opts.log_level);
 
-    let should_log_to_file = match &opts.log_dir {
-        Some(p) if p == &PathBuf::new() => false,
-        Some(_) | None => true,
-    };
+    let LogPaths {
+        log_path,
+        log_path_link,
+        log_file,
+    } = get_log_path_file(opts.up_dir.as_ref())
+        .map_err(|e| MainError::LogFileSetupFailed { source: e })?;
+    // Create file logger.
+    let file_decorator = slog_term::PlainSyncDecorator::new(log_file);
+    let file_drain = slog_term::FullFormat::new(file_decorator).build().fuse();
 
-    let mut file_drain = None;
-    let mut log_paths_opt = None;
-    if should_log_to_file {
-        let LogPaths {
-            log_path,
-            log_path_link,
-            log_file,
-        } = get_log_path_file(opts.log_dir.as_ref())
-            .map_err(|e| MainError::LogFileSetupFailed { source: e })?;
-        log_paths_opt = Some((log_path, log_path_link));
-
-        // Create file logger.
-        let file_decorator = slog_term::PlainSyncDecorator::new(log_file);
-        file_drain = Some(slog_term::FullFormat::new(file_decorator).build().fuse());
-    }
     let log_kv_pairs = o!("place" =>
        FnValue(move |info| {
            format!("{}:{} {}",
@@ -92,16 +82,11 @@ fn main() -> Result<()> {
        })
     );
 
-    #[allow(clippy::option_if_let_else)]
-    let root_logger = if let Some(file_drain) = file_drain {
-        let file_level_filter = LevelFilter::new(file_drain, opts.file_log_level);
-        Logger::root(
-            Duplicate::new(stderr_level_filter, file_level_filter).fuse(),
-            log_kv_pairs,
-        )
-    } else {
-        Logger::root(stderr_level_filter.fuse(), log_kv_pairs)
-    };
+    let file_level_filter = LevelFilter::new(file_drain, opts.file_log_level);
+    let root_logger = Logger::root(
+        Duplicate::new(stderr_level_filter, file_level_filter).fuse(),
+        log_kv_pairs,
+    );
 
     // slog_stdlog uses the logger from slog_scope, so set a logger there
     // In the future probably want to use proper scoped loggers.
@@ -111,13 +96,11 @@ fn main() -> Result<()> {
     slog_stdlog::init()?;
 
     trace!("Starting up.");
-    if let Some((log_path, log_path_link)) = log_paths_opt {
-        debug!(
-            "Writing full logs to {} (symlink to '{}')",
-            &log_path_link.display(),
-            &log_path.display()
-        );
-    }
+    debug!(
+        "Writing full logs to {} (symlink to '{}')",
+        &log_path_link.display(),
+        &log_path.display()
+    );
 
     trace!("Received args: {:#?}", opts);
     trace!(
@@ -152,11 +135,9 @@ struct LogPaths {
 
 /// Create log file, and a symlink to it that can be used to find the latest
 /// one.
-fn get_log_path_file(log_dir: Option<&PathBuf>) -> Result<LogPaths> {
-    let log_dir = log_dir.map_or_else(
-        || env::temp_dir().join("up-rs/logs"),
-        std::clone::Clone::clone,
-    );
+fn get_log_path_file(up_dir_opt: Option<&PathBuf>) -> Result<LogPaths> {
+    let mut log_dir = up_rs::get_up_dir(up_dir_opt);
+    log_dir.push("logs");
     fs::create_dir_all(&log_dir).map_err(|e| MainError::CreateDirError {
         path: log_dir.clone(),
         source: e,

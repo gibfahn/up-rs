@@ -1,7 +1,7 @@
 use std::{
     collections::{HashMap, HashSet},
     io,
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::Command,
     time::{Duration, Instant},
 };
@@ -154,7 +154,7 @@ pub fn run(
 
     match tasks_action {
         TasksAction::List => println!("{}", tasks.keys().join("\n")),
-        TasksAction::Run => run_tasks(bootstrap_tasks, tasks, &env)?,
+        TasksAction::Run => run_tasks(bootstrap_tasks, tasks, &env, &config.up_dir)?,
     }
     Ok(())
 }
@@ -163,6 +163,7 @@ fn run_tasks(
     bootstrap_tasks: Vec<String>,
     mut tasks: HashMap<String, task::Task>,
     env: &HashMap<String, String>,
+    up_dir: &Path,
 ) -> Result<()> {
     let bootstrap_tasks_len = bootstrap_tasks.len();
     if !bootstrap_tasks.is_empty() {
@@ -172,6 +173,7 @@ fn run_tasks(
                     .remove(&task)
                     .ok_or_else(|| eyre!("Task '{}' was missing.", task))?,
                 env,
+                up_dir,
             );
             if let TaskStatus::Failed(e) = task.status {
                 bail!(e);
@@ -182,7 +184,7 @@ fn run_tasks(
     let tasks = tasks
         .into_par_iter()
         .filter(|(_, task)| task.config.auto_run.unwrap_or(true))
-        .map(|(_, task)| run_task(task, env))
+        .map(|(_, task)| run_task(task, env, up_dir))
         .collect::<Vec<Task>>();
     let tasks_len = tasks.len() + bootstrap_tasks_len;
 
@@ -230,19 +232,19 @@ fn run_tasks(
             tasks_failed.iter().map(|t| &t.name).collect::<Vec<_>>()
         );
 
-        tasks_failed
-            .into_iter()
-            .filter_map(|t| match t.status {
-                TaskStatus::Failed(e) => Some(e),
-                _ => None,
-            })
-            .fold(Err(eyre!("Task Errors:")), color_eyre::Help::error)?;
+        let mut tasks_failed_iter = tasks_failed.into_iter().filter_map(|t| match t.status {
+            TaskStatus::Failed(e) => Some(e),
+            _ => None,
+        });
+        let err = tasks_failed_iter.next().ok_or(E::None {})?;
+        let err = eyre!(err);
+        tasks_failed_iter.fold(Err(err), color_eyre::Help::error)?;
     }
 
     Ok(())
 }
 
-fn run_task(mut task: Task, env: &HashMap<String, String>) -> Task {
+fn run_task(mut task: Task, env: &HashMap<String, String>, up_dir: &Path) -> Task {
     let env_fn = &|s: &str| {
         let out = shellexpand::full_with_context(s, dirs::home_dir, |k| {
             env.get(k).ok_or_else(|| eyre!("Value not found")).map(Some)
@@ -257,7 +259,7 @@ fn run_task(mut task: Task, env: &HashMap<String, String>) -> Task {
     };
 
     let now = Instant::now();
-    task.run(env_fn, env);
+    task.run(env_fn, env, up_dir);
     let elapsed_time = now.elapsed();
     if elapsed_time > Duration::from_secs(60) {
         warn!("Task {} took {:?}", task.name, elapsed_time);

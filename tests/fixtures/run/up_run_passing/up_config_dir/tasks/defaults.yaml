@@ -1,0 +1,35 @@
+run_lib: defaults
+
+data:
+  co.fahn.up-rs.test-up_run_passing:
+
+    AppleKeyboardUIMode: 2
+
+    # Always open new things in tabs (not new windows) for document based apps.
+    AppleWindowTabbingMode: always
+
+    # Mail -> Preferences -> Viewing -> Show Message Headers -> Custom
+    CustomHeaders:
+    - List-ID
+    - Message-ID
+    - X-Member-Count
+
+    HintCharacters: tnseriaodhplfuwyq;gjvmc,x.z/bk4738291056
+
+    # Write hammerspoon config to alternate location.
+    MJConfigFile: ~/.config/hammerspoon/init.lua
+
+    # Expand save panel by default
+    NSNavPanelExpandedStateForSaveMode: true
+    NSNavPanelExpandedStateForSaveMode2: false
+
+    # Display full POSIX path as Finder window title
+    _FXShowPosixPathInTitle: 1
+
+    autohide-time-modifier: 0.25
+
+    AppleICUDateFormatStrings:
+      "1": "y-MM-dd"
+      "2": "y-MM-dd"
+      "3": "y-MM-dd"
+      "4": "EEEE, y-MM-dd"

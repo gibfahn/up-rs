@@ -125,17 +125,22 @@ impl Task {
         Ok(task)
     }
 
-    pub fn run<F>(&mut self, env_fn: F, env: &HashMap<String, String>)
+    pub fn run<F>(&mut self, env_fn: F, env: &HashMap<String, String>, up_dir: &Path)
     where
         F: Fn(&str) -> Result<String, E>,
     {
-        match self.try_run(env_fn, env) {
+        match self.try_run(env_fn, env, up_dir) {
             Ok(status) => self.status = status,
             Err(e) => self.status = TaskStatus::Failed(e),
         }
     }
 
-    pub fn try_run<F>(&mut self, env_fn: F, env: &HashMap<String, String>) -> Result<TaskStatus, E>
+    pub fn try_run<F>(
+        &mut self,
+        env_fn: F,
+        env: &HashMap<String, String>,
+        up_dir: &Path,
+    ) -> Result<TaskStatus, E>
     where
         F: Fn(&str) -> Result<String, E>,
     {
@@ -148,7 +153,7 @@ impl Task {
                 "link" => {
                     let data: LinkOptions =
                         parse_task_config(maybe_data, &self.name, false, env_fn)?;
-                    tasks::link::run(data)
+                    tasks::link::run(data, up_dir)
                 }
 
                 "git" => {
@@ -166,7 +171,7 @@ impl Task {
                 "defaults" => {
                     let data: DefaultsConfig =
                         parse_task_config(maybe_data, &self.name, false, env_fn)?;
-                    tasks::defaults::run(data)
+                    tasks::defaults::run(data, up_dir)
                 }
 
                 "self" => {

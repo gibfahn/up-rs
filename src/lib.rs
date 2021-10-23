@@ -25,9 +25,12 @@ use crate::{
 
 mod config;
 mod env;
+pub mod files;
 mod generate;
 pub mod opts;
 pub mod tasks;
+
+pub use files::get_up_dir;
 
 /// Run `up_rs` with provided [Opts][] struct.
 ///
@@ -41,15 +44,19 @@ pub mod tasks;
 ///
 /// [Opts]: crate::opts::Opts
 pub fn run(opts: Opts) -> Result<()> {
+    let up_dir = get_up_dir(opts.up_dir.as_ref());
     match opts.cmd {
         Some(SubCommand::Link(link_options)) => {
-            tasks::link::run(link_options)?;
+            tasks::link::run(link_options, &up_dir)?;
         }
         Some(SubCommand::Git(git_options)) => {
             tasks::git::update::update(&git_options.into())?;
         }
         Some(SubCommand::Defaults(defaults_options)) => match defaults_options.subcommand {
             DefaultsSubcommand::Read(defaults_read_opts) => defaults::read(defaults_read_opts)?,
+            DefaultsSubcommand::Write(defaults_write_opts) => {
+                defaults::write(defaults_write_opts, &up_dir)?;
+            }
         },
         Some(SubCommand::Self_(cmd_opts)) => {
             tasks::update_self::run(&cmd_opts)?;
@@ -68,16 +75,16 @@ pub fn run(opts: Opts) -> Result<()> {
                 generate::run(&config)?;
             }
         },
-        Some(SubCommand::Run(ref _cmd_opts)) => {
-            let config = UpConfig::from(opts)?;
-            tasks::run(&config, TasksDir::Tasks, TasksAction::Run)?;
-        }
         Some(SubCommand::Completions(ref cmd_opts)) => {
             tasks::completions::run(cmd_opts)?;
         }
         Some(SubCommand::List(ref _cmd_opts)) => {
             let config = UpConfig::from(opts)?;
             tasks::run(&config, TasksDir::Tasks, TasksAction::List)?;
+        }
+        Some(SubCommand::Run(ref _cmd_opts)) => {
+            let config = UpConfig::from(opts)?;
+            tasks::run(&config, TasksDir::Tasks, TasksAction::Run)?;
         }
         None => {
             let config = UpConfig::from(opts)?;

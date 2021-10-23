@@ -23,27 +23,26 @@ impl ResolveEnv for LinkOptions {
     {
         self.from_dir = env_fn(&self.from_dir)?;
         self.to_dir = env_fn(&self.to_dir)?;
-        self.backup_dir = env_fn(&self.backup_dir)?;
         Ok(())
     }
 }
 
 /// Symlink everything from `to_dir` (default: ~/code/dotfiles/) into `from_dir`
 /// (default: ~). Anything that would be overwritten is copied into `backup_dir`
-/// (default: ~/backup/).
+/// (default: `up_dir/backup/link/`).
 ///
 /// Basically you put your dotfiles in ~/code/dotfiles/, in the same structure
 /// they were in relative to ~. Then if you want to edit your .bashrc (for
 /// example) you just edit ~/.bashrc, and as it's a symlink it'll actually edit
 /// ~/code/dotfiles/.bashrc. Then you can add and commit that change in ~/code/
 /// dotfiles.
-pub(crate) fn run(config: LinkOptions) -> Result<()> {
+pub(crate) fn run(config: LinkOptions, up_dir: &Path) -> Result<()> {
     let now: DateTime<Utc> = Utc::now();
     debug!("UTC time is: {}", now);
 
     let from_dir = PathBuf::from(config.from_dir);
     let to_dir = PathBuf::from(config.to_dir);
-    let backup_dir = PathBuf::from(config.backup_dir);
+    let backup_dir = up_dir.join("backup/link");
 
     let from_dir = resolve_directory(from_dir, "From")?;
     let to_dir = resolve_directory(to_dir, "To")?;

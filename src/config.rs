@@ -11,6 +11,7 @@ use log::{debug, info, trace};
 use serde_derive::{Deserialize, Serialize};
 
 use crate::{
+    get_up_dir,
     opts::{GitOptions, Opts, RunOptions, SubCommand},
     tasks::git,
 };
@@ -21,6 +22,7 @@ pub struct UpConfig {
     pub config_yaml: ConfigYaml,
     pub bootstrap: bool,
     pub tasks: Option<Vec<String>>,
+    pub up_dir: PathBuf,
 }
 
 // TODO(gib): Provide a way for users to easily validate their yaml files.
@@ -42,17 +44,17 @@ pub struct ConfigYaml {
 
 impl UpConfig {
     /// Build the `UpConfig` struct by parsing the config yaml files.
-    pub fn from(args: Opts) -> Result<Self> {
+    pub fn from(opts: Opts) -> Result<Self> {
         let mut config_yaml = ConfigYaml::default();
 
-        let run_options = match args.cmd {
+        let run_options = match opts.cmd {
             Some(SubCommand::Run(task_opts) | SubCommand::List(task_opts)) => task_opts,
             _ => RunOptions::default(),
         };
 
         let mut config_path_explicitly_specified = true;
         let up_yaml_path = match (
-            Self::get_up_yaml_path(&args.config),
+            Self::get_up_yaml_path(&opts.config),
             run_options.fallback_url,
         ) {
             // File exists, use file.
@@ -97,6 +99,7 @@ impl UpConfig {
             up_yaml_path,
             config_yaml,
             bootstrap,
+            up_dir: get_up_dir(opts.up_dir.as_ref()),
             tasks: run_options.tasks,
         })
     }
