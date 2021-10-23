@@ -78,7 +78,7 @@ pub(super) fn write_defaults_values(
     domain: &str,
     prefs: HashMap<String, plist::Value>,
     up_dir: &Path,
-) -> Result<(), E> {
+) -> Result<bool, E> {
     let backup_dir = up_dir.join("backup/defaults");
 
     let plist_path = plist_path(domain)?;
@@ -134,7 +134,7 @@ pub(super) fn write_defaults_values(
     }
 
     if !values_changed {
-        return Ok(());
+        return Ok(values_changed);
     }
 
     if plist_path_exists {
@@ -178,5 +178,5 @@ pub(super) fn write_defaults_values(
     }
     trace!("Plist updated at {:?}", &plist_path);
 
-    Ok(())
+    Ok(values_changed)
 }

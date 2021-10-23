@@ -111,7 +111,7 @@ impl Task {
                 .file_stem()
                 .ok_or_else(|| eyre!("Task had no path."))?
                 .to_str()
-                .ok_or(E::None {})?
+                .ok_or(E::UnexpectedNone)?
                 .to_owned(),
         };
         let task = Self {

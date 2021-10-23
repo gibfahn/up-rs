@@ -82,7 +82,11 @@ pub fn run(
     tasks_action: TasksAction,
 ) -> Result<()> {
     // TODO(gib): Handle missing dir & move into config.
-    let mut tasks_dir = config.up_yaml_path.as_ref().ok_or(E::None {})?.clone();
+    let mut tasks_dir = config
+        .up_yaml_path
+        .as_ref()
+        .ok_or(E::UnexpectedNone)?
+        .clone();
     tasks_dir.pop();
     tasks_dir.push(tasks_dirname.to_dir_name());
 
@@ -236,7 +240,7 @@ fn run_tasks(
             TaskStatus::Failed(e) => Some(e),
             _ => None,
         });
-        let err = tasks_failed_iter.next().ok_or(E::None {})?;
+        let err = tasks_failed_iter.next().ok_or(E::UnexpectedNone)?;
         let err = eyre!(err);
         tasks_failed_iter.fold(Err(err), color_eyre::Help::error)?;
     }
@@ -303,7 +307,7 @@ pub enum TaskError {
         cmd: Vec<String>,
     },
     /// Unexpectedly empty option found.
-    None {},
+    UnexpectedNone,
     /// Invalid yaml at '{path}':
     InvalidYaml {
         path: PathBuf,

@@ -4,11 +4,8 @@
 //! the updates at once. Also takes care of restarting any tools to pick up the
 //! config, or notifying the user if they need to log out or reboot.
 //!
-//! Note that this runs the `defaults` binary rather than manually editing .plist files as macOS has
-//! a layer of indirection that means directly editing files may not work, for more information see: <https://eclecticlight.co/2017/07/06/sticky-preferences-why-trashing-or-editing-them-may-not-change-anything/>
-//! <https://apps.tempel.org/PrefsEditor/>
-
-// TODO(gib): use CFPreferences instead of running the defaults binary.
+//! Note that manually editing .plist files on macOS (rather than using e.g. the `defaults` binary)
+//! may cause changes not to be picked up until `cfprefsd` is restarted ([more information](https://eclecticlight.co/2017/07/06/sticky-preferences-why-trashing-or-editing-them-may-not-change-anything/)).
 
 mod plist_utils;
 
@@ -18,9 +15,9 @@ use std::{
     process::ExitStatus,
 };
 
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{eyre, Context, Result};
 use displaydoc::Display;
-use log::{debug, trace};
+use log::{debug, error, trace, warn};
 use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -42,10 +39,27 @@ pub struct DefaultsConfig(HashMap<String, HashMap<String, plist::Value>>);
 
 pub(crate) fn run(config: DefaultsConfig, up_dir: &Path) -> Result<()> {
     debug!("Setting defaults");
-    for (domain, prefs) in config.0 {
-        write_defaults_values(&domain, prefs, up_dir)?;
+    let (passed, errors): (Vec<_>, Vec<_>) = config
+        .0
+        .into_iter()
+        .map(|(domain, prefs)| write_defaults_values(&domain, prefs, up_dir))
+        .partition(Result::is_ok);
+    let errors: Vec<_> = errors.into_iter().map(Result::unwrap_err).collect();
+
+    if passed.into_iter().map(Result::unwrap).any(|r| r) {
+        warn!("Defaults values have been changed, these may not take effect until you restart the system or run `sudo killall cfprefsd`");
     }
-    Ok(())
+
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        for error in &errors {
+            error!("{:?}", error);
+        }
+        let mut errors_iter = errors.into_iter();
+        Err(errors_iter.next().ok_or(E::UnexpectedNone)?)
+            .with_context(|| eyre!("{:?}", errors_iter.collect::<Vec<_>>()))
+    }
 }
 
 #[derive(Error, Debug, Display)]
@@ -184,6 +198,9 @@ pub enum DefaultsError {
     UnexpectedString {
         value: Result<String, serde_yaml::Error>,
     },
+
+    /// Unexpectedly empty option found.
+    UnexpectedNone,
 }
 
 pub(crate) fn read(defaults_opts: DefaultsReadOptions) -> Result<(), E> {
