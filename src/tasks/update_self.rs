@@ -15,7 +15,10 @@ use serde_derive::Deserialize;
 use thiserror::Error;
 
 use self::UpdateSelfError as E;
-use crate::{opts::UpdateSelfOptions, tasks::ResolveEnv};
+use crate::{
+    opts::UpdateSelfOptions,
+    tasks::{task::TaskStatus, ResolveEnv},
+};
 
 #[derive(Debug, Deserialize)]
 struct GitHubReleaseJsonResponse {
@@ -30,17 +33,17 @@ impl ResolveEnv for UpdateSelfOptions {}
 
 /// Downloads the latest version of the binary from the specified URL and
 /// replaces the current executable path with it.
-pub(crate) fn run(opts: &UpdateSelfOptions) -> Result<()> {
+pub(crate) fn run(opts: &UpdateSelfOptions) -> Result<TaskStatus> {
     let up_path = env::current_exe()?.canonicalize().unwrap();
 
     // If the current binary's location is where it was originally compiled, assume it is a dev
     // build, and thus skip the update.
     if !opts.always_update && up_path.starts_with(env!("CARGO_MANIFEST_DIR")) {
-        info!(
+        debug!(
             "Skipping up-rs update, current version '{}' is a dev build.",
             &up_path.display(),
         );
-        return Ok(());
+        return Ok(TaskStatus::Skipped);
     }
 
     let client = reqwest::blocking::Client::builder()
@@ -56,24 +59,24 @@ pub(crate) fn run(opts: &UpdateSelfOptions) -> Result<()> {
         trace!("latest_github_release: {:?}", latest_github_release,);
         let latest_github_release = latest_github_release.tag_name;
         if CURRENT_VERSION == latest_github_release {
-            info!(
+            debug!(
                 "Skipping up-rs update, current version '{}' is latest GitHub version '{:?}'",
                 CURRENT_VERSION, &latest_github_release,
             );
-            return Ok(());
+            return Ok(TaskStatus::Skipped);
         }
     }
 
     let temp_dir = env::temp_dir();
     let temp_path = &temp_dir.join(format!("up_rs-{}", Utc::now().to_rfc3339()));
 
-    debug!(
+    trace!(
         "Downloading url {} to path {}",
         &opts.url,
         up_path.display()
     );
 
-    debug!("Using temporary path: {}", temp_path.display());
+    trace!("Using temporary path: {}", temp_path.display());
     let mut response = reqwest::blocking::get(&opts.url)?.error_for_status()?;
 
     fs::create_dir_all(&temp_dir).with_context(|| E::CreateDir { path: temp_dir })?;
@@ -101,13 +104,14 @@ pub(crate) fn run(opts: &UpdateSelfOptions) -> Result<()> {
             from: temp_path.clone(),
             to: up_path.clone(),
         })?;
+        Ok(TaskStatus::Passed)
     } else {
-        info!(
+        debug!(
             "Skipping up-rs update, current version '{}' and new version '{}'",
             CURRENT_VERSION, &new_version,
         );
+        Ok(TaskStatus::Skipped)
     }
-    Ok(())
 }
 
 #[derive(Error, Debug, Display)]

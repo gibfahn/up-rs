@@ -28,6 +28,7 @@ use crate::{
             plist_utils::{get_plist_value_type, plist_path, write_defaults_values},
             DefaultsError as E,
         },
+        task::TaskStatus,
         ResolveEnv,
     },
 };
@@ -37,7 +38,7 @@ impl ResolveEnv for DefaultsConfig {}
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct DefaultsConfig(HashMap<String, HashMap<String, plist::Value>>);
 
-pub(crate) fn run(config: DefaultsConfig, up_dir: &Path) -> Result<()> {
+pub(crate) fn run(config: DefaultsConfig, up_dir: &Path) -> Result<TaskStatus> {
     debug!("Setting defaults");
     let (passed, errors): (Vec<_>, Vec<_>) = config
         .0
@@ -45,13 +46,18 @@ pub(crate) fn run(config: DefaultsConfig, up_dir: &Path) -> Result<()> {
         .map(|(domain, prefs)| write_defaults_values(&domain, prefs, up_dir))
         .partition(Result::is_ok);
     let errors: Vec<_> = errors.into_iter().map(Result::unwrap_err).collect();
+    let passed: Vec<_> = passed.into_iter().map(Result::unwrap).collect();
 
-    if passed.into_iter().map(Result::unwrap).any(|r| r) {
+    if passed.iter().all(|r| !r) && errors.is_empty() {
+        return Ok(TaskStatus::Skipped);
+    }
+
+    if passed.into_iter().any(|r| r) {
         warn!("Defaults values have been changed, these may not take effect until you restart the system or run `sudo killall cfprefsd`");
     }
 
     if errors.is_empty() {
-        Ok(())
+        Ok(TaskStatus::Passed)
     } else {
         for error in &errors {
             error!("{:?}", error);

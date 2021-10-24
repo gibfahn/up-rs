@@ -17,19 +17,20 @@ use crate::{
     opts::GenerateGitConfig,
     tasks::{
         git::{GitConfig, GitRemote},
-        task::Task,
+        task::{Task, TaskStatus},
         ResolveEnv, TaskError,
     },
 };
 
-pub fn run(generate_git_configs: &[GenerateGitConfig]) -> Result<()> {
+// TODO(gib): Return TaskStatus::Skipped if we didn't change anything.
+pub fn run(generate_git_configs: &[GenerateGitConfig]) -> Result<TaskStatus> {
     let errors: Vec<_> = generate_git_configs
         .par_iter()
         .map(run_single)
         .filter_map(Result::err)
         .collect();
     if errors.is_empty() {
-        Ok(())
+        Ok(TaskStatus::Passed)
     } else {
         for error in &errors {
             error!("{:?}", error);

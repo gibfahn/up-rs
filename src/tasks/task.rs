@@ -149,7 +149,7 @@ impl Task {
         if let Some(lib) = &self.config.run_lib {
             let maybe_data = self.config.data.as_ref().cloned();
 
-            match lib.as_str() {
+            let status = match lib.as_str() {
                 "link" => {
                     let data: LinkOptions =
                         parse_task_config(maybe_data, &self.name, false, env_fn)?;
@@ -187,7 +187,7 @@ impl Task {
                 lib: lib.to_string(),
                 source: e,
             })?;
-            return Ok(TaskStatus::Passed);
+            return Ok(status);
         }
 
         if let Some(mut cmd) = self.config.check_cmd.clone() {

@@ -12,7 +12,7 @@ use thiserror::Error;
 use self::GitTaskError as E;
 use crate::{
     opts::GitOptions,
-    tasks::{ResolveEnv, TaskError},
+    tasks::{task::TaskStatus, ResolveEnv, TaskError},
 };
 
 pub mod branch;
@@ -47,14 +47,15 @@ const fn prune_default() -> bool {
     false
 }
 
-pub(crate) fn run(configs: &[GitConfig]) -> Result<()> {
+// TODO(gib): Return TaskStatus::Skipped if we didn't do anything.
+pub(crate) fn run(configs: &[GitConfig]) -> Result<TaskStatus> {
     let errors: Vec<_> = configs
         .par_iter()
         .map(update::update)
         .filter_map(Result::err)
         .collect();
     if errors.is_empty() {
-        Ok(())
+        Ok(TaskStatus::Passed)
     } else {
         for error in &errors {
             error!("{:?}", error);

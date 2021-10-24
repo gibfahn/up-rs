@@ -13,7 +13,7 @@ use walkdir::{DirEntry, WalkDir};
 
 use crate::{
     opts::LinkOptions,
-    tasks::{ResolveEnv, TaskError},
+    tasks::{task::TaskStatus, ResolveEnv, TaskError},
 };
 
 impl ResolveEnv for LinkOptions {
@@ -36,7 +36,7 @@ impl ResolveEnv for LinkOptions {
 /// example) you just edit ~/.bashrc, and as it's a symlink it'll actually edit
 /// ~/code/dotfiles/.bashrc. Then you can add and commit that change in ~/code/
 /// dotfiles.
-pub(crate) fn run(config: LinkOptions, up_dir: &Path) -> Result<()> {
+pub(crate) fn run(config: LinkOptions, up_dir: &Path) -> Result<TaskStatus> {
     let now: DateTime<Utc> = Utc::now();
     debug!("UTC time is: {}", now);
 
@@ -73,6 +73,7 @@ pub(crate) fn run(config: LinkOptions, up_dir: &Path) -> Result<()> {
             .collect::<Result<Vec<_>>>()
     );
 
+    let mut work_done = false;
     // For each non-directory file in from_dir.
     for from_path in WalkDir::new(&from_dir)
         .min_depth(1)
@@ -82,7 +83,9 @@ pub(crate) fn run(config: LinkOptions, up_dir: &Path) -> Result<()> {
     {
         let rel_path = from_path.path().strip_prefix(&from_dir)?;
         create_parent_dir(&to_dir, rel_path, &backup_dir)?;
-        link_path(&from_path, &to_dir, rel_path, &backup_dir)?;
+        if link_path(&from_path, &to_dir, rel_path, &backup_dir)? {
+            work_done = true;
+        }
     }
 
     // Remove backup dir if not empty.
@@ -109,7 +112,11 @@ pub(crate) fn run(config: LinkOptions, up_dir: &Path) -> Result<()> {
         );
     }
 
-    Ok(())
+    if work_done {
+        Ok(TaskStatus::Passed)
+    } else {
+        Ok(TaskStatus::Skipped)
+    }
 }
 
 /// Ensure dir exists, and resolve symlinks to find it's canonical path.
@@ -185,13 +192,14 @@ fn get_parent_path(path: &Path) -> Result<&Path> {
 /// Create a symlink from `from_path` -> `to_path`.
 /// `rel_path` is the relative path within `from_dir`.
 /// Moves any existing files that would be overwritten into `backup_dir`.
+/// Returns a boolean indicating whether any symlinks were created.
 #[allow(clippy::filetype_is_file)]
 fn link_path(
     from_path: &DirEntry,
     to_dir: &Path,
     rel_path: &Path,
     backup_dir: &Path,
-) -> Result<()> {
+) -> Result<bool> {
     let to_path = to_dir.join(rel_path);
     if to_path.exists() {
         let to_path_file_type = to_path.symlink_metadata()?.file_type();
@@ -203,7 +211,7 @@ fn link_path(
                             "Link at {:?} already points to {:?}, skipping.",
                             to_path, existing_link
                         );
-                        return Ok(());
+                        return Ok(false);
                     }
                     warn!(
                         "Link at {:?} points to {:?}, changing to {:?}.",
@@ -268,14 +276,17 @@ fn link_path(
         trace!("File '{:?}' doesn't exist.", to_path);
     }
     info!("Linking:\n  From: {:?}\n  To: {:?}", from_path, to_path);
-    unix::fs::symlink(from_path.path(), &to_path).map_err(|e| {
-        LinkError::SymlinkError {
-            from_path: from_path.path().to_path_buf(),
-            to_path: to_path.clone(),
-            source: e,
-        }
-        .into()
-    })
+    unix::fs::symlink(from_path.path(), &to_path)
+        // If we got here, we did work, so return true.
+        .map(|()| true)
+        .map_err(|e| {
+            LinkError::SymlinkError {
+                from_path: from_path.path().to_path_buf(),
+                to_path: to_path.clone(),
+                source: e,
+            }
+            .into()
+        })
 }
 
 #[derive(Error, Debug, Display)]
