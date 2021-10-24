@@ -51,11 +51,11 @@ pub struct TaskConfig {
     /// Whether to run this by default, or only if required.
     pub auto_run: Option<bool>,
     /// Run library: up-rs library to use for this task. Either use this or
-    /// `run_cmd` + `check_cmd`.
+    /// `run_cmd` + `skip_if_cmd`.
     pub run_lib: Option<String>,
     /// Check command: only run the `run_cmd` if this command returns a non-zero
     /// exit code.
-    pub check_cmd: Option<Vec<String>>,
+    pub skip_if_cmd: Option<Vec<String>>,
     /// Run command: command to run to perform the update.
     pub run_cmd: Option<Vec<String>>,
     /// Description of the task.
@@ -78,7 +78,7 @@ const fn default_false() -> bool {
 /// Shell commands we run.
 #[derive(Debug, Clone, Copy)]
 pub enum CommandType {
-    /// check_cmd field in the yaml.
+    /// skip_if_cmd field in the yaml.
     Check,
     /// run_cmd field in the yaml.
     Run,
@@ -190,19 +190,19 @@ impl Task {
             return Ok(status);
         }
 
-        if let Some(mut cmd) = self.config.check_cmd.clone() {
+        if let Some(mut cmd) = self.config.skip_if_cmd.clone() {
             debug!("Running '{}' check command.", &self.name);
             for s in &mut cmd {
                 *s = env_fn(s)?;
             }
-            // TODO(gib): Allow choosing how to validate check_cmd output (stdout, zero exit
+            // TODO(gib): Allow choosing how to validate skip_if_cmd output (stdout, zero exit
             // code, non-zero exit code).
             if self.run_command(CommandType::Check, &cmd, env)? {
                 debug!("Skipping task '{}' as check command passed.", &self.name);
                 return Ok(TaskStatus::Skipped);
             }
         } else {
-            // TODO(gib): Make a warning and allow silencing by setting check_cmd to boolean
+            // TODO(gib): Make a warning and allow silencing by setting skip_if_cmd to boolean
             // false.
             debug!(
                 "You haven't specified a check command for '{}', so it will always be run",
