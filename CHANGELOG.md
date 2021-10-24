@@ -1,3 +1,9 @@
+<a name="0.12.1"></a>
+## [0.12.1][] (2021-10-24)
+
+
+
+
 <a name="0.12.0"></a>
 ## [0.12.0][] (2021-10-24)
 
@@ -463,3 +469,4 @@
 [0.10.0]: https://github.com/gibfahn/up-rs/releases/tag/0.10.0
 [0.11.0]: https://github.com/gibfahn/up-rs/releases/tag/0.11.0
 [0.12.0]: https://github.com/gibfahn/up-rs/releases/tag/0.12.0
+[0.12.1]: https://github.com/gibfahn/up-rs/releases/tag/0.12.1
