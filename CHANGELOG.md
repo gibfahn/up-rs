@@ -1,3 +1,26 @@
+<a name="0.12.0"></a>
+## [0.12.0][] (2021-10-24)
+
+
+#### Bug Fixes
+
+* **defaults:**
+  *  skip defaults and its tests on non-Darwin systems ([5c2d0d7a](https://github.com/gibfahn/up-rs/commit/5c2d0d7a24c891219e03b427a88b7134b2656391))
+  *  check for container/sandbox app preferences ([71e71676](https://github.com/gibfahn/up-rs/commit/71e716768475fbccace8410d9790b131358d90b5))
+  *  continue on defaults errors ([122bdb19](https://github.com/gibfahn/up-rs/commit/122bdb1963c128e96c668a4ed837e68c7cee380d))
+* **logging:**
+  *  further reduce always run info logging ([296c96b7](https://github.com/gibfahn/up-rs/commit/296c96b79d0c95cb2138a66a0d0b558269aea322))
+  *  change initial info log level to debug ([74e8691c](https://github.com/gibfahn/up-rs/commit/74e8691c5f57cd29bd1e110be845dfae465efb9a))
+* **tasks:**  return TaskStatus::Skipped if we didn't do any work ([ae8d2a2d](https://github.com/gibfahn/up-rs/commit/ae8d2a2d731f26f5bf3396aaec97c388786c5685))
+
+#### Features
+
+* **defaults:**
+  *  support maps and arrays in defaults, restructure up dir ([217d055b](https://github.com/gibfahn/up-rs/commit/217d055bf3e317775e935f786cc201f930bcd998))
+  *  add a defaults print command ([3222a369](https://github.com/gibfahn/up-rs/commit/3222a36977f1ff337a2f1ac5c5639bd59d440dfc))
+
+
+
 <a name="0.11.0"></a>
 ## [0.11.0][] (2021-10-18)
 
@@ -439,3 +462,4 @@
 [0.9.5]: https://github.com/gibfahn/up-rs/releases/tag/0.9.5
 [0.10.0]: https://github.com/gibfahn/up-rs/releases/tag/0.10.0
 [0.11.0]: https://github.com/gibfahn/up-rs/releases/tag/0.11.0
+[0.12.0]: https://github.com/gibfahn/up-rs/releases/tag/0.12.0
