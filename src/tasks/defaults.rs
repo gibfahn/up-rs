@@ -39,6 +39,11 @@ impl ResolveEnv for DefaultsConfig {}
 pub struct DefaultsConfig(HashMap<String, HashMap<String, plist::Value>>);
 
 pub(crate) fn run(config: DefaultsConfig, up_dir: &Path) -> Result<TaskStatus> {
+    if !(cfg!(target_os = "macos") || cfg!(target_os = "ios")) {
+        debug!("Defaults: skipping setting defaults as not on a Darwin platform.");
+        return Ok(TaskStatus::Skipped);
+    }
+
     debug!("Setting defaults");
     let (passed, errors): (Vec<_>, Vec<_>) = config
         .0

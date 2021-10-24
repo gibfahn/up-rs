@@ -1,3 +1,6 @@
+// Defaults tests are macOS only.
+#![cfg(target_os = "macos")]
+
 use testutils::{assert, run_defaults};
 
 #[test]
@@ -111,7 +114,7 @@ fn defaults_read_local() {
 fn defaults_write_local() {
     let temp_dir = testutils::temp_dir(file!(), testutils::function_name!()).unwrap();
 
-    let test_plist = format!("co.fahn.up-rs.test-{}", testutils::function_name!());
+    let domain = format!("co.fahn.up-rs.test-{}", testutils::function_name!());
 
     // Format: (defaults_type, orig_value, orig_check_value, new_value, check_value)
     let test_values = [
@@ -151,7 +154,7 @@ fn defaults_write_local() {
 
         let defaults_key = format!("defaults_write_local_{}", n);
         let defaults_type = format!("-{}", defaults_type);
-        let mut args = vec!["write", &test_plist, &defaults_key, &defaults_type];
+        let mut args = vec!["write", &domain, &defaults_key, &defaults_type];
         args.extend(values);
 
         // Write the original value to a test plist file.
@@ -164,7 +167,7 @@ fn defaults_write_local() {
         cmd.args(&[
             "defaults",
             "read",
-            &test_plist,
+            &domain,
             &format!("defaults_write_local_{}", n),
         ]);
         let cmd_output = testutils::run_cmd(&mut cmd);
@@ -178,25 +181,20 @@ fn defaults_write_local() {
     // Set the key to the new value ourselves.
     for (n, (_, _, _, new_value, _)) in test_values.iter().enumerate() {
         let mut cmd = testutils::up_cmd(&temp_dir);
-        cmd.args(&[
-            "defaults",
-            "write",
-            &test_plist,
-            &format!("defaults_write_local_{}", n),
-            new_value,
-        ]);
+
+        let defaults_key = format!("defaults_write_local_{}", n);
+        cmd.args(&["defaults", "write", &domain, &defaults_key, new_value]);
         let cmd_output = testutils::run_cmd(&mut cmd);
         assert!(cmd_output.status.success());
         assert::contains(
             &String::from_utf8_lossy(&cmd_output.stderr),
-            "Defaults value has changed",
+            &format!("Changing default {} {}", domain, defaults_key),
         );
     }
 
     // Check that defaults agrees with the new value.
     for (n, (_, _, _, _, check_value)) in test_values.iter().enumerate() {
-        let new_default =
-            run_defaults(&["read", &test_plist, &format!("defaults_write_local_{}", n)]);
+        let new_default = run_defaults(&["read", &domain, &format!("defaults_write_local_{}", n)]);
         assert_eq!(format!("{}\n", check_value), new_default);
     }
 }

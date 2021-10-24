@@ -10,6 +10,13 @@ use plist::Dictionary;
 
 use crate::tasks::defaults::DefaultsError as E;
 
+// TODO(gib): support `-currentHost`. Afaict this means looking at this file:
+//
+// ~/Library/Preferences/ByHost/{domain}.{hardware_uuid}.plist
+//
+// You can get the Hardware UUID from:
+// <https://apple.stackexchange.com/questions/342042/how-can-i-query-the-hardware-uuid-of-a-mac-programmatically-from-a-command-line>
+
 /**
 Get the path to the plist file given a domain.
 
@@ -150,8 +157,8 @@ pub(super) fn write_defaults_values(
         }
         values_changed = true;
         info!(
-            "Defaults value has changed, changing {}: {:?} -> {:?}",
-            domain, old_value, new_value
+            "Changing default {} {}: {:?} -> {:?}",
+            domain, key, old_value, new_value
         );
 
         let plist_type = get_plist_value_type(&plist_value);

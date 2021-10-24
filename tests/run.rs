@@ -39,6 +39,8 @@ fn up_run_passing() {
     .unwrap();
 
     let test_plist = format!("co.fahn.up-rs.test-{}", testutils::function_name!());
+
+    #[cfg(target_os = "macos")]
     {
         let mut cmd = Command::new("defaults");
         cmd.args(&["delete", &test_plist]);
@@ -72,54 +74,57 @@ fn up_run_passing() {
         &temp_dir.join("link_dir/dotfile_dir/file_to_link"),
     );
 
-    // Defaults Task: Check values were set correctly.
-    let actual_value = run_defaults(&["read", &test_plist]);
-    assert_eq!(actual_value, EXPECTED_DEFAULTS_VALUE);
+    #[cfg(target_os = "macos")]
+    {
+        // Defaults Task: Check values were set correctly.
+        let actual_value = run_defaults(&["read", &test_plist]);
+        assert_eq!(actual_value, EXPECTED_DEFAULTS_VALUE);
 
-    // Defaults Task: Check types were set correctly.
+        // Defaults Task: Check types were set correctly.
 
-    assert_eq!(
-        "Type is boolean\n",
-        run_defaults(&[
-            "read-type",
-            "co.fahn.up-rs.test-up_run_passing",
-            "NSNavPanelExpandedStateForSaveMode"
-        ])
-    );
+        assert_eq!(
+            "Type is boolean\n",
+            run_defaults(&[
+                "read-type",
+                "co.fahn.up-rs.test-up_run_passing",
+                "NSNavPanelExpandedStateForSaveMode"
+            ])
+        );
 
-    assert_eq!(
-        "Type is float\n",
-        run_defaults(&[
-            "read-type",
-            "co.fahn.up-rs.test-up_run_passing",
-            "autohide-time-modifier"
-        ])
-    );
+        assert_eq!(
+            "Type is float\n",
+            run_defaults(&[
+                "read-type",
+                "co.fahn.up-rs.test-up_run_passing",
+                "autohide-time-modifier"
+            ])
+        );
 
-    assert_eq!(
-        "Type is integer\n",
-        run_defaults(&[
-            "read-type",
-            "co.fahn.up-rs.test-up_run_passing",
-            "AppleKeyboardUIMode"
-        ])
-    );
+        assert_eq!(
+            "Type is integer\n",
+            run_defaults(&[
+                "read-type",
+                "co.fahn.up-rs.test-up_run_passing",
+                "AppleKeyboardUIMode"
+            ])
+        );
 
-    assert_eq!(
-        "Type is array\n",
-        run_defaults(&[
-            "read-type",
-            "co.fahn.up-rs.test-up_run_passing",
-            "CustomHeaders"
-        ])
-    );
+        assert_eq!(
+            "Type is array\n",
+            run_defaults(&[
+                "read-type",
+                "co.fahn.up-rs.test-up_run_passing",
+                "CustomHeaders"
+            ])
+        );
 
-    assert_eq!(
-        "Type is dictionary\n",
-        run_defaults(&[
-            "read-type",
-            "co.fahn.up-rs.test-up_run_passing",
-            "AppleICUDateFormatStrings"
-        ])
-    );
+        assert_eq!(
+            "Type is dictionary\n",
+            run_defaults(&[
+                "read-type",
+                "co.fahn.up-rs.test-up_run_passing",
+                "AppleICUDateFormatStrings"
+            ])
+        );
+    }
 }
