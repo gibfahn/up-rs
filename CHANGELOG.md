@@ -1,3 +1,13 @@
+<a name="0.12.2"></a>
+## [0.12.2][] (2021-10-25)
+
+
+#### Bug Fixes
+
+* **task:**  rename to run_if_cmd, allow using with run_lib ([8ab63c23](https://github.com/gibfahn/up-rs/commit/8ab63c232c3957869efd31fd5055b0a0d8f56aca))
+
+
+
 <a name="0.12.1"></a>
 ## [0.12.1][] (2021-10-24)
 
@@ -470,3 +480,4 @@
 [0.11.0]: https://github.com/gibfahn/up-rs/releases/tag/0.11.0
 [0.12.0]: https://github.com/gibfahn/up-rs/releases/tag/0.12.0
 [0.12.1]: https://github.com/gibfahn/up-rs/releases/tag/0.12.1
+[0.12.2]: https://github.com/gibfahn/up-rs/releases/tag/0.12.2
