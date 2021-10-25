@@ -1,1 +1,3 @@
-skip_if_cmd: ["${up_binary_path}", "--version"]
+# Should be skipped as this command should fail.
+run_if_cmd: ["${up_binary_path}", "--not-a-flag"]
+run_cmd: ["${up_binary_path}", "--version"]

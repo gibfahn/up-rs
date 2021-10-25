@@ -1,1 +1,1 @@
-skip_if_cmd: ["${up_binary_path}", "--version"]
+run_if_cmd: ["${up_binary_path}", "--version"]

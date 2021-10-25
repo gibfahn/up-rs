@@ -1,3 +1,6 @@
+# Should be run as this command should succeed.
+run_if_cmd: ["${up_binary_path}", "--version"]
+
 run_lib: "link"
 
 data:

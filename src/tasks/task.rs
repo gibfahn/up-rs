@@ -51,11 +51,10 @@ pub struct TaskConfig {
     /// Whether to run this by default, or only if required.
     pub auto_run: Option<bool>,
     /// Run library: up-rs library to use for this task. Either use this or
-    /// `run_cmd` + `skip_if_cmd`.
+    /// `run_cmd` + `run_if_cmd`.
     pub run_lib: Option<String>,
-    /// Check command: only run the `run_cmd` if this command returns a non-zero
-    /// exit code.
-    pub skip_if_cmd: Option<Vec<String>>,
+    /// Run if command: only run the `run_cmd` if this command passes (returns exit code 0).
+    pub run_if_cmd: Option<Vec<String>>,
     /// Run command: command to run to perform the update.
     pub run_cmd: Option<Vec<String>>,
     /// Description of the task.
@@ -78,8 +77,8 @@ const fn default_false() -> bool {
 /// Shell commands we run.
 #[derive(Debug, Clone, Copy)]
 pub enum CommandType {
-    /// skip_if_cmd field in the yaml.
-    Check,
+    /// run_if_cmd field in the yaml.
+    RunIf,
     /// run_cmd field in the yaml.
     Run,
 }
@@ -88,7 +87,7 @@ impl Display for CommandType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::Run => write!(f, "run command"),
-            Self::Check => write!(f, "check command"),
+            Self::RunIf => write!(f, "run_if command"),
         }
     }
 }
@@ -146,6 +145,24 @@ impl Task {
     {
         info!("Running task '{}'", &self.name);
 
+        if let Some(mut cmd) = self.config.run_if_cmd.clone() {
+            debug!("Running '{}' run_if command.", &self.name);
+            for s in &mut cmd {
+                *s = env_fn(s)?;
+            }
+            // TODO(gib): Allow choosing how to validate run_if_cmd output (stdout, zero exit
+            // code, non-zero exit code).
+            if !self.run_command(CommandType::RunIf, &cmd, env)? {
+                debug!("Skipping task '{}' as run_if command failed.", &self.name);
+                return Ok(TaskStatus::Skipped);
+            }
+        } else {
+            debug!(
+                "You haven't specified a run_if command for '{}', so it will always be run",
+                &self.name
+            );
+        }
+
         if let Some(lib) = &self.config.run_lib {
             let maybe_data = self.config.data.as_ref().cloned();
 
@@ -190,26 +207,6 @@ impl Task {
             return Ok(status);
         }
 
-        if let Some(mut cmd) = self.config.skip_if_cmd.clone() {
-            debug!("Running '{}' check command.", &self.name);
-            for s in &mut cmd {
-                *s = env_fn(s)?;
-            }
-            // TODO(gib): Allow choosing how to validate skip_if_cmd output (stdout, zero exit
-            // code, non-zero exit code).
-            if self.run_command(CommandType::Check, &cmd, env)? {
-                debug!("Skipping task '{}' as check command passed.", &self.name);
-                return Ok(TaskStatus::Skipped);
-            }
-        } else {
-            // TODO(gib): Make a warning and allow silencing by setting skip_if_cmd to boolean
-            // false.
-            debug!(
-                "You haven't specified a check command for '{}', so it will always be run",
-                &self.name
-            );
-        }
-
         if let Some(mut cmd) = self.config.run_cmd.clone() {
             debug!("Running '{}' run command.", &self.name);
             for s in &mut cmd {
@@ -249,7 +246,7 @@ impl Task {
 
         let elapsed_time = now.elapsed();
         let success = output.status.success();
-        self.log_command_output(CommandType::Check, &output, elapsed_time);
+        self.log_command_output(CommandType::RunIf, &output, elapsed_time);
         Ok(success)
     }
 
@@ -265,12 +262,12 @@ impl Task {
         Ok(command)
     }
 
-    /// | Command | Result | Status  | Stdout/Stderr |
-    /// | ---     | ---    | ---     | ---           |
-    /// | Check   | passes | `debug` | `debug`       |
-    /// | Run     | passes | `debug` | `debug`       |
-    /// | Check   | fails  | `info`  | `debug`       |
-    /// | Run     | fails  | `error` | `error`       |
+    /// | Command   | Result | Status  | Stdout/Stderr |
+    /// | ---       | ---    | ---     | ---           |
+    /// | `RunIf`   | passes | `debug` | `debug`       |
+    /// | `Run`     | passes | `debug` | `debug`       |
+    /// | `RunIf`   | fails  | `info`  | `debug`       |
+    /// | `Run`     | fails  | `error` | `error`       |
     pub fn log_command_output(
         &self,
         command_type: CommandType,
@@ -280,7 +277,7 @@ impl Task {
         let (level, stdout_stderr_level) = match (&command_type, output.status.success()) {
             (_, true) => (Level::Debug, Level::Debug),
             (CommandType::Run, false) => (Level::Error, Level::Error),
-            (CommandType::Check, false) => (Level::Info, Level::Debug),
+            (CommandType::RunIf, false) => (Level::Info, Level::Debug),
         };
 
         // TODO(gib): How do we separate out the task output?
