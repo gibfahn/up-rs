@@ -1,3 +1,15 @@
+<a name="0.12.3"></a>
+## [0.12.3][] (2021-10-28)
+
+
+#### Bug Fixes
+
+* **tasks:**
+  *  automatically delete broken symlinks to removed tasks ([0d4dfdb3](https://github.com/gibfahn/up-rs/commit/0d4dfdb379a402bec7239c2744e34984bb374f85))
+  *  fix command type in stdout/stderr logging ([adf80529](https://github.com/gibfahn/up-rs/commit/adf805299e847baea9a2817f41c58078418f45d5))
+
+
+
 <a name="0.12.2"></a>
 ## [0.12.2][] (2021-10-25)
 
@@ -481,3 +493,4 @@
 [0.12.0]: https://github.com/gibfahn/up-rs/releases/tag/0.12.0
 [0.12.1]: https://github.com/gibfahn/up-rs/releases/tag/0.12.1
 [0.12.2]: https://github.com/gibfahn/up-rs/releases/tag/0.12.2
+[0.12.3]: https://github.com/gibfahn/up-rs/releases/tag/0.12.3
