@@ -12,6 +12,7 @@ use thiserror::Error;
 use walkdir::{DirEntry, WalkDir};
 
 use crate::{
+    files,
     opts::LinkOptions,
     tasks::{task::TaskStatus, ResolveEnv, TaskError},
 };
@@ -260,18 +261,7 @@ fn link_path(
             bail!("This should be unreachable.")
         }
     } else if to_path.symlink_metadata().is_ok() {
-        warn!(
-            "Removing existing broken link.\n  Path: {:?}\n  Dest: {:?}",
-            &to_path,
-            &to_path.read_link().map_err(|e| LinkError::IoError {
-                path: to_path.clone(),
-                source: e
-            })?
-        );
-        fs::remove_file(&to_path).map_err(|e| LinkError::DeleteError {
-            path: to_path.clone(),
-            source: e,
-        })?;
+        files::remove_broken_symlink(&to_path)?;
     } else {
         trace!("File '{:?}' doesn't exist.", to_path);
     }

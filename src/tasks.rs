@@ -17,7 +17,7 @@ use self::{
     task::{CommandType, Task},
     TaskError as E,
 };
-use crate::{config, env::get_env, tasks::task::TaskStatus};
+use crate::{config, env::get_env, files::remove_broken_symlink, tasks::task::TaskStatus};
 
 pub mod completions;
 pub mod defaults;
@@ -128,10 +128,7 @@ pub fn run(
         let path = entry.path();
         // If file is a broken symlink.
         if !path.exists() && path.symlink_metadata().is_ok() {
-            warn!(
-                "Failed to read task, broken symlink or file permissions issue? {}",
-                path.display()
-            );
+            remove_broken_symlink(&path)?;
             continue;
         }
         let task = task::Task::from(&path)?;

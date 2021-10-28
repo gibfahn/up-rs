@@ -25,6 +25,7 @@ use crate::{
 
 mod config;
 mod env;
+pub mod errors;
 pub mod files;
 mod generate;
 pub mod opts;
