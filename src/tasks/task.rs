@@ -246,7 +246,7 @@ impl Task {
 
         let elapsed_time = now.elapsed();
         let success = output.status.success();
-        self.log_command_output(CommandType::RunIf, &output, elapsed_time);
+        self.log_command_output(command_type, &output, elapsed_time);
         Ok(success)
     }
 
