@@ -1,3 +1,16 @@
+<a name="0.12.4"></a>
+## [0.12.4][] (2021-11-02)
+
+
+#### Bug Fixes
+
+* **bootstrap:**  fix bootstrapping order ([6b43b100](https://github.com/gibfahn/up-rs/commit/6b43b1009e178084ade10e637ab7438c61b5c868))
+* **generate:**
+  *  don't recurse into git repos ([cb6346e1](https://github.com/gibfahn/up-rs/commit/cb6346e15e61c1e244266019422cf2e0ca8711a0))
+  *  don't serialise empty options in the config ([cd7d52a1](https://github.com/gibfahn/up-rs/commit/cd7d52a1243ac2b4ac65f09343a74f7500829d95))
+
+
+
 <a name="0.12.3"></a>
 ## [0.12.3][] (2021-10-28)
 
@@ -494,3 +507,4 @@
 [0.12.1]: https://github.com/gibfahn/up-rs/releases/tag/0.12.1
 [0.12.2]: https://github.com/gibfahn/up-rs/releases/tag/0.12.2
 [0.12.3]: https://github.com/gibfahn/up-rs/releases/tag/0.12.3
+[0.12.4]: https://github.com/gibfahn/up-rs/releases/tag/0.12.4
