@@ -103,14 +103,13 @@ pub fn run(
 
     // TODO(gib): Handle and filter by constraints.
 
-    let mut bootstrap_tasks = match (config.bootstrap, &config.config_yaml.bootstrap_tasks) {
+    let bootstrap_tasks = match (config.bootstrap, &config.config_yaml.bootstrap_tasks) {
         (false, _) => Ok(Vec::new()),
         (true, None) => Err(eyre!(
             "Bootstrap flag set but no bootstrap_tasks specified in config."
         )),
         (true, Some(b_tasks)) => Ok(b_tasks.clone()),
     }?;
-    bootstrap_tasks.reverse();
 
     let filter_tasks_set: Option<HashSet<String>> =
         config.tasks.clone().map(|v| v.into_iter().collect());
