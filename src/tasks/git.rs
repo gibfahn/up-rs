@@ -36,6 +36,7 @@ pub struct GitConfig {
     /// Branch to checkout when cloning/updating. Defaults to the current branch
     /// when updating, or the default branch of the first remote for
     /// cloning.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub branch: Option<String>,
     /// Prune local branches whose changes have already been merged upstream.
     #[serde(default = "prune_default")]
@@ -112,6 +113,7 @@ pub struct GitRemote {
     /// URL to fetch from. Also used for pushing if `push_url` unset.
     pub fetch_url: String,
     /// URL to push to, defaults to fetch URL.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub push_url: Option<String>,
 }
 

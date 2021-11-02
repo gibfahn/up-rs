@@ -43,21 +43,29 @@ pub struct Task {
 #[serde(deny_unknown_fields)]
 pub struct TaskConfig {
     /// Task name, defaults to file name (minus extension) if unset.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
     /// Set of Constraints that will cause the task to be run.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub constraints: Option<HashMap<String, String>>,
     /// Tasks that must have been executed beforehand.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub requires: Option<Vec<String>>,
     /// Whether to run this by default, or only if required.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub auto_run: Option<bool>,
     /// Run library: up-rs library to use for this task. Either use this or
     /// `run_cmd` + `run_if_cmd`.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub run_lib: Option<String>,
     /// Run if command: only run the `run_cmd` if this command passes (returns exit code 0).
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub run_if_cmd: Option<Vec<String>>,
     /// Run command: command to run to perform the update.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub run_cmd: Option<Vec<String>>,
     /// Description of the task.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     /// Set to true to prompt for superuser privileges before running.
     /// This will allow all subtasks that up executes in this iteration.
@@ -66,6 +74,7 @@ pub struct TaskConfig {
     // This field must be the last one in order for the yaml serializer in the generate functions
     // to be able to serialise it properly.
     /// Set of data provided to the Run library.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<serde_yaml::Value>,
 }
 
