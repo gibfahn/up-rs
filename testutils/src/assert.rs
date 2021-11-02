@@ -32,10 +32,14 @@ pub fn file(path: &Path, contents: &str) {
         path.is_dir(),
         path.symlink_metadata().unwrap().file_type().is_symlink()
     );
+
+    let actual_contents = fs::read_to_string(path).unwrap();
     assert_eq!(
-        fs::read_to_string(path).unwrap(),
         contents,
-        "Expected file contents don't match actual file contents."
+        actual_contents,
+        "\n  Expected file contents don't match actual file contents..\n  Expected: \n<<<\n{}>>>\n  Actual: \n<<<\n{}>>>",
+        contents,
+        actual_contents,
     );
 }
 

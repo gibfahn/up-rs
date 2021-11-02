@@ -1,0 +1,5 @@
+# Set by test runner.
+inherit_env: [
+  # generate_git_*.yml
+  "root_dir",
+]
