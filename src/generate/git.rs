@@ -75,8 +75,6 @@ pub fn run_single(generate_git_config: &GenerateGitConfig) -> Result<()> {
     Ok(())
 }
 
-// False-positives on Vec::new(), see https://github.com/rust-lang/rust-clippy/issues/3410
-#[allow(clippy::use_self)]
 impl ResolveEnv for Vec<GenerateGitConfig> {
     fn resolve_env<F>(&mut self, env_fn: F) -> Result<(), TaskError>
     where
@@ -107,28 +105,36 @@ fn find_repos(search_paths: &[PathBuf], excludes: Option<&Vec<String>>) -> Vec<P
     let mut repo_paths = Vec::new();
     for path in search_paths {
         trace!("Searching in '{}'", &path.display());
-        for entry in WalkDir::new(path)
-            .into_iter()
-            .filter_entry(|e| {
-                if let Some(ex) = excludes {
-                    let s = e.path().to_str().unwrap_or("");
-                    for exclude in ex {
-                        if s.contains(exclude) {
-                            return false;
-                        }
+
+        let mut it = WalkDir::new(path).into_iter();
+        'walkdir: loop {
+            let entry = match it.next() {
+                None => break,
+                Some(Err(_)) => continue,
+                Some(Ok(entry)) => entry,
+            };
+
+            // Exclude anything from the excludes list.
+            if let Some(ex) = excludes {
+                let s = entry.path().to_str().unwrap_or("");
+                for exclude in ex {
+                    if s.contains(exclude) {
+                        // Hit an exclude dir, stop iterating.
+                        it.skip_current_dir();
+                        continue 'walkdir;
                     }
-                    true
-                } else {
-                    true
                 }
-            })
-            .filter_map(Result::ok)
-            .filter(|e| e.file_type().is_dir() && e.file_name() == ".git")
-        {
-            trace!("Entry: {:?}", &entry);
-            let mut repo_path = entry.into_path();
-            repo_path.pop();
-            repo_paths.push(repo_path);
+            }
+
+            // Add anything that has a .git dir inside it.
+            if entry.file_type().is_dir() && entry.path().join(".git").is_dir() {
+                // Found matching entry, add it.
+                trace!("Entry: {:?}", &entry);
+                repo_paths.push(entry.path().to_path_buf());
+
+                // Stop iterating, we don't want git repos inside other git repos.
+                it.skip_current_dir();
+            }
         }
     }
     debug!("Found repo paths: {:?}", repo_paths);
