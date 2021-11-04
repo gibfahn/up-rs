@@ -17,6 +17,19 @@ use crate::tasks::defaults::DefaultsError as E;
 // You can get the Hardware UUID from:
 // <https://apple.stackexchange.com/questions/342042/how-can-i-query-the-hardware-uuid-of-a-mac-programmatically-from-a-command-line>
 
+// TODO(gib): Support NSUserKeyEquivalents macOS defaults settings. Basically this means:
+// For any domain where we're writing a value to the NSUserKeyEquivalents key, we should go make
+// sure that this array contains the domain as a value.
+//
+// ```console
+// ❯ up defaults read com.apple.universalaccess com.apple.custommenu.apps
+// - NSGlobalDomain
+// - net.kovidgoyal.kitty
+// - com.apple.mail
+// ```
+
+// TODO(gib): support array-add and dict-add equivalents (append if not present).
+
 /**
 Get the path to the plist file given a domain.
 
