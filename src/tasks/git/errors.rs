@@ -21,6 +21,8 @@ pub enum GitError {
     NoHeadSet,
     /// Remote name unset.
     RemoteNameMissing,
+    /// Couldn't find remote {name}
+    RemoteNotFound { name: String, source: git2::Error },
     /** Repo has uncommitted changes, refusing to update. Status:
      * {status}
      */

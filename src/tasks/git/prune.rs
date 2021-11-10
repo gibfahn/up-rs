@@ -13,6 +13,9 @@ use crate::tasks::git::{
 /// Prune merged PR branches. Deletes local branches where the push branch
 /// has been merged into the upstream branch, and the push branch has now
 /// been deleted.
+///
+/// If the branch to be pruned is the currently checked out branch, switch to the HEAD branch of the
+/// `remote_name` remote.
 pub(super) fn prune_merged_branches(repo: &Repository, remote_name: &str) -> Result<()> {
     let branches_to_prune = branches_to_prune(repo)?;
     if branches_to_prune.is_empty() {

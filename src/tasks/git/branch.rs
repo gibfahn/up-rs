@@ -1,5 +1,5 @@
 use color_eyre::eyre::{Context, Result};
-use git2::{Branch, BranchType, Direction, ErrorCode, Repository};
+use git2::{Branch, BranchType, Direction, ErrorCode, Remote, Repository};
 use log::{debug, trace, warn};
 
 use crate::tasks::git::{errors::GitError as E, fetch::remote_callbacks, update::get_config_value};
@@ -88,7 +88,8 @@ fn get_push_remote(branch: &str, config: &git2::Config) -> Result<Option<String>
     Ok(None)
 }
 
-pub(super) fn calculate_head(repo: &Repository) -> Result<String> {
+// Return the HEAD branch of the specified remote in the repository.
+pub(super) fn calculate_head(repo: &Repository, remote: &mut Remote) -> Result<String> {
     let head_if_set = repo.head();
     Ok(match head_if_set {
         Ok(head) => head
@@ -96,7 +97,6 @@ pub(super) fn calculate_head(repo: &Repository) -> Result<String> {
             .map(ToOwned::to_owned)
             .ok_or(E::InvalidBranchError)?,
         Err(head_err) if head_err.code() == ErrorCode::UnbornBranch => {
-            let mut remote = repo.find_remote(repo.remotes()?.get(0).ok_or(E::NoRemotes)?)?;
             // TODO(gib): avoid fetching again here.
             {
                 let mut count = 0;

@@ -8,7 +8,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use color_eyre::eyre::{bail, ensure, Context, Result};
+use color_eyre::eyre::{bail, Context, Result};
 use git2::{BranchType, ConfigLevel, ErrorCode, FetchOptions, Repository};
 use itertools::Itertools;
 use log::{debug, trace, warn};
@@ -84,8 +84,6 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
         user_git_config.add_file(&local_git_config_path, ConfigLevel::Local, false)?;
     }
 
-    // Set up remotes.
-    ensure!(!git_config.remotes.is_empty(), E::NoRemotes);
     for remote_config in &git_config.remotes {
         set_up_remote(&repo, remote_config)?;
     }
@@ -101,14 +99,23 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
             .collect::<Vec<_>>()
     );
 
+    // The first remote specified is the default remote.
+    let default_remote_name = git_config.remotes.get(0).ok_or(E::NoRemotes)?.name.clone();
+    let mut default_remote =
+        repo.find_remote(&default_remote_name)
+            .map_err(|e| E::RemoteNotFound {
+                source: e,
+                name: default_remote_name.clone(),
+            })?;
+
     if git_config.prune {
-        prune_merged_branches(&repo, &git_config.remotes.get(0).ok_or(E::NoRemotes)?.name)?;
+        prune_merged_branches(&repo, &default_remote_name)?;
     }
 
     let branch_name: String = if let Some(branch_name) = &git_config.branch {
         branch_name.clone()
     } else {
-        calculate_head(&repo)?
+        calculate_head(&repo, &mut default_remote)?
     };
     let short_branch = shorten_branch_ref(&branch_name);
     // TODO(gib): Find better way to make branch_name long and short_branch short.
@@ -120,7 +127,7 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
             &repo,
             &branch_name,
             short_branch,
-            &git_config.remotes.get(0).unwrap().name,
+            &default_remote_name,
             newly_created_repo,
         )?;
     }
@@ -161,6 +168,7 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
             }
         }
     }
+    drop(default_remote); // Can't mutably use repo while this value is around.
     warn_for_unpushed_changes(&mut repo, &user_git_config, &git_path)?;
     Ok(())
 }

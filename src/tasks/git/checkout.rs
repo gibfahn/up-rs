@@ -17,7 +17,7 @@ pub(super) fn checkout_branch(
     repo: &Repository,
     branch_name: &str,
     short_branch: &str,
-    upstream_remote: &str,
+    upstream_remote_name: &str,
     force: bool,
 ) -> Result<()> {
     match repo.find_branch(short_branch, BranchType::Local) {
@@ -27,7 +27,7 @@ pub(super) fn checkout_branch(
                 "Branch {short_branch} doesn't exist, creating it...",
                 short_branch = short_branch,
             );
-            let branch_target = format!("{}/{}", upstream_remote, short_branch);
+            let branch_target = format!("{}/{}", upstream_remote_name, short_branch);
             let branch_commit = repo
                 .find_branch(&branch_target, BranchType::Remote)?
                 .get()
