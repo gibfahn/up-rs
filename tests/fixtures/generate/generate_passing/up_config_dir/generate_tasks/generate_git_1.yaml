@@ -3,6 +3,6 @@ run_lib: generate_git
 data:
 - path: ${root_dir}/up_config_dir/tasks/git_1.yaml
   search_paths: ["${root_dir}/git_scan_dir_1", "${root_dir}/git_scan_dir_2"]
-  excludes: ["/tmp/", "/go/"]
+  excludes: ["/up-tmp/", "/go/"]
   prune: true
   remote_order: ["up", "fork"]
