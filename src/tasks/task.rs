@@ -58,7 +58,12 @@ pub struct TaskConfig {
     /// `run_cmd` + `run_if_cmd`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub run_lib: Option<String>,
-    /// Run if command: only run the `run_cmd` if this command passes (returns exit code 0).
+    /**
+    Run if command: only run the `run_cmd` if this command passes (returns exit code 0).
+
+    The command will be skipped if exit code 204 is returned (HTTP 204 means "No Content").
+    Any other exit code means the command failed to run.
+    */
     #[serde(skip_serializing_if = "Option::is_none")]
     pub run_if_cmd: Option<Vec<String>>,
     /// Run command: command to run to perform the update.
@@ -84,7 +89,7 @@ const fn default_false() -> bool {
 }
 
 /// Shell commands we run.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum CommandType {
     /// run_if_cmd field in the yaml.
     RunIf,
@@ -221,14 +226,8 @@ impl Task {
             for s in &mut cmd {
                 *s = env_fn(s)?;
             }
-            if self.run_command(CommandType::Run, &cmd, env)? {
-                return Ok(TaskStatus::Passed);
-            }
-            return Ok(TaskStatus::Failed(E::CmdNonZero {
-                command_type: CommandType::Run,
-                name: self.name.clone(),
-                cmd,
-            }));
+            self.run_command(CommandType::Run, &cmd, env)?;
+            return Ok(TaskStatus::Passed);
         }
 
         Err(E::MissingCmd {
@@ -237,6 +236,10 @@ impl Task {
     }
 
     // TODO(gib): Error should include an easy way to see the task logs.
+    /**
+    Run a command.
+    If the `command_type` is `RunIf`, then `Ok(false)` may be returned if the command was skipped.
+    */
     pub fn run_command(
         &self,
         command_type: CommandType,
@@ -254,9 +257,22 @@ impl Task {
         })?;
 
         let elapsed_time = now.elapsed();
-        let success = output.status.success();
         self.log_command_output(command_type, &output, elapsed_time);
-        Ok(success)
+        match output.status.code() {
+            Some(0) => Ok(true),
+            Some(204) if command_type == CommandType::RunIf => Ok(false),
+            Some(code) => Err(E::CmdNonZero {
+                name: self.name.clone(),
+                command_type,
+                cmd: cmd.to_owned(),
+                code,
+            }),
+            None => Err(E::CmdTerminated {
+                command_type,
+                name: self.name.clone(),
+                cmd: cmd.to_owned(),
+            }),
+        }
     }
 
     pub fn get_command(cmd: &[String], env: &HashMap<String, String>) -> Result<Command, E> {

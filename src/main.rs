@@ -36,6 +36,7 @@ const IGNORED_ENV_VARS: [&str; 1] = [
     "LS_COLORS",
 ];
 
+// TODO(gib): Return correct exit codes using https://docs.rs/exitcode/1.1.2/exitcode/.
 fn main() -> Result<()> {
     // Get starting time.
     let now = Instant::now();

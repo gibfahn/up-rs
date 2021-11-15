@@ -296,8 +296,15 @@ pub enum TaskError {
         source: io::Error,
         cmd: Vec<String>,
     },
-    /// Task '{name}' {command_type} failed. Command: {cmd:?}.
+    /// Task '{name}' {command_type} failed with exit code {code}. Command: {cmd:?}.
     CmdNonZero {
+        command_type: CommandType,
+        name: String,
+        cmd: Vec<String>,
+        code: i32,
+    },
+    /// Task '{name}' {command_type} was terminated. Command: {cmd:?}.
+    CmdTerminated {
         command_type: CommandType,
         name: String,
         cmd: Vec<String>,
