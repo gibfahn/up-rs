@@ -61,12 +61,17 @@ pub struct TaskConfig {
     /**
     Run if command: only run the `run_cmd` if this command passes (returns exit code 0).
 
-    The command will be skipped if exit code 204 is returned (HTTP 204 means "No Content").
+    The task will be skipped if exit code 204 is returned (HTTP 204 means "No Content").
     Any other exit code means the command failed to run.
     */
     #[serde(skip_serializing_if = "Option::is_none")]
     pub run_if_cmd: Option<Vec<String>>,
-    /// Run command: command to run to perform the update.
+    /**
+    Run command: command to run to perform the update.
+
+    The task will be marked as skipped if exit code 204 is returned (HTTP 204 means "No Content").
+    Any other exit code means the command failed to run.
+    */
     #[serde(skip_serializing_if = "Option::is_none")]
     pub run_cmd: Option<Vec<String>>,
     /// Description of the task.
@@ -226,8 +231,11 @@ impl Task {
             for s in &mut cmd {
                 *s = env_fn(s)?;
             }
-            self.run_command(CommandType::Run, &cmd, env)?;
-            return Ok(TaskStatus::Passed);
+            if self.run_command(CommandType::Run, &cmd, env)? {
+                return Ok(TaskStatus::Passed);
+            } else {
+                return Ok(TaskStatus::Skipped);
+            }
         }
 
         Err(E::MissingCmd {
@@ -257,10 +265,9 @@ impl Task {
         })?;
 
         let elapsed_time = now.elapsed();
-        self.log_command_output(command_type, &output, elapsed_time);
-        match output.status.code() {
+        let command_result = match output.status.code() {
             Some(0) => Ok(true),
-            Some(204) if command_type == CommandType::RunIf => Ok(false),
+            Some(204) => Ok(false),
             Some(code) => Err(E::CmdNonZero {
                 name: self.name.clone(),
                 command_type,
@@ -272,7 +279,9 @@ impl Task {
                 name: self.name.clone(),
                 cmd: cmd.to_owned(),
             }),
-        }
+        };
+        self.log_command_output(command_type, command_result.is_ok(), &output, elapsed_time);
+        command_result
     }
 
     pub fn get_command(cmd: &[String], env: &HashMap<String, String>) -> Result<Command, E> {
@@ -287,29 +296,25 @@ impl Task {
         Ok(command)
     }
 
-    /// | Command   | Result | Status  | Stdout/Stderr |
-    /// | ---       | ---    | ---     | ---           |
-    /// | `RunIf`   | passes | `debug` | `debug`       |
-    /// | `Run`     | passes | `debug` | `debug`       |
-    /// | `RunIf`   | fails  | `info`  | `debug`       |
-    /// | `Run`     | fails  | `error` | `error`       |
+    /// Logs command output (as `debug` if it passed, or as `error` otherwise).
     pub fn log_command_output(
         &self,
         command_type: CommandType,
+        command_success: bool,
         output: &Output,
         elapsed_time: Duration,
     ) {
-        let (level, stdout_stderr_level) = match (&command_type, output.status.success()) {
-            (_, true) => (Level::Debug, Level::Debug),
-            (CommandType::Run, false) => (Level::Error, Level::Error),
-            (CommandType::RunIf, false) => (Level::Info, Level::Debug),
+        let level = if command_success {
+            Level::Debug
+        } else {
+            Level::Error
         };
 
         // TODO(gib): How do we separate out the task output?
         // TODO(gib): Document error codes.
         log!(
             level,
-            "Task '{}' {} ran in {:?} with status: {}",
+            "Task '{}' {} ran in {:?} with {}",
             &self.name,
             command_type,
             elapsed_time,
@@ -317,7 +322,7 @@ impl Task {
         );
         if !output.stdout.is_empty() {
             log!(
-                stdout_stderr_level,
+                level,
                 "Task '{}' {} stdout:\n<<<\n{}>>>\n",
                 &self.name,
                 command_type,
@@ -326,7 +331,7 @@ impl Task {
         }
         if !output.stderr.is_empty() {
             log!(
-                stdout_stderr_level,
+                level,
                 "Task '{}' {} command stderr:\n<<<\n{}>>>\n",
                 &self.name,
                 command_type,
