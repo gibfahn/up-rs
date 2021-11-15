@@ -1,7 +1,8 @@
-use std::{collections::HashMap, process::Command};
+use std::collections::HashMap;
 
-use testutils::{assert, run_defaults};
+use testutils::assert;
 
+#[cfg(target_os = "macos")]
 const EXPECTED_DEFAULTS_VALUE: &str = r#"{
     AppleICUDateFormatStrings =     {
         1 = "y-MM-dd";
@@ -38,11 +39,12 @@ fn up_run_passing() {
     )
     .unwrap();
 
+    #[cfg(target_os = "macos")]
     let test_plist = format!("co.fahn.up-rs.test-{}", testutils::function_name!());
 
     #[cfg(target_os = "macos")]
     {
-        let mut cmd = Command::new("defaults");
+        let mut cmd = std::process::Command::new("defaults");
         cmd.args(&["delete", &test_plist]);
         cmd.output().unwrap();
     }
@@ -76,6 +78,8 @@ fn up_run_passing() {
 
     #[cfg(target_os = "macos")]
     {
+        use testutils::run_defaults;
+
         // Defaults Task: Check values were set correctly.
         let actual_value = run_defaults(&["read", &test_plist]);
         assert_eq!(actual_value, EXPECTED_DEFAULTS_VALUE);
