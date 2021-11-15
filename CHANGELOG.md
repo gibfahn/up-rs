@@ -1,3 +1,18 @@
+<a name="0.13.0"></a>
+## [0.13.0][] (2021-11-15)
+
+
+#### Features
+
+* **task:**  allow marking a task as skipped in the run_cmd ([81621db1](https://github.com/gibfahn/up-rs/commit/81621db1aa746f8b594f47044343db7c07de4607))
+
+#### Bug Fixes
+
+* **completions:**  have `up completions --help` list available shells ([77bc7dcc](https://github.com/gibfahn/up-rs/commit/77bc7dcc35981837f2f30708ecd15086f9b3c80e))
+* **git:**  cannot locate remote-tracking branch 'up/forkmain' ([d9fbe6fd](https://github.com/gibfahn/up-rs/commit/d9fbe6fde2657c67f76a48a029bcceaf731259be))
+
+
+
 <a name="0.12.4"></a>
 ## [0.12.4][] (2021-11-02)
 
@@ -508,3 +523,4 @@
 [0.12.2]: https://github.com/gibfahn/up-rs/releases/tag/0.12.2
 [0.12.3]: https://github.com/gibfahn/up-rs/releases/tag/0.12.3
 [0.12.4]: https://github.com/gibfahn/up-rs/releases/tag/0.12.4
+[0.13.0]: https://github.com/gibfahn/up-rs/releases/tag/0.13.0
