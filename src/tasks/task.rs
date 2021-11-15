@@ -233,9 +233,8 @@ impl Task {
             }
             if self.run_command(CommandType::Run, &cmd, env)? {
                 return Ok(TaskStatus::Passed);
-            } else {
-                return Ok(TaskStatus::Skipped);
             }
+            return Ok(TaskStatus::Skipped);
         }
 
         Err(E::MissingCmd {

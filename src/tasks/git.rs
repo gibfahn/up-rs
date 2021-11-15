@@ -1,6 +1,6 @@
 use std::convert::From;
 
-use clap::Clap;
+use clap::Parser;
 use color_eyre::eyre::{eyre, Context, Result};
 use displaydoc::Display;
 use git2::Remote;
@@ -106,7 +106,7 @@ impl ResolveEnv for Vec<GitConfig> {
     }
 }
 
-#[derive(Debug, Default, Clap, Serialize, Deserialize)]
+#[derive(Debug, Default, Parser, Serialize, Deserialize)]
 pub struct GitRemote {
     /// Name of the remote to set in git.
     pub name: String,

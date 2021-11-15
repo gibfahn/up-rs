@@ -1,6 +1,6 @@
 use std::{path::PathBuf, str::FromStr};
 
-use clap::{AppSettings, ArgEnum, Clap, ValueHint};
+use clap::{ArgEnum, Parser, ValueHint};
 use clap_generate::Shell;
 use color_eyre::eyre::{eyre, Result};
 use serde_derive::{Deserialize, Serialize};
@@ -45,8 +45,8 @@ up task configs, e.g. `up link` to link dotfiles.
 For debugging, run with `RUST_LIB_BACKTRACE=1` to show error/panic traces.
 Logs from the latest run are available at $TMPDIR/up-rs/logs/up-rs_latest.log by default.
 */
-#[derive(Debug, Clap)]
-#[clap(version = env!("CARGO_PKG_VERSION"), global_setting = AppSettings::ColoredHelp)]
+#[derive(Debug, Parser)]
+#[clap(version = env!("CARGO_PKG_VERSION"))]
 pub struct Opts {
     /// Set the logging level explicitly (options: Off, Error, Warn, Info,
     /// Debug, Trace).
@@ -78,7 +78,7 @@ fn from_level(level: &str) -> Result<Level> {
 /// Auto: Colour on if stderr isatty, else off.
 /// Always: Always enable colours.
 /// Never: Never enable colours.
-#[derive(Debug, ArgEnum)]
+#[derive(Debug, ArgEnum, Clone)]
 pub enum Color {
     Auto,
     Always,
@@ -86,7 +86,7 @@ pub enum Color {
 }
 
 // Optional subcommand (e.g. the "link" in "up link").
-#[derive(Debug, Clap)]
+#[derive(Debug, Parser)]
 pub(crate) enum SubCommand {
     /// Run the update scripts. If you don't provide a subcommand this is the default action.
     /// If you want to pass Run args you will need to specify the subcommand.
@@ -107,7 +107,7 @@ pub(crate) enum SubCommand {
     List(RunOptions),
 }
 
-#[derive(Debug, Clap, Default)]
+#[derive(Debug, Parser, Default)]
 pub(crate) struct RunOptions {
     /// Run the bootstrap list of tasks in series first, then run the rest in
     /// parallel. Designed for first-time setup.
@@ -127,7 +127,7 @@ pub(crate) struct RunOptions {
     pub(crate) tasks: Option<Vec<String>>,
 }
 
-#[derive(Debug, Clap, Default, Serialize, Deserialize)]
+#[derive(Debug, Parser, Default, Serialize, Deserialize)]
 pub(crate) struct LinkOptions {
     /// Path where your dotfiles are kept (hopefully in source control).
     #[clap(short = 'f', long = "from", default_value = "~/code/dotfiles", value_hint = ValueHint::DirPath)]
@@ -137,7 +137,7 @@ pub(crate) struct LinkOptions {
     pub(crate) to_dir: String,
 }
 
-#[derive(Debug, Default, Clap)]
+#[derive(Debug, Default, Parser)]
 pub struct GitOptions {
     /// URL of git repo to download.
     #[clap(long, value_hint = ValueHint::Url)]
@@ -159,14 +159,14 @@ pub struct GitOptions {
     pub prune: bool,
 }
 
-#[derive(Debug, Clap)]
+#[derive(Debug, Parser)]
 pub(crate) struct GenerateOptions {
     /// Lib to generate.
     #[clap(subcommand)]
     pub(crate) lib: Option<GenerateLib>,
 }
 
-#[derive(Debug, Clap, Serialize, Deserialize)]
+#[derive(Debug, Parser, Serialize, Deserialize)]
 pub(crate) struct UpdateSelfOptions {
     /// URL to download update from.
     #[clap(long, default_value = SELF_UPDATE_URL, value_hint = ValueHint::Url)]
@@ -178,9 +178,10 @@ pub(crate) struct UpdateSelfOptions {
     pub(crate) always_update: bool,
 }
 
-#[derive(Debug, Clap)]
+#[derive(Debug, Parser)]
 pub(crate) struct CompletionsOptions {
     /// Shell for which to generate completions.
+    #[clap(arg_enum)]
     pub(crate) shell: Shell,
 }
 
@@ -194,7 +195,7 @@ impl Default for UpdateSelfOptions {
 }
 
 /// Library to generate.
-#[derive(Debug, Clap)]
+#[derive(Debug, Parser)]
 pub(crate) enum GenerateLib {
     /// Generate a git repo.
     Git(GenerateGitConfig),
@@ -202,7 +203,7 @@ pub(crate) enum GenerateLib {
     Defaults(GenerateDefaultsConfig),
 }
 
-#[derive(Debug, Clap, Serialize, Deserialize)]
+#[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct GenerateGitConfig {
     /// Path to yaml file to update.
     #[clap(long, parse(from_str), value_hint = ValueHint::FilePath)]
@@ -223,21 +224,21 @@ pub struct GenerateGitConfig {
     pub(crate) remote_order: Vec<String>,
 }
 
-#[derive(Debug, Clap, Serialize, Deserialize)]
+#[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct GenerateDefaultsConfig {
     /// Path to yaml file to update.
     #[clap(long, parse(from_str), value_hint = ValueHint::FilePath)]
     pub(crate) path: PathBuf,
 }
 
-#[derive(Debug, Clap, Serialize, Deserialize)]
+#[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct DefaultsOptions {
     /// Defaults action to take.
     #[clap(subcommand)]
     pub(crate) subcommand: DefaultsSubcommand,
 }
 
-#[derive(Debug, Clap, Serialize, Deserialize)]
+#[derive(Debug, Parser, Serialize, Deserialize)]
 pub enum DefaultsSubcommand {
     /// Read a defaults option and print it to the stdout as yaml.
     Read(DefaultsReadOptions),
@@ -248,7 +249,7 @@ pub enum DefaultsSubcommand {
     Write(DefaultsWriteOptions),
 }
 
-#[derive(Debug, Clap, Serialize, Deserialize)]
+#[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct DefaultsReadOptions {
     /// Read from the global domain. If you set this, do not also pass a domain argument.
     #[clap(short = 'g', long = "globalDomain")]
@@ -259,7 +260,7 @@ pub struct DefaultsReadOptions {
     pub(crate) key: Option<String>,
 }
 
-#[derive(Debug, Clap, Serialize, Deserialize)]
+#[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct DefaultsWriteOptions {
     /// Read from the global domain. If you set this, do not also pass a domain argument.
     #[clap(short = 'g', long = "globalDomain")]
