@@ -1,30 +1,36 @@
 #!/usr/bin/env zsh
 
-set -eu
+# Publish a new release.
+
+set -euo pipefail
 
 # For docs see docs/RELEASE.md
 
-CYAN='\033[0;36m' # Light blue.
-RED='\033[0;31m'  # Red.
-NC='\033[0m'      # No Color.
+autoload -U colors && colors
 
-this_script=$0:A
-project_root=$(dirname $(dirname $this_script))
-cd $project_root
-pwd
+project_dir=${0:a:h:h}
+cd $project_dir
 
 # Deny all warnings in CI.
 export RUSTFLAGS="-D warnings"
 
 main() {
+  echo -e "${fg[magenta]}Publishing new version of the up-rs CLI...${reset_color}"
+
   # Make sure docker is running as we'll need it later.
   pgrep -q Docker || open -a docker
 
   # Bail on uncommitted diffs.
   diff=$(git diff --color=always)
   if [[ -n $diff ]]; then
-    error "${CYAN}-> Repo has uncommitted diffs:${NC}
+    error "${fg[cyan]}-> Repo has uncommitted diffs:${reset_color}
     $diff"
+  fi
+
+  # Bail on untracked files.
+  untracked=$(git ls-files . --exclude-standard --others | head)
+  if [[ -n $untracked ]]; then
+    error "Repo has untracked files:\n$untracked"
   fi
 
   # Test Darwin
@@ -37,14 +43,14 @@ main() {
   last_release=$(gh release list -L 1 | awk '{print $1}')
   cargo_toml_version=$(awk -F\" '/^version = /{print $2; exit}' Cargo.toml)
 
+  # Generate and commit the changelog:
+
   if [[ $changelog_version != $last_release ]]; then
     prompt_to_skip "Last release was $last_release, but changelog updated to $changelog_version. Skipping changelog update..."
     new_version=$changelog_version
   else
     log_section "Updating changelog..."
     read "new_version?New version (old version is ${last_release?}): "
-
-    # Generate and commit the changelog:
 
     # TODO(gib): make this follow (and link to in CHANGELOG.md) https://keepachangelog.com/en/1.0.0/
     clog -C CHANGELOG.md --from="${last_release?}" --setversion="${new_version?}"
@@ -89,10 +95,8 @@ main() {
     log_and_run cargo publish
   fi
 
-  log_section "Pushing latest commits..."
-  git push
+  log_and_run git push up main
 
-  log_section "Creating GitHub release..."
   # This allows them to be downloaded as `up-$(uname)`.
   mkdir -p out
   cp target/release/up out/up-Darwin
@@ -115,7 +119,7 @@ main() {
 
 log_section() {
   echo "
-$CYAN=> $*$NC"
+${fg[cyan]}=> $*${reset_color}"
 }
 
 log_and_run() {
@@ -126,7 +130,7 @@ log_and_run() {
 # $1: Error message
 # $2: Error code (default: 1).
 error() {
-  echo -e "${RED}ERROR${NC}: $1" >&2
+  echo -e "${fg[red]}ERROR${reset_color}: $1" >&2
   exit "${2:-1}"
 }
 
