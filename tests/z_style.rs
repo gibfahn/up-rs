@@ -119,6 +119,7 @@ fn testutils_clippy() {
 #[cfg(feature = "CI")]
 #[test]
 fn no_todo() {
+    const DISALLOWED_STRINGS: [&str; 4] = ["XXX(", "XXX:", "todo!", "dbg!"];
     let files_with_todos = ignore::WalkBuilder::new("./")
         // Check hidden files too.
         .hidden(false)
@@ -130,20 +131,29 @@ fn no_todo() {
                 .map_or(false, |file_type| file_type.is_file())
                 // Don't match todos in this file.
                 && !file.path().ends_with(file!())
-                // Changelog has XXX in it.
-                && !file.path().ends_with("CHANGELOG.md")
         })
         // Find anything containing a todo.
         .filter(|file| {
             let text = std::fs::read_to_string(file.path()).unwrap();
-            text.contains("XXX") || text.contains("todo!") || text.contains("dbg!")
+
+            for disallowed_string in DISALLOWED_STRINGS {
+                if text.contains(disallowed_string) {
+                    println!(
+                        "ERROR: {:?} contains disallowed string '{}'",
+                        file.path(),
+                        disallowed_string,
+                    );
+                    return true;
+                }
+            }
+            false
         })
         .map(|file| file.path().display().to_string())
         .collect::<Vec<_>>();
 
     assert!(
         files_with_todos.is_empty(),
-        "\nXXX: should not be committed to the main branch, use TODO: instead\n {:#?}\n",
+        "\nFiles with blocking todos should not be committed to the main branch, use TODO: instead\n{:#?}\n",
         files_with_todos,
     );
 }
