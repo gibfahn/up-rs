@@ -81,14 +81,13 @@ main() {
   # Builds musl static Linux binaries.
   log_and_run bin/cargo-docker build --release
 
-  # TODO(gib): re-enable once https://github.com/ebarnard/rust-plist/issues/75 is fixed.
-  # latest_crate_version=$(curl https://crates.io/api/v1/crates/up-rs | jq -r .crate.newest_version)
-  # if [[ $latest_crate_version == $new_version ]]; then
-  #   prompt_to_skip "Skipping cargo publish as latest release is already $latest_crate_version."
-  # else
-  #   # Publish to crates.io:
-  #   log_and_run cargo publish
-  # fi
+  latest_crate_version=$(curl https://crates.io/api/v1/crates/up-rs | jq -r .crate.newest_version)
+  if [[ $latest_crate_version == $new_version ]]; then
+    prompt_to_skip "Skipping cargo publish as latest release is already $latest_crate_version."
+  else
+    # Publish to crates.io:
+    log_and_run cargo publish
+  fi
 
   log_section "Pushing latest commits..."
   git push
