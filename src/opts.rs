@@ -114,12 +114,12 @@ pub(crate) struct RunOptions {
     #[clap(long)]
     pub(crate) bootstrap: bool,
     /// Fallback git repo URL to download to get the config.
-    #[clap(short = 'f', value_hint = ValueHint::Url)]
+    #[clap(short = 'f', long, value_hint = ValueHint::Url)]
     pub(crate) fallback_url: Option<String>,
     /// Fallback path inside the git repo to get the config.
     /// The default path assumes your fallback_url points to a dotfiles repo
     /// that is linked into ~.
-    #[clap(short = 'p', default_value = FALLBACK_CONFIG_PATH, value_hint = ValueHint::FilePath)]
+    #[clap(short = 'p', long, default_value = FALLBACK_CONFIG_PATH, value_hint = ValueHint::FilePath)]
     pub(crate) fallback_path: String,
     /// Optionally pass one or more tasks to run. The default is to run all
     /// tasks.
