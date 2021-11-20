@@ -168,7 +168,7 @@ fn run_tasks(
     env: &HashMap<String, String>,
     up_dir: &Path,
 ) -> Result<()> {
-    let bootstrap_tasks_len = bootstrap_tasks.len();
+    let mut completed_tasks = Vec::new();
     if !bootstrap_tasks.is_empty() {
         for task in bootstrap_tasks {
             let task = run_task(
@@ -181,22 +181,25 @@ fn run_tasks(
             if let TaskStatus::Failed(e) = task.status {
                 bail!(e);
             }
+            completed_tasks.push(task);
         }
     }
 
-    let tasks = tasks
-        .into_par_iter()
-        .filter(|(_, task)| task.config.auto_run.unwrap_or(true))
-        .map(|(_, task)| run_task(task, env, up_dir))
-        .collect::<Vec<Task>>();
-    let tasks_len = tasks.len() + bootstrap_tasks_len;
+    completed_tasks.extend(
+        tasks
+            .into_par_iter()
+            .filter(|(_, task)| task.config.auto_run.unwrap_or(true))
+            .map(|(_, task)| run_task(task, env, up_dir))
+            .collect::<Vec<Task>>(),
+    );
+    let completed_tasks_len = completed_tasks.len();
 
     let mut tasks_passed = Vec::new();
     let mut tasks_skipped = Vec::new();
     let mut tasks_failed = Vec::new();
     let mut tasks_incomplete = Vec::new();
 
-    for task in tasks {
+    for task in completed_tasks {
         match task.status {
             TaskStatus::Failed(_) => {
                 tasks_failed.push(task);
@@ -209,7 +212,7 @@ fn run_tasks(
 
     info!(
         "Ran {} tasks, {} passed, {} failed, {} skipped",
-        tasks_len,
+        completed_tasks_len,
         tasks_passed.len(),
         tasks_failed.len(),
         tasks_skipped.len()
