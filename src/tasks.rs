@@ -143,7 +143,10 @@ pub fn run(
         tasks.insert(task.name.clone(), task);
     }
 
-    if matches!(tasks_action, TasksAction::Run) && tasks.values().any(|t| t.config.needs_sudo) {
+    if matches!(tasks_action, TasksAction::Run)
+        && tasks.values().any(|t| t.config.needs_sudo)
+        && users::get_current_uid() != 0
+    {
         // TODO(gib): this only lasts for 5 minutes.
         debug!("Prompting for superuser privileges with 'sudo -v'");
         Command::new("sudo").arg("-v").output()?;
