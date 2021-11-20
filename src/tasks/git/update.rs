@@ -186,6 +186,15 @@ fn set_up_remote(repo: &Repository, remote_config: &GitRemote) -> Result<()> {
         );
         repo.remote(remote_name, &remote_config.fetch_url)
     })?;
+    if let Some(url) = remote.url() {
+        if url != remote_config.fetch_url {
+            debug!(
+                "Changing remote {} fetch URL from {} to {}",
+                remote_name, url, remote_config.fetch_url
+            );
+            repo.remote_set_url(remote_name, &remote_config.fetch_url)?;
+        }
+    }
     if let Some(push_url) = &remote_config.push_url {
         repo.remote_set_pushurl(remote_name, Some(push_url))?;
     }
