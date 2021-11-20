@@ -80,11 +80,14 @@ main() {
 
   # Check the documentation is buildable.
   log_and_run cargo doc
-  # Build Darwin (without the CI feature).
-  log_and_run cargo build --release
   # Tests musl static Linux binaries.
   log_and_run bin/cargo-docker
-  # Builds musl static Linux binaries.
+  # Runs end-to-end bootstrap tests.
+  log_and_run bin/bootstrap-test
+
+  # Build Darwin release binaries (without the CI feature).
+  log_and_run cargo build --release
+  # Builds musl static Linux release binaries.
   log_and_run bin/cargo-docker build --release
 
   latest_crate_version=$(curl https://crates.io/api/v1/crates/up-rs | jq -r .crate.newest_version)
