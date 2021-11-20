@@ -1,3 +1,26 @@
+<a name="0.13.1"></a>
+## [0.13.1][] (2021-11-20)
+
+
+#### Bug Fixes
+
+* **generate:**  replace home dir in generated paths ([50ae6bed](https://github.com/gibfahn/up-rs/commit/50ae6beda3816e7326ace738b0667a3f46681d6a))
+* **git:**
+  *  update the git remote fetch URL if it has changed ([310f5bb9](https://github.com/gibfahn/up-rs/commit/310f5bb9f4dff24e0ba354a590753ad113793673))
+  *  don't try to prune or check unpushed branches on first clone ([65ad74e9](https://github.com/gibfahn/up-rs/commit/65ad74e93a26db4f384103285525a6b32c7e898f))
+* **opts:**  allow passing --bootstrap as a long argument ([e0f58ff7](https://github.com/gibfahn/up-rs/commit/e0f58ff74708263532288b33b077fd5c3caaa7a5))
+* **run:**  add long options for fallback URL and path ([61bb3ad0](https://github.com/gibfahn/up-rs/commit/61bb3ad0958e20e1780019566091da8a8bc14c3b))
+* **self_update:**  don't downgrade pre-release versions ([91d6fd3e](https://github.com/gibfahn/up-rs/commit/91d6fd3e0f25eae7f1294df04f112e00e426558b))
+* **tasks:**
+  *  include bootstrap tasks in completed task counts ([b746a0b0](https://github.com/gibfahn/up-rs/commit/b746a0b0a2ab81198be3449ccf6575d7af3a78d6))
+  *  don't run sudo if running as root already ([3baf0e7e](https://github.com/gibfahn/up-rs/commit/3baf0e7eb79267ecfda68b38cfe497fa2b01bcc7))
+
+#### Features
+
+* **config:**  support org/repo fallback URLs (maps to github.com URLs) ([271785d7](https://github.com/gibfahn/up-rs/commit/271785d7509ca7dd39f048cb550f75ad786fb9fc))
+
+
+
 <a name="0.13.0"></a>
 ## [0.13.0][] (2021-11-15)
 
@@ -524,3 +547,4 @@
 [0.12.3]: https://github.com/gibfahn/up-rs/releases/tag/0.12.3
 [0.12.4]: https://github.com/gibfahn/up-rs/releases/tag/0.12.4
 [0.13.0]: https://github.com/gibfahn/up-rs/releases/tag/0.13.0
+[0.13.1]: https://github.com/gibfahn/up-rs/releases/tag/0.13.1
