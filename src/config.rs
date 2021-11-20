@@ -157,10 +157,17 @@ impl UpConfig {
 }
 
 // TODO(gib): add tests.
-/// If the fallback repo path was provided, clone or update that path into a
-/// temporary directory, and then return the path to the `up.yaml` file within
-/// that directory by joining `<fallback_url>/<fallback_path>`.
-fn get_fallback_config_path(fallback_url: String, fallback_path: String) -> Result<PathBuf> {
+/**
+If the fallback repo path was provided, clone or update that path into a
+temporary directory, and then return the path to the `up.yaml` file within
+that directory by joining `<fallback_url>/<fallback_path>`.
+
+If the `fallback_url` is of the form org/repo , then assume it is a github.com repository.
+*/
+fn get_fallback_config_path(mut fallback_url: String, fallback_path: String) -> Result<PathBuf> {
+    if !fallback_url.contains("://") {
+        fallback_url = format!("https://github.com/{}", fallback_url);
+    }
     let fallback_repo_path = env::temp_dir().join("up-rs/fallback_repo");
     fs::create_dir_all(&fallback_repo_path)
         .with_context(|| format!("Failed to create {:?}", fallback_repo_path))?;
