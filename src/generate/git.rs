@@ -48,6 +48,10 @@ pub fn run_single(generate_git_config: &GenerateGitConfig) -> Result<()> {
     let mut git_task = Task::from(&generate_git_config.path)?;
     debug!("Existing git config: {:?}", git_task);
     let mut git_configs = Vec::new();
+    let home_dir = dirs::home_dir().ok_or(E::MissingHomeDir)?;
+    let home_dir = home_dir.to_str().ok_or_else(|| E::InvalidUTF8Path {
+        path: home_dir.clone(),
+    })?;
     for path in find_repos(
         &generate_git_config.search_paths,
         generate_git_config.excludes.as_ref(),
@@ -56,6 +60,7 @@ pub fn run_single(generate_git_config: &GenerateGitConfig) -> Result<()> {
             &path,
             generate_git_config.prune,
             &generate_git_config.remote_order,
+            home_dir,
         )?);
     }
 
@@ -141,7 +146,12 @@ fn find_repos(search_paths: &[PathBuf], excludes: Option<&Vec<String>>) -> Vec<P
     repo_paths
 }
 
-fn parse_git_config(path: &Path, prune: bool, remote_order: &[String]) -> Result<GitConfig> {
+fn parse_git_config(
+    path: &Path,
+    prune: bool,
+    remote_order: &[String],
+    home_dir: &str,
+) -> Result<GitConfig> {
     let repo = Repository::open(&path)?;
 
     let mut sorted_remote_names = Vec::new();
@@ -167,8 +177,16 @@ fn parse_git_config(path: &Path, prune: bool, remote_order: &[String]) -> Result
         )?);
     }
 
+    // Replace home directory in the path with ~.
+    let replaced_path = path.to_str().ok_or_else(|| E::InvalidUTF8Path {
+        path: path.to_path_buf(),
+    })?;
+    let replaced_path = replaced_path
+        .strip_prefix(home_dir)
+        .map_or_else(|| replaced_path.to_owned(), |p| format!("~{}", p));
+
     let config = GitConfig {
-        path: path.to_string_lossy().to_string(),
+        path: replaced_path,
         branch: None,
         remotes,
         prune,
@@ -184,6 +202,10 @@ pub enum GenerateGitError {
     InvalidUtf8,
     /// Invalid remote '{name}'.
     InvalidRemote { name: String },
+    /// Unable to calculate user's home directory.
+    MissingHomeDir,
     /// Unexpected None in option.
     UnexpectedNone,
+    /// Path contained invalid UTF-8 characters: {path:?}
+    InvalidUTF8Path { path: PathBuf },
 }
