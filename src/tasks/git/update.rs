@@ -108,7 +108,7 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
                 name: default_remote_name.clone(),
             })?;
 
-    if git_config.prune {
+    if !newly_created_repo && git_config.prune {
         prune_merged_branches(&repo, &default_remote_name)?;
     }
 
@@ -169,7 +169,9 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
         }
     }
     drop(default_remote); // Can't mutably use repo while this value is around.
-    warn_for_unpushed_changes(&mut repo, &user_git_config, &git_path)?;
+    if !newly_created_repo {
+        warn_for_unpushed_changes(&mut repo, &user_git_config, &git_path)?;
+    }
     Ok(())
 }
 
