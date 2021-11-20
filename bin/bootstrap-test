@@ -1,0 +1,28 @@
+#!/usr/bin/env zsh
+
+set -eu -o pipefail
+
+autoload -U colors && colors
+
+project_dir=${0:a:h:h}
+cd $project_dir
+
+set -x
+
+bin/cargo-docker build --release
+
+docker run -it --rm -w /root \
+  -v "$PWD"/target/x86_64-unknown-linux-musl/release/up:/usr/local/bin/up \
+  -v "$PWD"/tests/fixtures/bootstrap-test/git/git-credential-netrc:/usr/local/bin/git-credential-netrc \
+  -v "$HOME"/.netrc:/root/.netrc \
+  -v "$PWD"/tests/fixtures/bootstrap-test/git/git:/usr/local/bin/git \
+  -v "$PWD"/tests/fixtures/bootstrap-test/git/config:/root/.gitconfig \
+  alpine /bin/sh -c 'up run --bootstrap --fallback-url gibfahn/dot'
+
+docker run -it --rm -w /root \
+  -v "$PWD"/target/x86_64-unknown-linux-musl/release/up:/usr/local/bin/up \
+  -v "$PWD"/tests/fixtures/bootstrap-test/git/git-credential-netrc:/usr/local/bin/git-credential-netrc \
+  -v "$HOME"/.netrc:/root/.netrc \
+  -v "$PWD"/tests/fixtures/bootstrap-test/git/git:/usr/local/bin/git \
+  -v "$PWD"/tests/fixtures/bootstrap-test/git/config:/root/.gitconfig \
+  ubuntu /bin/sh -c 'apt update && apt install -y ca-certificates && up run -bf gibfahn/dot'

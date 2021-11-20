@@ -17,7 +17,7 @@ indent_size = 4
 indent_size = 2
 
 # Extra files are needed for shfmt until https://github.com/mvdan/sh/issues/664 is fixed.
-[{*.sh,*.zsh,cargo-docker,release}]
+[{*.sh,*.zsh,cargo-docker,release,git-credential-netrc,git}]
 indent_size = 2
 ## Read by shfmt
 # Indent the options to case statements.

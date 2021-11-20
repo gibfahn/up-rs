@@ -1,0 +1,3 @@
+# Git config that only sets the credential helper for bootstrap testing.
+[credential]
+  helper = netrc   # Use the mounted netrc for auth.

@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# Fake git binary, whose only job is to forward `git credential-netrc get` calls to
+# `git-credential-netrc`. Used for testing up-rs.
+
+arg="$1"
+shift
+
+exec git-"$arg" "$@"
