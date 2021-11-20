@@ -111,7 +111,7 @@ pub(crate) enum SubCommand {
 pub(crate) struct RunOptions {
     /// Run the bootstrap list of tasks in series first, then run the rest in
     /// parallel. Designed for first-time setup.
-    #[clap(long)]
+    #[clap(short, long)]
     pub(crate) bootstrap: bool,
     /// Fallback git repo URL to download to get the config.
     #[clap(short = 'f', long, value_hint = ValueHint::Url)]
