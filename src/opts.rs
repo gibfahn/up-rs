@@ -123,8 +123,8 @@ pub(crate) struct RunOptions {
     #[clap(short = 'p', long, default_value = FALLBACK_CONFIG_PATH, value_hint = ValueHint::FilePath)]
     pub(crate) fallback_path: String,
     /// Optionally pass one or more tasks to run. The default is to run all
-    /// tasks.
-    #[clap(long, multiple_occurrences(true))]
+    /// tasks. This option can be provided multiple times.
+    #[clap(short, long, multiple_values(false), multiple_occurrences(true))]
     pub(crate) tasks: Option<Vec<String>>,
 }
 
