@@ -1,3 +1,14 @@
+<a name="0.13.2"></a>
+## [0.13.2][] (2021-12-02)
+
+
+#### Bug Fixes
+
+* **opts:**  show full help when running `liv help <subcommand>` ([a7cc667f](https://github.com/gibfahn/up-rs/commit/a7cc667fc9f4c89b20cc2c13ab03759dfa76af96))
+* **run:**  allow passing -t for --tasks ([8277d207](https://github.com/gibfahn/up-rs/commit/8277d2072017f0d2075d3e8360bfeb48187c7907))
+
+
+
 <a name="0.13.1"></a>
 ## [0.13.1][] (2021-11-20)
 
@@ -548,3 +559,4 @@
 [0.12.4]: https://github.com/gibfahn/up-rs/releases/tag/0.12.4
 [0.13.0]: https://github.com/gibfahn/up-rs/releases/tag/0.13.0
 [0.13.1]: https://github.com/gibfahn/up-rs/releases/tag/0.13.1
+[0.13.2]: https://github.com/gibfahn/up-rs/releases/tag/0.13.2
