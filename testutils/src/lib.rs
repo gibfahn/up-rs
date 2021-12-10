@@ -100,7 +100,7 @@ pub fn fixtures_dir() -> PathBuf {
 /// file name + test function name). Cleans the directory if it already exists.
 ///
 /// ```rust
-/// let temp_dir = temp_dir(testutils::file!(), testutils::function_name!()).unwrap();
+/// let temp_dir = temp_dir(file!(), testutils::function_name!()).unwrap();
 /// ```
 ///
 /// # Errors
