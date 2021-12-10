@@ -2,7 +2,7 @@
 name = "up-rs"
 version = "0.13.2"
 authors = ["Gibson Fahnestock <gibfahn@gmail.com>"]
-edition = '2018'
+edition = '2021'
 license = "MIT OR Apache-2.0"
 description = """
 up-rs is a tool to help you keep your machine up to date.
