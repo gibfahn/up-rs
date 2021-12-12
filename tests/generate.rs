@@ -6,12 +6,10 @@ use walkdir::WalkDir;
 /// Test that we can generate tasks from a sample workspace.
 #[test]
 fn generate_passing() {
-    let temp_dir = testutils::temp_dir(file!(), testutils::function_name!()).unwrap();
+    let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
 
     testutils::copy_all(
-        &testutils::fixtures_dir()
-            .join(testutils::test_path(file!()))
-            .join(testutils::function_name!()),
+        &testutils::fixture_dir(testutils::function_path!()),
         &temp_dir,
     )
     .unwrap();
@@ -40,7 +38,7 @@ fn generate_passing() {
     }
     assert_eq!(expected_git_dirs_count, renamed_git_dirs);
 
-    let mut cmd = testutils::up_cmd(&temp_dir);
+    let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
 
     let mut envs = HashMap::new();
     envs.insert("root_dir", &temp_dir);

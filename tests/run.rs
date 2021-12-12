@@ -29,18 +29,16 @@ const EXPECTED_DEFAULTS_VALUE: &str = r#"{
 /// Run a full up with a bunch of configuration and check things work.
 #[test]
 fn up_run_passing() {
-    let temp_dir = testutils::temp_dir(file!(), testutils::function_name!()).unwrap();
+    let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
 
     testutils::copy_all(
-        &testutils::fixtures_dir()
-            .join(testutils::test_path(file!()))
-            .join(testutils::function_name!()),
-        &temp_dir,
+        dbg!(&testutils::fixture_dir(testutils::function_path!())),
+        dbg!(&temp_dir),
     )
     .unwrap();
 
     #[cfg(target_os = "macos")]
-    let test_plist = format!("co.fahn.up-rs.test-{}", testutils::function_name!());
+    let test_plist = "co.fahn.up-rs.test-up_run_passing";
 
     #[cfg(target_os = "macos")]
     {
@@ -49,12 +47,12 @@ fn up_run_passing() {
         cmd.output().unwrap();
     }
 
-    let mut cmd = testutils::up_cmd(&temp_dir);
+    let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
     let mut envs = HashMap::new();
     // Used in link task.
     envs.insert("link_from_dir", temp_dir.join("link_dir/dotfile_dir"));
     envs.insert("link_to_dir", temp_dir.join("link_dir/home_dir"));
-    envs.insert("up_binary_path", testutils::up_binary_path());
+    envs.insert("up_binary_path", testutils::test_binary_path("up"));
     cmd.envs(envs);
 
     cmd.args(

@@ -5,8 +5,8 @@ use testutils::assert;
 /// Make sure we can't run this without required args.
 #[test]
 fn missing_args() {
-    let temp_dir = testutils::temp_dir(file!(), testutils::function_name!()).unwrap();
-    let mut cmd = testutils::up_cmd(&temp_dir);
+    let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
+    let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
     cmd.args(["git"].iter());
     let cmd_output = testutils::run_cmd(&mut cmd);
     assert!(
@@ -30,7 +30,7 @@ fn real_clone() {
     // |/
     // * 553c207 first commit
 
-    let temp_dir = testutils::temp_dir(file!(), testutils::function_name!()).unwrap();
+    let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
     let git_pathbuf = temp_dir.join("hello_world_repo");
     let git_path = git_pathbuf.to_string_lossy();
 
@@ -189,7 +189,7 @@ fn real_clone() {
 }
 
 fn up_git_cmd(git_path: &str, temp_dir: &Path) -> Command {
-    let mut cmd = testutils::up_cmd(temp_dir);
+    let mut cmd = testutils::test_binary_cmd("up", temp_dir);
     cmd.args(
         [
             "git",

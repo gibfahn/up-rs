@@ -38,7 +38,7 @@ fn rustfmt() {
 /// Fail if rustfmt (cargo fmt) hasn't been run on testutils.
 #[test]
 fn testutils_rustfmt() {
-    let current_dir = env::current_dir().unwrap().join("testutils");
+    let current_dir = env::current_dir().unwrap().join("tests/testutils");
     let check_output;
 
     #[cfg(feature = "CI")]
@@ -92,7 +92,7 @@ fn clippy() {
 /// Fail if cargo clippy hasn't been run on testutils.
 #[test]
 fn testutils_clippy() {
-    let current_dir = env::current_dir().unwrap().join("testutils");
+    let current_dir = env::current_dir().unwrap().join("tests/testutils");
     let clippy_output;
 
     #[cfg(feature = "CI")]

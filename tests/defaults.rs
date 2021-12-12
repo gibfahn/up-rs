@@ -5,14 +5,14 @@ use testutils::{assert, run_defaults};
 
 #[test]
 fn defaults_read_global() {
-    let temp_dir = testutils::temp_dir(file!(), testutils::function_name!()).unwrap();
+    let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
 
     let expected_value = run_defaults(&["read", "-g", "com.apple.sound.beep.sound"]);
 
     // Reading a normal value should have the same output as the defaults command (but yaml not
     // defaults own format).
     {
-        let mut cmd = testutils::up_cmd(&temp_dir);
+        let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
         cmd.args(&["defaults", "read", "-g", "com.apple.sound.beep.sound"]);
         let cmd_output = testutils::run_cmd(&mut cmd);
         assert!(cmd_output.status.success());
@@ -21,7 +21,7 @@ fn defaults_read_global() {
 
     // Providing a full absolute path to a plist file should also work.
     {
-        let mut cmd = testutils::up_cmd(&temp_dir);
+        let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
         cmd.args(&[
             "defaults",
             "read",
@@ -39,7 +39,7 @@ fn defaults_read_global() {
     // Setting -g is the same as setting the domain NSGlobalDomain, so shouldn't pass both a key and
     // a value to `defaults read`.
     {
-        let mut cmd = testutils::up_cmd(&temp_dir);
+        let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
         cmd.args(&[
             "defaults",
             "read",
@@ -58,7 +58,7 @@ fn defaults_read_global() {
 
 #[test]
 fn defaults_read_local() {
-    let temp_dir = testutils::temp_dir(file!(), testutils::function_name!()).unwrap();
+    let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
 
     // Four-letter codes for view modes: `icnv`, `clmv`, `glyv`, `Nlsv`
     let expected_value = run_defaults(&["read", "com.apple.finder", "FXPreferredViewStyle"]);
@@ -66,7 +66,7 @@ fn defaults_read_local() {
     // Reading a normal value should have the same output as the defaults command (but yaml not
     // defaults own format).
     {
-        let mut cmd = testutils::up_cmd(&temp_dir);
+        let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
         cmd.args(&[
             "defaults",
             "read",
@@ -80,7 +80,7 @@ fn defaults_read_local() {
 
     // A .plist extension should be allowed too.
     {
-        let mut cmd = testutils::up_cmd(&temp_dir);
+        let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
         cmd.args(&[
             "defaults",
             "read",
@@ -94,7 +94,7 @@ fn defaults_read_local() {
 
     // Providing a full absolute path to a plist file should also work.
     {
-        let mut cmd = testutils::up_cmd(&temp_dir);
+        let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
         cmd.args(&[
             "defaults",
             "read",
@@ -112,9 +112,9 @@ fn defaults_read_local() {
 
 #[test]
 fn defaults_write_local() {
-    let temp_dir = testutils::temp_dir(file!(), testutils::function_name!()).unwrap();
+    let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
 
-    let domain = format!("co.fahn.up-rs.test-{}", testutils::function_name!());
+    let domain = format!("co.fahn.up-rs.test-{}", testutils::function_path!());
 
     // Format: (defaults_type, orig_value, orig_check_value, new_value, check_value)
     let test_values = [
@@ -163,7 +163,7 @@ fn defaults_write_local() {
 
     // Check we agree with `defaults` about the original value.
     for (n, (_, _, orig_check_value, _, _)) in test_values.iter().enumerate() {
-        let mut cmd = testutils::up_cmd(&temp_dir);
+        let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
         cmd.args(&[
             "defaults",
             "read",
@@ -180,7 +180,7 @@ fn defaults_write_local() {
 
     // Set the key to the new value ourselves.
     for (n, (_, _, _, new_value, _)) in test_values.iter().enumerate() {
-        let mut cmd = testutils::up_cmd(&temp_dir);
+        let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
 
         let defaults_key = format!("defaults_write_local_{}", n);
         cmd.args(&["defaults", "write", &domain, &defaults_key, new_value]);

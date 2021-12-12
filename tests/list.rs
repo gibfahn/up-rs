@@ -9,12 +9,10 @@ use testutils::assert;
 /// Run a full up with a bunch of configuration and check things work.
 #[test]
 fn up_list_passing() {
-    let temp_dir = testutils::temp_dir(file!(), testutils::function_name!()).unwrap();
+    let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
 
     testutils::copy_all(
-        &testutils::fixtures_dir()
-            .join(testutils::test_path(file!()))
-            .join(testutils::function_name!()),
+        &testutils::fixture_dir(testutils::function_path!()),
         &temp_dir,
     )
     .unwrap();
@@ -23,7 +21,7 @@ fn up_list_passing() {
     // Used in link task.
     envs.insert("link_from_dir", temp_dir.join("link_dir/dotfile_dir"));
     envs.insert("link_to_dir", temp_dir.join("link_dir/home_dir"));
-    envs.insert("up_binary_path", testutils::up_binary_path());
+    envs.insert("up_binary_path", testutils::test_binary_path("up"));
 
     itertools::assert_equal(
         ["link", "run_self_cmd", "skip_self_cmd"],
@@ -45,7 +43,7 @@ fn up_list_passing() {
 }
 
 fn check_list(args: &[&str], envs: &HashMap<&str, PathBuf>, temp_dir: &Path) -> String {
-    let mut cmd = testutils::up_cmd(temp_dir);
+    let mut cmd = testutils::test_binary_cmd("up", temp_dir);
     cmd.envs(envs);
     cmd.args(&[
         "--config",

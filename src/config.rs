@@ -206,9 +206,11 @@ mod yaml_paths_tests {
 
         // Set up paths.
         let default_path = "$XDG_CONFIG_HOME/up/up.yaml";
-        let fake_home_1 = testutils::fixtures_dir().join("fake_home_dir_with_upconfig");
+        let fake_home_1 =
+            testutils::fixture_dir(testutils::function_path!()).join("fake_home_dir_with_upconfig");
         let config_yaml_1 = fake_home_1.join(".config/up/up.yaml");
-        let fake_home_2 = testutils::fixtures_dir().join("fake_home_dir_without_upconfig");
+        let fake_home_2 = testutils::fixture_dir(testutils::function_path!())
+            .join("fake_home_dir_without_upconfig");
 
         // With all options set, we should pick the one passed as command-line arg.
         let args_config_path = env::current_exe().unwrap();

@@ -2,6 +2,7 @@
 
 use std::{
     env, fs,
+    io::ErrorKind,
     os::unix,
     path::{Path, PathBuf},
     process::{Command, Output},
@@ -13,40 +14,42 @@ use walkdir::WalkDir;
 pub mod assert;
 
 /// Returns the path to target/debug or target/release.
-fn up_binary_dir() -> PathBuf {
-    let mut up_path = env::current_exe()
+fn test_crate_binary_dir(binary_name: &str) -> PathBuf {
+    let mut target_dir_path = env::current_exe()
         .unwrap()
         .parent()
         .expect("test binary directory")
         .to_path_buf();
-    if !&up_path.join("up").is_file() {
+    if !&target_dir_path.join(binary_name).is_file() {
         // Sometimes it is ./target/debug/deps/test_* not just ./target/debug/test_*.
-        assert!(up_path.pop());
+        assert!(target_dir_path.pop());
     }
-    up_path.canonicalize().unwrap();
-    up_path
+    target_dir_path.canonicalize().unwrap();
+    target_dir_path
 }
 
-/// Returns the path to the up binary being run.
-pub fn up_binary_path() -> PathBuf {
-    up_binary_dir().join("up")
+/// Returns the path to the binary being run.
+pub fn test_binary_path(binary_name: &str) -> PathBuf {
+    test_crate_binary_dir(binary_name).join(binary_name)
 }
 
-/// Returns the path to the root of the project (the up-rs/ folder).
-fn up_project_dir() -> PathBuf {
-    // Directory of the testutils Cargo.toml i.e. up-rs/testutils/
+/// Returns the path to the root of the project (the {crate}/ folder).
+fn test_project_dir() -> PathBuf {
+    // Directory of the testutils Cargo.toml i.e. {crate}/tests/testutils/
     let mut project_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    // Pop up to up-rs/ dir.
+    // Pop up to tests/ dir.
+    assert!(project_dir.pop());
+    // Pop up to crate dir.
     assert!(project_dir.pop());
     project_dir
 }
 
-/// Returns a new command starting with /path/to/up (add args as needed).
+/// Returns a new command starting with /path/to/{binary} (add args as needed).
 #[must_use]
-pub fn up_cmd(temp_dir: &Path) -> Command {
-    let mut cmd = Command::new(up_binary_path());
+pub fn test_binary_cmd(binary_name: &str, temp_dir: &Path) -> Command {
+    let mut cmd = Command::new(test_binary_path(binary_name));
     // Set temp dir to be inside our test's temp dir.
-    cmd.env("TMPDIR", temp_dir.join("up_temp_dir"));
+    cmd.env("TMPDIR", temp_dir.join(format!("{}_temp_dir", binary_name)));
     // Always print colours, even when output is not a tty.
     cmd.env("RUST_LOG_STYLE", "always");
     // Show backtrace on exit, nightly only for now.
@@ -83,60 +86,52 @@ pub fn run_cmd(cmd: &mut Command) -> Output {
     cmd_output
 }
 
-/// Returns the test module name (usually the test file name).
-#[must_use]
-pub fn test_path(file: &str) -> String {
-    file.chars().skip(6).take_while(|c| *c != '.').collect()
-}
-
 /// Returns the path to the tests/fixtures directory (relative to the crate
 /// root).
 #[must_use]
-pub fn fixtures_dir() -> PathBuf {
-    up_project_dir().join("tests/fixtures")
+pub fn fixture_dir(function_path: &str) -> PathBuf {
+    test_project_dir()
+        .join("tests/fixtures")
+        .join(function_path.replace("::", "/"))
 }
 
 /// Returns the path to a temporary directory for your test (OS tempdir + test
-/// file name + test function name). Cleans the directory if it already exists.
+/// function path). Cleans the directory if it already exists.
 ///
 /// ```rust
-/// let temp_dir = temp_dir(file!(), testutils::function_name!()).unwrap();
+/// let temp_dir = temp_dir(testutils::function_path!()).unwrap();
 /// ```
 ///
 /// # Errors
 ///
 /// Fails if any of the underlying file system operations fail.
-pub fn temp_dir(file: &str, function_name: &str) -> Result<PathBuf> {
+pub fn temp_dir(binary_name: &str, function_path: &str) -> Result<PathBuf> {
     let os_temp_dir = env::temp_dir().canonicalize()?;
     let mut temp_dir = os_temp_dir.clone();
-    temp_dir.push("up_rs_tests");
-    temp_dir.push(file);
-    temp_dir.push(function_name);
+    temp_dir.push(format!("{}_test_tempdirs", binary_name));
+    temp_dir.push(function_path.replace("::", "/"));
     assert!(temp_dir.starts_with(os_temp_dir));
-    if temp_dir.exists() {
-        temp_dir.canonicalize()?;
-        fs::remove_dir_all(&temp_dir)?;
+    let remove_dir_result = fs::remove_dir_all(&temp_dir);
+    if matches!(&remove_dir_result, Err(e) if e.kind() != ErrorKind::NotFound) {
+        remove_dir_result?;
     }
     assert!(!temp_dir.exists());
     fs::create_dir_all(&temp_dir)?;
     Ok(temp_dir)
 }
 
-/// Expands to the current function name (not the full path).
+/// Expands to the current function path.
 #[macro_export]
-macro_rules! function_name {
+macro_rules! function_path {
     () => {{
+        // Okay, this is ugly, I get it. However, this is the best we can get on a stable rust.
         fn f() {}
         fn type_name_of<T>(_: T) -> &'static str {
             std::any::type_name::<T>()
         }
         let name = type_name_of(f);
-
-        // Find and cut the rest of the path
-        match &name[..name.len() - 3].rfind(':') {
-            Some(pos) => &name[pos + 1..name.len() - 3],
-            None => &name[..name.len() - 3],
-        }
+        // `3` is the length of the `::f`.
+        &name[..name.len() - 3]
     }};
 }
 
