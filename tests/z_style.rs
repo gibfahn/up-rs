@@ -70,7 +70,7 @@ fn clippy() {
 
     #[cfg(feature = "CI")]
     {
-        clippy_output = cargo_cmd(&current_dir, CargoCmdType::ClippyStableCheck);
+        clippy_output = cargo_cmd(&current_dir, CargoCmdType::ClippyCheck);
     }
 
     #[cfg(not(feature = "CI"))]
@@ -97,7 +97,7 @@ fn testutils_clippy() {
 
     #[cfg(feature = "CI")]
     {
-        clippy_output = cargo_cmd(&current_dir, CargoCmdType::ClippyStableCheck);
+        clippy_output = cargo_cmd(&current_dir, CargoCmdType::ClippyCheck);
     }
 
     #[cfg(not(feature = "CI"))]
@@ -171,11 +171,7 @@ enum CargoCmdType {
     /// Fix any formatting issues.
     #[cfg(not(feature = "CI"))]
     RustfmtFix,
-    /// Run clippy in CI.
-    #[cfg(feature = "CI")]
-    ClippyStableCheck,
     /// Run clippy.
-    #[cfg(not(feature = "CI"))]
     ClippyCheck,
     /// Fix clippy errors if possible.
     #[cfg(not(feature = "CI"))]
@@ -191,23 +187,7 @@ fn cargo_cmd(current_dir: &Path, fmt: CargoCmdType) -> Output {
         CargoCmdType::RustfmtCheck => ["+nightly", "fmt", "--", "--check"].iter(),
         #[cfg(not(feature = "CI"))]
         CargoCmdType::RustfmtFix => ["+nightly", "fmt"].iter(),
-        #[cfg(feature = "CI")]
-        CargoCmdType::ClippyStableCheck => [
-            "clippy",
-            #[cfg(not(debug_assertions))]
-            "--release",
-            "--color=always",
-            "--",
-            "--deny=warnings",
-        ]
-        .iter(),
-        // TODO(gib): Stop using preview once clippy in cargo ships.
-        // See: https://github.com/rust-lang/rust-clippy/issues/3837
-        // Note that preview allows auto-fixing with `cargo fix --clippy`, and fixes
-        // the caching issue (https://github.com/rust-lang/rust-clippy/issues/2604).
-        #[cfg(not(feature = "CI"))]
         CargoCmdType::ClippyCheck => [
-            "+nightly",
             "clippy",
             #[cfg(not(debug_assertions))]
             "--release",
@@ -218,12 +198,10 @@ fn cargo_cmd(current_dir: &Path, fmt: CargoCmdType) -> Output {
         .iter(),
         #[cfg(not(feature = "CI"))]
         CargoCmdType::ClippyFix => [
-            "+nightly",
             "clippy",
             #[cfg(not(debug_assertions))]
             "--release",
             "--color=always",
-            "-Z=unstable-options",
             "--fix",
             "--allow-staged",
         ]
