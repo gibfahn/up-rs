@@ -32,8 +32,8 @@ fn up_run_passing() {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
 
     testutils::copy_all(
-        dbg!(&testutils::fixture_dir(testutils::function_path!())),
-        dbg!(&temp_dir),
+        &testutils::fixture_dir(testutils::function_path!()),
+        &temp_dir,
     )
     .unwrap();
 
@@ -43,7 +43,7 @@ fn up_run_passing() {
     #[cfg(target_os = "macos")]
     {
         let mut cmd = std::process::Command::new("defaults");
-        cmd.args(&["delete", &test_plist]);
+        cmd.args(&["delete", test_plist]);
         cmd.output().unwrap();
     }
 
@@ -79,7 +79,7 @@ fn up_run_passing() {
         use testutils::run_defaults;
 
         // Defaults Task: Check values were set correctly.
-        let actual_value = run_defaults(&["read", &test_plist]);
+        let actual_value = run_defaults(&["read", test_plist]);
         assert_eq!(actual_value, EXPECTED_DEFAULTS_VALUE);
 
         // Defaults Task: Check types were set correctly.

@@ -116,7 +116,7 @@ fn testutils_clippy() {
     );
 }
 
-#[cfg(feature = "CI")]
+// #[cfg(feature = "CI")]
 #[test]
 fn no_todo() {
     const DISALLOWED_STRINGS: [&str; 4] = ["XXX(", "XXX:", "todo!", "dbg!"];
