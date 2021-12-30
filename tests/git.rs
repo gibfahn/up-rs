@@ -1,5 +1,6 @@
-use std::{path::Path, process::Command};
+use std::path::Path;
 
+use assert_cmd::Command;
 use testutils::assert;
 
 /// Make sure we can't run this without required args.
@@ -8,11 +9,7 @@ fn missing_args() {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
     let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
     cmd.args(["git"].iter());
-    let cmd_output = testutils::run_cmd(&mut cmd);
-    assert!(
-        !cmd_output.status.success(),
-        "\n No args should fail the command.",
-    );
+    cmd.assert().failure();
 }
 
 /// Actually try cloning a git repository and make sure we can update.
@@ -36,8 +33,7 @@ fn real_clone() {
 
     // Clone to directory.
     {
-        let cmd_output = testutils::run_cmd(&mut up_git_cmd(&git_path, &temp_dir));
-        assert!(cmd_output.status.success());
+        up_git_cmd(&git_path, &temp_dir).assert().success();
         assert::file(&git_pathbuf.join("README"), "Hello World!\n");
         check_repo(
             &git_path,
@@ -53,9 +49,10 @@ fn real_clone() {
 
     // Clone again to the same directory, different branch.
     {
-        let cmd_output =
-            testutils::run_cmd(up_git_cmd(&git_path, &temp_dir).args(&["--branch", "test"]));
-        assert!(cmd_output.status.success());
+        up_git_cmd(&git_path, &temp_dir)
+            .args(&["--branch", "test"])
+            .assert()
+            .success();
         check_repo(
             &git_path,
             "b3cbd5bbd7e81436d2eee04537ea2b4c0cad4cdf",
@@ -102,8 +99,7 @@ fn real_clone() {
         );
         let mut cmd = up_git_cmd(&git_path, &temp_dir);
         cmd.args(&["--branch", "test"]);
-        let cmd_output = testutils::run_cmd(&mut cmd);
-        assert!(cmd_output.status.success());
+        cmd.assert().success();
         check_repo(
             &git_path,
             "b3cbd5bbd7e81436d2eee04537ea2b4c0cad4cdf",
@@ -130,8 +126,7 @@ fn real_clone() {
         let mut cmd = up_git_cmd(&git_path, &temp_dir);
         // This time try to prune.
         cmd.args(&["--branch", "test", "--prune"]);
-        let cmd_output = testutils::run_cmd(&mut cmd);
-        assert!(cmd_output.status.success());
+        cmd.assert().success();
         check_repo(
             &git_path,
             "b3cbd5bbd7e81436d2eee04537ea2b4c0cad4cdf",
@@ -207,9 +202,15 @@ fn up_git_cmd(git_path: &str, temp_dir: &Path) -> Command {
 
 /// Run a `git` command to test the internal git setup works as expected.
 fn run_git_cmd(git_path: &str, args: &[&str], success: bool) -> String {
-    let cmd_output = testutils::run_cmd(Command::new("git").args(&["-C", git_path]).args(args));
-    assert_eq!(cmd_output.status.success(), success);
-    String::from_utf8_lossy(&cmd_output.stdout).to_string()
+    let assert = Command::new("git")
+        .args(&["-C", git_path])
+        .args(args)
+        .assert();
+    let assert = match success {
+        true => assert.success(),
+        false => assert.failure(),
+    };
+    String::from_utf8_lossy(&assert.get_output().stdout).to_string()
 }
 
 fn check_repo(git_path: &str, head_commit: &str, head_branch: &str, head_upstream: &str) {

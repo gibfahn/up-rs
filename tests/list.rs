@@ -3,6 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use assert_cmd::cargo::cargo_bin;
 use itertools::Itertools;
 use testutils::assert;
 
@@ -21,7 +22,7 @@ fn up_list_passing() {
     // Used in link task.
     envs.insert("link_from_dir", temp_dir.join("link_dir/dotfile_dir"));
     envs.insert("link_to_dir", temp_dir.join("link_dir/home_dir"));
-    envs.insert("up_binary_path", testutils::test_binary_path("up"));
+    envs.insert("up_binary_path", cargo_bin("up"));
 
     itertools::assert_equal(
         ["link", "run_self_cmd", "skip_self_cmd"],
@@ -52,13 +53,9 @@ fn check_list(args: &[&str], envs: &HashMap<&str, PathBuf>, temp_dir: &Path) -> 
     ]);
     cmd.args(args);
 
-    let cmd_output = testutils::run_cmd(&mut cmd);
-    assert!(
-        cmd_output.status.success(),
-        "\n Up command should pass successfully.",
-    );
+    let cmd_assert = cmd.assert().success();
 
     assert::nothing_at(&temp_dir.join("link_dir/home_dir/file_to_link"));
 
-    return String::from_utf8_lossy(&cmd_output.stdout).to_string();
+    return String::from_utf8_lossy(&cmd_assert.get_output().stdout).to_string();
 }

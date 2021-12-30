@@ -1,5 +1,7 @@
 use std::path::Path;
 
+use predicates::prelude::*;
+
 #[test]
 fn help_test() {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
@@ -19,13 +21,11 @@ fn version_test() {
 fn check_help_or_version(arg: &str, temp_dir: &Path) {
     let mut cmd = testutils::test_binary_cmd("up", temp_dir);
     cmd.arg(arg);
-    let cmd_output = testutils::run_cmd(&mut cmd);
-    assert!(cmd_output.status.success());
-    assert_eq!(
-        String::from_utf8_lossy(&cmd_output.stdout)
-            .lines()
-            .next()
-            .unwrap(),
-        format!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"))
-    );
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::starts_with(format!(
+            "{} {}\n",
+            env!("CARGO_PKG_NAME"),
+            env!("CARGO_PKG_VERSION")
+        )));
 }

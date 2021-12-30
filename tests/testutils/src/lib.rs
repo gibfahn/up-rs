@@ -5,33 +5,13 @@ use std::{
     io::ErrorKind,
     os::unix,
     path::{Path, PathBuf},
-    process::{Command, Output},
 };
 
+use assert_cmd::Command;
 use color_eyre::eyre::Result;
 use walkdir::WalkDir;
 
 pub mod assert;
-
-/// Returns the path to target/debug or target/release.
-fn test_crate_binary_dir(binary_name: &str) -> PathBuf {
-    let mut target_dir_path = env::current_exe()
-        .unwrap()
-        .parent()
-        .expect("test binary directory")
-        .to_path_buf();
-    if !&target_dir_path.join(binary_name).is_file() {
-        // Sometimes it is ./target/debug/deps/test_* not just ./target/debug/test_*.
-        assert!(target_dir_path.pop());
-    }
-    target_dir_path.canonicalize().unwrap();
-    target_dir_path
-}
-
-/// Returns the path to the binary being run.
-pub fn test_binary_path(binary_name: &str) -> PathBuf {
-    test_crate_binary_dir(binary_name).join(binary_name)
-}
 
 /// Returns the path to the root of the project (the {crate}/ folder).
 fn test_project_dir() -> PathBuf {
@@ -47,7 +27,7 @@ fn test_project_dir() -> PathBuf {
 /// Returns a new command starting with /path/to/{binary} (add args as needed).
 #[must_use]
 pub fn test_binary_cmd(binary_name: &str, temp_dir: &Path) -> Command {
-    let mut cmd = Command::new(test_binary_path(binary_name));
+    let mut cmd = Command::cargo_bin(binary_name).unwrap();
     // Set temp dir to be inside our test's temp dir.
     cmd.env("TMPDIR", temp_dir.join(format!("{}_temp_dir", binary_name)));
     // Always print colours, even when output is not a tty.
@@ -65,25 +45,6 @@ pub fn test_binary_cmd(binary_name: &str, temp_dir: &Path) -> Command {
         .iter(),
     );
     cmd
-}
-
-/// Runs a command and prints out the stdout/stderr nicely.
-/// Returns the command output.
-#[must_use]
-pub fn run_cmd(cmd: &mut Command) -> Output {
-    println!("Running command '{:?}'.", cmd);
-    let cmd_output = cmd.output().unwrap();
-    println!("  status: {}", cmd_output.status);
-    if !cmd_output.stdout.is_empty() {
-        println!("  stdout: {}", String::from_utf8_lossy(&cmd_output.stdout));
-    }
-    if !cmd_output.stderr.is_empty() {
-        println!(
-            "  stderr:\n\n{}",
-            String::from_utf8_lossy(&cmd_output.stderr)
-        );
-    }
-    cmd_output
 }
 
 /// Returns the path to the tests/fixtures directory (relative to the crate
@@ -170,13 +131,4 @@ pub fn copy_all(from_dir: &Path, to_dir: &Path) -> Result<()> {
         }
     }
     Ok(())
-}
-
-/// Run defaults command with args provided, check it passed, and return the stdout.
-pub fn run_defaults(args: &[&str]) -> String {
-    let mut cmd = Command::new("defaults");
-    cmd.args(args);
-    let output = run_cmd(&mut cmd);
-    assert!(output.status.success(), "Running {:?} failed.", cmd);
-    String::from_utf8_lossy(&output.stdout).to_string()
 }

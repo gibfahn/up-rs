@@ -9,11 +9,7 @@ fn empty_yaml() {
     fs::create_dir(temp_dir.join("tasks")).unwrap();
     let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
     cmd.args(["-c", temp_dir.join("up.yaml").to_str().unwrap()].iter());
-    let cmd_output = testutils::run_cmd(&mut cmd);
-    assert!(
-        cmd_output.status.success(),
-        "\n Update command should pass with empty yaml as there are no required options.",
-    );
+    cmd.assert().success();
 }
 
 #[test]
@@ -23,9 +19,5 @@ fn basic_yaml() {
     testutils::copy_all(&fixtures_dir, &temp_dir).unwrap();
     let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
     cmd.args(["-c", temp_dir.join("up.yaml").to_str().unwrap()].iter());
-    let cmd_output = testutils::run_cmd(&mut cmd);
-    assert!(
-        cmd_output.status.success(),
-        "\n Update command should pass with basic yaml.",
-    );
+    cmd.assert().success();
 }

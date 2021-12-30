@@ -9,3 +9,5 @@ edition = "2021"
 [dependencies]
 walkdir = "2.3.1"
 color-eyre = "0.5.11"
+assert_cmd = "2.0.2"
+predicates = "2.1.0"

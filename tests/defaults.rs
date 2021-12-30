@@ -1,22 +1,24 @@
 // Defaults tests are macOS only.
 #![cfg(target_os = "macos")]
 
-use testutils::{assert, run_defaults};
+use duct::cmd;
+use predicates::prelude::*;
 
 #[test]
 fn defaults_read_global() {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
 
-    let expected_value = run_defaults(&["read", "-g", "com.apple.sound.beep.sound"]);
+    let mut expected_value = cmd!("defaults", "read", "-g", "com.apple.sound.beep.sound")
+        .read()
+        .unwrap();
+    expected_value.push('\n');
 
     // Reading a normal value should have the same output as the defaults command (but yaml not
     // defaults own format).
     {
         let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
         cmd.args(&["defaults", "read", "-g", "com.apple.sound.beep.sound"]);
-        let cmd_output = testutils::run_cmd(&mut cmd);
-        assert!(cmd_output.status.success());
-        assert_eq!(expected_value, String::from_utf8_lossy(&cmd_output.stdout));
+        cmd.assert().success().stdout(expected_value.clone());
     }
 
     // Providing a full absolute path to a plist file should also work.
@@ -31,9 +33,7 @@ fn defaults_read_global() {
             ),
             "com.apple.sound.beep.sound",
         ]);
-        let cmd_output = testutils::run_cmd(&mut cmd);
-        assert!(cmd_output.status.success());
-        assert_eq!(expected_value, String::from_utf8_lossy(&cmd_output.stdout));
+        cmd.assert().success().stdout(expected_value);
     }
 
     // Setting -g is the same as setting the domain NSGlobalDomain, so shouldn't pass both a key and
@@ -47,12 +47,9 @@ fn defaults_read_global() {
             "NSGlobalDomain",
             "com.apple.sound.beep.sound",
         ]);
-        let cmd_output = testutils::run_cmd(&mut cmd);
-        assert!(!cmd_output.status.success());
-        assert::contains(
-            &String::from_utf8_lossy(&cmd_output.stderr),
-            "both a domain and a key",
-        );
+        cmd.assert()
+            .failure()
+            .stderr(predicate::str::contains("both a domain and a key"));
     }
 }
 
@@ -61,7 +58,15 @@ fn defaults_read_local() {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
 
     // Four-letter codes for view modes: `icnv`, `clmv`, `glyv`, `Nlsv`
-    let expected_value = run_defaults(&["read", "com.apple.finder", "FXPreferredViewStyle"]);
+    let mut expected_value = cmd!(
+        "defaults",
+        "read",
+        "com.apple.finder",
+        "FXPreferredViewStyle"
+    )
+    .read()
+    .unwrap();
+    expected_value.push('\n');
 
     // Reading a normal value should have the same output as the defaults command (but yaml not
     // defaults own format).
@@ -73,9 +78,7 @@ fn defaults_read_local() {
             "com.apple.finder",
             "FXPreferredViewStyle",
         ]);
-        let cmd_output = testutils::run_cmd(&mut cmd);
-        assert!(cmd_output.status.success());
-        assert_eq!(expected_value, String::from_utf8_lossy(&cmd_output.stdout));
+        cmd.assert().success().stdout(expected_value.clone());
     }
 
     // A .plist extension should be allowed too.
@@ -87,9 +90,7 @@ fn defaults_read_local() {
             "com.apple.finder.plist",
             "FXPreferredViewStyle",
         ]);
-        let cmd_output = testutils::run_cmd(&mut cmd);
-        assert!(cmd_output.status.success());
-        assert_eq!(expected_value, String::from_utf8_lossy(&cmd_output.stdout));
+        cmd.assert().success().stdout(expected_value.clone());
     }
 
     // Providing a full absolute path to a plist file should also work.
@@ -104,9 +105,7 @@ fn defaults_read_local() {
             ),
             "FXPreferredViewStyle",
         ]);
-        let cmd_output = testutils::run_cmd(&mut cmd);
-        assert!(cmd_output.status.success());
-        assert_eq!(expected_value, String::from_utf8_lossy(&cmd_output.stdout));
+        cmd.assert().success().stdout(expected_value);
     }
 }
 
@@ -158,7 +157,7 @@ fn defaults_write_local() {
         args.extend(values);
 
         // Write the original value to a test plist file.
-        run_defaults(&args);
+        cmd("defaults", &args).run().unwrap();
     }
 
     // Check we agree with `defaults` about the original value.
@@ -170,12 +169,9 @@ fn defaults_write_local() {
             &domain,
             &format!("defaults_write_local_{}", n),
         ]);
-        let cmd_output = testutils::run_cmd(&mut cmd);
-        assert!(cmd_output.status.success());
-        assert_eq!(
-            format!("{}\n", orig_check_value),
-            String::from_utf8_lossy(&cmd_output.stdout)
-        );
+        cmd.assert()
+            .success()
+            .stdout(format!("{}\n", orig_check_value));
     }
 
     // Set the key to the new value ourselves.
@@ -184,17 +180,24 @@ fn defaults_write_local() {
 
         let defaults_key = format!("defaults_write_local_{}", n);
         cmd.args(&["defaults", "write", &domain, &defaults_key, new_value]);
-        let cmd_output = testutils::run_cmd(&mut cmd);
-        assert!(cmd_output.status.success());
-        assert::contains(
-            &String::from_utf8_lossy(&cmd_output.stderr),
-            &format!("Changing default {} {}", domain, defaults_key),
-        );
+        cmd.assert()
+            .success()
+            .stderr(predicate::str::contains(format!(
+                "Changing default {} {}",
+                domain, defaults_key
+            )));
     }
 
     // Check that defaults agrees with the new value.
     for (n, (_, _, _, _, check_value)) in test_values.iter().enumerate() {
-        let new_default = run_defaults(&["read", &domain, &format!("defaults_write_local_{}", n)]);
-        assert_eq!(format!("{}\n", check_value), new_default);
+        let new_default = cmd!(
+            "defaults",
+            "read",
+            &domain,
+            &format!("defaults_write_local_{}", n)
+        )
+        .read()
+        .unwrap();
+        assert_eq!(*check_value, new_default);
     }
 }

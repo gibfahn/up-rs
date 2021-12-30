@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use assert_cmd::cargo::cargo_bin;
+use duct::cmd;
 use testutils::assert;
 
 #[cfg(target_os = "macos")]
@@ -23,8 +25,7 @@ const EXPECTED_DEFAULTS_VALUE: &str = r#"{
     NSNavPanelExpandedStateForSaveMode2 = 0;
     "_FXShowPosixPathInTitle" = 1;
     "autohide-time-modifier" = "0.25";
-}
-"#;
+}"#;
 
 /// Run a full up with a bunch of configuration and check things work.
 #[test]
@@ -52,7 +53,7 @@ fn up_run_passing() {
     // Used in link task.
     envs.insert("link_from_dir", temp_dir.join("link_dir/dotfile_dir"));
     envs.insert("link_to_dir", temp_dir.join("link_dir/home_dir"));
-    envs.insert("up_binary_path", testutils::test_binary_path("up"));
+    envs.insert("up_binary_path", cargo_bin("up"));
     cmd.envs(envs);
 
     cmd.args(
@@ -62,11 +63,7 @@ fn up_run_passing() {
         ]
         .iter(),
     );
-    let cmd_output = testutils::run_cmd(&mut cmd);
-    assert!(
-        cmd_output.status.success(),
-        "\n Up command should pass successfully.",
-    );
+    cmd.assert().success();
 
     // Link Task: Check symlinks were created correctly.
     assert::link(
@@ -76,57 +73,70 @@ fn up_run_passing() {
 
     #[cfg(target_os = "macos")]
     {
-        use testutils::run_defaults;
-
         // Defaults Task: Check values were set correctly.
-        let actual_value = run_defaults(&["read", test_plist]);
+        let actual_value = cmd!("defaults", "read", test_plist).read().unwrap();
         assert_eq!(actual_value, EXPECTED_DEFAULTS_VALUE);
 
         // Defaults Task: Check types were set correctly.
 
         assert_eq!(
-            "Type is boolean\n",
-            run_defaults(&[
+            "Type is boolean",
+            cmd!(
+                "defaults",
                 "read-type",
                 "co.fahn.up-rs.test-up_run_passing",
                 "NSNavPanelExpandedStateForSaveMode"
-            ])
+            )
+            .read()
+            .unwrap()
         );
 
         assert_eq!(
-            "Type is float\n",
-            run_defaults(&[
+            "Type is float",
+            cmd!(
+                "defaults",
                 "read-type",
                 "co.fahn.up-rs.test-up_run_passing",
                 "autohide-time-modifier"
-            ])
+            )
+            .read()
+            .unwrap()
         );
 
         assert_eq!(
-            "Type is integer\n",
-            run_defaults(&[
+            "Type is integer",
+            cmd!(
+                "defaults",
                 "read-type",
                 "co.fahn.up-rs.test-up_run_passing",
                 "AppleKeyboardUIMode"
-            ])
+            )
+            .read()
+            .unwrap()
         );
 
         assert_eq!(
-            "Type is array\n",
-            run_defaults(&[
+            "Type is array",
+            cmd!(
+                "defaults",
                 "read-type",
                 "co.fahn.up-rs.test-up_run_passing",
                 "CustomHeaders"
-            ])
+            )
+            .read()
+            .unwrap()
         );
 
         assert_eq!(
-            "Type is dictionary\n",
-            run_defaults(&[
+            "Type is dictionary",
+            cmd!(
+                "defaults",
                 "read-type",
                 "co.fahn.up-rs.test-up_run_passing",
                 "AppleICUDateFormatStrings"
-            ])
+            )
+            .read()
+            .unwrap()
         );
     }
 }

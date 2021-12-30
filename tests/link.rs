@@ -3,9 +3,9 @@ use std::{
     fs::File,
     os::unix,
     path::{Path, PathBuf},
-    process::Output,
 };
 
+use assert_cmd::assert::Assert;
 use testutils::assert;
 
 /// Set up a basic home_dir, run the link function against it, and make sure we
@@ -172,14 +172,14 @@ fn hidden_and_nested() {
 #[test]
 fn missing_from_dir() {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
-    let output = run_link_cmd(
+    let cmd_assert = run_link_cmd(
         &temp_dir.join("dotfile_dir"),
         &temp_dir.join("home_dir"),
         &temp_dir,
         LinkResult::Failure,
     );
     assert::contains_all(
-        &String::from_utf8_lossy(&output.stderr),
+        &String::from_utf8_lossy(&cmd_assert.get_output().stderr),
         &[
             "From directory",
             "should exist and be a directory.",
@@ -193,14 +193,14 @@ fn missing_from_dir() {
 fn missing_to_dir() {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
     fs::create_dir(&temp_dir.join("dotfile_dir")).unwrap();
-    let output = run_link_cmd(
+    let assert = run_link_cmd(
         &temp_dir.join("dotfile_dir"),
         &temp_dir.join("home_dir"),
         &temp_dir,
         LinkResult::Failure,
     );
     assert::contains_all(
-        &String::from_utf8_lossy(&output.stderr),
+        &String::from_utf8_lossy(&assert.get_output().stderr),
         &[
             "To directory",
             "should exist and be a directory.",
@@ -218,14 +218,14 @@ fn uncreateable_backup_dir() {
     fs::create_dir(&temp_dir.join("home_dir")).unwrap();
     fs::create_dir_all(&temp_dir.join("up-rs/backup")).unwrap();
     File::create(&temp_dir.join("up-rs/backup/link")).unwrap();
-    let output = run_link_cmd(
+    let assert = run_link_cmd(
         &temp_dir.join("dotfile_dir"),
         &temp_dir.join("home_dir"),
         &temp_dir,
         LinkResult::Failure,
     );
     assert::contains_all(
-        &String::from_utf8_lossy(&output.stderr),
+        &String::from_utf8_lossy(&assert.get_output().stderr),
         &[
             "Backup directory",
             "should exist and be a directory",
@@ -276,7 +276,7 @@ fn run_link_cmd(
     home_dir: &Path,
     temp_dir: &Path,
     result: LinkResult,
-) -> Output {
+) -> Assert {
     let mut cmd = testutils::test_binary_cmd("up", temp_dir);
     // Always show coloured logs.
     cmd.args(
@@ -290,13 +290,10 @@ fn run_link_cmd(
         .iter(),
     );
 
-    let cmd_output = testutils::run_cmd(&mut cmd);
-    assert_eq!(
-        cmd_output.status.success(),
-        result.to_bool(),
-        "\n Expected result: '{:?}', but status was: '{:?}'.",
-        result,
-        cmd_output.status
-    );
-    cmd_output
+    let assert_cmd = if result.to_bool() {
+        cmd.assert().success()
+    } else {
+        cmd.assert().failure()
+    };
+    assert_cmd
 }

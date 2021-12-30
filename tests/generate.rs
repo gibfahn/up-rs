@@ -52,11 +52,7 @@ fn generate_passing() {
         ]
         .iter(),
     );
-    let cmd_output = testutils::run_cmd(&mut cmd);
-    assert!(
-        cmd_output.status.success(),
-        "\n Up command should pass successfully.",
-    );
+    cmd.assert().success();
 
     assert::file(
         &temp_dir.join("up_config_dir/tasks/git_1.yaml"),
