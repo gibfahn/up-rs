@@ -1,7 +1,7 @@
 use std::{path::PathBuf, str::FromStr};
 
 use clap::{AppSettings, ArgEnum, Parser, ValueHint};
-use clap_generate::Shell;
+use clap_complete::Shell;
 use color_eyre::eyre::{eyre, Result};
 use serde_derive::{Deserialize, Serialize};
 use slog::Level;
@@ -62,7 +62,7 @@ pub struct Opts {
     #[clap(long, default_value = "debug", env = "FILE_LOG_LEVEL", parse(try_from_str = from_level))]
     pub file_log_level: Level,
     /// Whether to color terminal output.
-    #[clap(long, default_value = "auto", case_insensitive = true, arg_enum)]
+    #[clap(long, default_value = "auto", ignore_case = true, arg_enum)]
     pub color: Color,
     /// Path to the up.yaml file for up.
     #[clap(long, short = 'c', default_value = "$XDG_CONFIG_HOME/up/up.yaml", value_hint = ValueHint::FilePath)]

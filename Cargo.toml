@@ -21,24 +21,24 @@ path = "src/main.rs"
 
 [dependencies]
 chrono = "0.4.19"
-clap = "3.0.0-beta.5"
-clap_generate = "3.0.0-beta.5"
-color-eyre = "0.5.11"
+clap = { version = "3.0.7", features = ["derive", "env"] }
+clap_complete = "3.0.4"
+color-eyre = "0.6.0"
 dirs = "4.0.0"
 displaydoc = "0.2.3"
 envy = "0.4.2"
-git2 = { version = "0.13.23", features = ["vendored-openssl"] }
-itertools = "0.10.1"
+git2 = { version = "0.13.25", features = ["vendored-openssl"] }
+itertools = "0.10.3"
 log = "0.4.14"
 plist = "1.3.1"
 rayon = "1.5.1"
-reqwest = { version = "0.11.6", features = ["blocking", "json"] }
+reqwest = { version = "0.11.9", features = ["blocking", "json"] }
 ring = "0.16.20"
 semver = "1.0.4"
-serde = "1.0.130"
-serde_derive = "1.0.130"
-serde_json = "1.0.70"
-serde_yaml = "0.8.21"
+serde = "1.0.133"
+serde_derive = "1.0.133"
+serde_json = "1.0.75"
+serde_yaml = "0.8.23"
 shellexpand = "2.1.0"
 slog = "2.7.0"
 slog-async = "2.7.0"
