@@ -29,7 +29,7 @@ fn generate_passing() {
         // Add anything that has a .git dir inside it.
         if entry.file_type().is_dir() && entry.file_name() == "_git" {
             fs::rename(entry.path(), entry.path().parent().unwrap().join(".git"))
-                .unwrap_or_else(|e| panic!("Error renaming .git dir {:?}: {:?}", entry, e));
+                .unwrap_or_else(|e| panic!("Error renaming .git dir {entry:?}: {e:?}"));
 
             renamed_git_dirs += 1;
             // Stop iterating, we don't want to look inside .git dirs for .git dirs.

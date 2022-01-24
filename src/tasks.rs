@@ -113,7 +113,7 @@ pub fn run(
 
     let filter_tasks_set: Option<HashSet<String>> =
         config.tasks.clone().map(|v| v.into_iter().collect());
-    debug!("Filter tasks set: {:?}", &filter_tasks_set);
+    debug!("Filter tasks set: {filter_tasks_set:?}");
 
     let mut tasks: HashMap<String, task::Task> = HashMap::new();
     for entry in tasks_dir.read_dir().map_err(|e| E::ReadDir {
@@ -131,16 +131,14 @@ pub fn run(
             continue;
         }
         let task = task::Task::from(&path)?;
+        let name = &task.name;
         if let Some(filter) = filter_tasks_set.as_ref() {
-            if !filter.contains(&task.name) {
-                debug!(
-                    "Not running task '{}' as not in tasks filter {:?}",
-                    &task.name, &filter
-                );
+            if !filter.contains(name) {
+                debug!("Not running task '{name}' as not in tasks filter {filter:?}",);
                 continue;
             }
         }
-        tasks.insert(task.name.clone(), task);
+        tasks.insert(name.clone(), task);
     }
 
     if matches!(tasks_action, TasksAction::Run)
@@ -153,7 +151,7 @@ pub fn run(
     }
 
     debug!("Task count: {:?}", tasks.len());
-    trace!("Task list: {:#?}", tasks);
+    trace!("Task list: {tasks:#?}");
 
     match tasks_action {
         TasksAction::List => println!("{}", tasks.keys().join("\n")),
@@ -211,8 +209,7 @@ fn run_tasks(
     }
 
     info!(
-        "Ran {} tasks, {} passed, {} failed, {} skipped",
-        completed_tasks_len,
+        "Ran {completed_tasks_len} tasks, {} passed, {} failed, {} skipped",
         tasks_passed.len(),
         tasks_failed.len(),
         tasks_skipped.len()

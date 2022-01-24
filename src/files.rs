@@ -21,9 +21,8 @@ pub fn get_up_dir(up_dir_opt: Option<&PathBuf>) -> PathBuf {
 /// This checks that the path pointed to doesn't exist, but that the symlink does exist.
 pub(crate) fn remove_broken_symlink(path: &Path) -> Result<(), UpError> {
     warn!(
-        "Removing existing broken symlink.\n  Path: {:?}\n  Dest: {:?}",
-        &path,
-        &path.read_link().map_err(|e| UpError::IoError {
+        "Removing existing broken symlink.\n  Path: {path:?}\n  Dest: {dest:?}",
+        dest = &path.read_link().map_err(|e| UpError::IoError {
             path: path.to_owned(),
             source: e
         })?

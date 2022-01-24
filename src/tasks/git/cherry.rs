@@ -42,15 +42,15 @@ pub(super) fn unmerged_commits(
         let id = id?;
         upstream_patch_ids.insert(patch_id(repo, id)?.as_ref().to_owned());
     }
-    trace!("Upstream patch IDs: {:?}", &upstream_patch_ids);
+    trace!("Upstream patch IDs: {upstream_patch_ids:?}");
 
     let merge_base = repo.merge_base(head_oid, upstream_oid)?;
     let head_ids: Vec<Oid> = rev_list(repo, head_oid, merge_base)?.collect::<Result<_, _>>()?;
-    trace!("Found head IDs: {:?}", head_ids);
+    trace!("Found head IDs: {head_ids:?}");
 
     for id in head_ids {
         let head_patch_id = patch_id(repo, id)?;
-        trace!("Head patch ID for '{:?}': '{:?}'", id, head_patch_id);
+        trace!("Head patch ID for '{id:?}': '{head_patch_id:?}'");
         if !upstream_patch_ids.contains(head_patch_id.as_ref()) {
             // Found an unmerged commit.
             return Ok(true);

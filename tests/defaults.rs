@@ -151,8 +151,8 @@ fn defaults_write_local() {
             _ => vec![*orig_value],
         };
 
-        let defaults_key = format!("defaults_write_local_{}", n);
-        let defaults_type = format!("-{}", defaults_type);
+        let defaults_key = format!("defaults_write_local_{n}");
+        let defaults_type = format!("-{defaults_type}");
         let mut args = vec!["write", &domain, &defaults_key, &defaults_type];
         args.extend(values);
 
@@ -167,18 +167,18 @@ fn defaults_write_local() {
             "defaults",
             "read",
             &domain,
-            &format!("defaults_write_local_{}", n),
+            &format!("defaults_write_local_{n}"),
         ]);
         cmd.assert()
             .success()
-            .stdout(format!("{}\n", orig_check_value));
+            .stdout(format!("{orig_check_value}\n"));
     }
 
     // Set the key to the new value ourselves.
     for (n, (_, _, _, new_value, _)) in test_values.iter().enumerate() {
         let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
 
-        let defaults_key = format!("defaults_write_local_{}", n);
+        let defaults_key = format!("defaults_write_local_{n}");
         cmd.args(&["defaults", "write", &domain, &defaults_key, new_value]);
         cmd.assert()
             .success()
@@ -194,7 +194,7 @@ fn defaults_write_local() {
             "defaults",
             "read",
             &domain,
-            &format!("defaults_write_local_{}", n)
+            &format!("defaults_write_local_{n}")
         )
         .read()
         .unwrap();

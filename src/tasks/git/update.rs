@@ -33,7 +33,10 @@ pub(crate) fn update(git_config: &GitConfig) -> Result<()> {
     let elapsed_time = now.elapsed();
     // TODO(gib): configurable logging for long actions.
     if elapsed_time > Duration::from_secs(60) {
-        warn!("Git update for {} took {:?}", git_config.path, elapsed_time);
+        warn!(
+            "Git update for {path} took {elapsed_time:?}",
+            path = git_config.path
+        );
     }
     result
 }
@@ -46,7 +49,7 @@ pub(crate) fn update(git_config: &GitConfig) -> Result<()> {
 pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
     // Create dir if it doesn't exist.
     let git_path = PathBuf::from(git_config.path.clone());
-    debug!("Updating git repo '{}'", git_path.display());
+    debug!("Updating git repo '{git_path:?}'");
     // Whether we just created this repo.
     let mut newly_created_repo = false;
     if !git_path.is_dir() {
@@ -66,7 +69,10 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
                 newly_created_repo = true;
                 Repository::init(&git_path)?
             } else {
-                debug!("Failed to open repository: {:?}\n  {}", e.code(), e);
+                debug!(
+                    "Failed to open repository: {code:?}\n  {e}",
+                    code = e.code()
+                );
                 bail!(e);
             }
         }
@@ -119,10 +125,10 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
     };
     let short_branch = shorten_branch_ref(&branch_name);
     // TODO(gib): Find better way to make branch_name long and short_branch short.
-    let branch_name = format!("refs/heads/{}", short_branch);
+    let branch_name = format!("refs/heads/{short_branch}");
 
     if newly_created_repo || needs_checkout(&repo, &branch_name) {
-        debug!("Checking out branch: {}", short_branch);
+        debug!("Checking out branch: {short_branch}");
         checkout_branch(
             &repo,
             &branch_name,
@@ -136,7 +142,7 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
     // Refs: https://github.com/libgit2/libgit2/issues/5689
     if let Some(push_branch) = get_push_branch(&repo, short_branch, &user_git_config)? {
         debug!("Checking for a @{{push}} branch.");
-        let push_revision = format!("{}@{{push}}", short_branch);
+        let push_revision = format!("{short_branch}@{{push}}");
         let merge_commit = repo.reference_to_annotated_commit(push_branch.get())?;
         let push_branch_name = get_branch_name(&push_branch)?;
         do_merge(&repo, &branch_name, &merge_commit).with_context(|| E::Merge {
@@ -146,7 +152,7 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
         })?;
     } else {
         debug!("Branch doesn't have an @{{push}} branch, checking @{{upstream}} instead.");
-        let up_revision = format!("{}@{{upstream}}", short_branch);
+        let up_revision = format!("{short_branch}@{{upstream}}");
         match repo
             .find_branch(short_branch, BranchType::Local)?
             .upstream()
@@ -180,17 +186,14 @@ fn set_up_remote(repo: &Repository, remote_config: &GitRemote) -> Result<()> {
 
     // TODO(gib): Check remote URL matches, else delete and recreate.
     let mut remote = repo.find_remote(remote_name).or_else(|e| {
-        debug!(
-            "Finding requested remote failed, creating it (error was: {})",
-            e
-        );
+        debug!("Finding requested remote failed, creating it (error was: {e})",);
         repo.remote(remote_name, &remote_config.fetch_url)
     })?;
     if let Some(url) = remote.url() {
         if url != remote_config.fetch_url {
             debug!(
-                "Changing remote {} fetch URL from {} to {}",
-                remote_name, url, remote_config.fetch_url
+                "Changing remote {remote_name} fetch URL from {url} to {new_url}",
+                new_url = remote_config.fetch_url
             );
             repo.remote_set_url(remote_name, &remote_config.fetch_url)?;
         }
@@ -226,12 +229,12 @@ fn set_up_remote(repo: &Repository, remote_config: &GitRemote) -> Result<()> {
                     let base = if cfg!(target_os = "macos") { format!("\n\n  - Check that this command returns 'osxkeychain':\n      \
                     git config credential.helper\n    \
                     If so, set the token with this command (passing in your username and password):\n      \
-                    echo -e \"protocol={protocol}\\nhost={host}\\nusername=${{username?}}\\npassword=${{password?}}\" | git credential-osxkeychain store", host=host, protocol=protocol) } else { String::new() };
+                    echo -e \"protocol={protocol}\\nhost={host}\\nusername=${{username?}}\\npassword=${{password?}}\" | git credential-osxkeychain store") } else { String::new() };
 
                     format!("\n  - Check that this command returns a valid username and password (access token):\n      \
                         git credential fill <<< $'protocol={protocol}\\nhost={host}\\npath={path}'\n    \
                         If not see <https://docs.github.com/en/free-pro-team@latest/github/using-git/caching-your-github-credentials-in-git>{base}",
-                        base=base, path=path, host=host, protocol=protocol)
+                        )
                 } else {
                     String::new()
                 };
@@ -274,7 +277,7 @@ pub(in crate::tasks::git) fn get_config_value(
     match config.get_entry(key) {
         Ok(push_remote_entry) if push_remote_entry.has_value() => {
             let val = push_remote_entry.value().ok_or(E::InvalidBranchError)?;
-            trace!("Config value for {} was {}", key, val);
+            trace!("Config value for {key} was {val}");
             Ok(Some(val.to_owned()))
         }
         Err(e) if e.code() != ErrorCode::NotFound => {
@@ -283,7 +286,7 @@ pub(in crate::tasks::git) fn get_config_value(
         }
         _ => {
             // Returned not found error, or entry didn't have a value.
-            trace!("Config value {} was not set", key);
+            trace!("Config value {key} was not set");
             Ok(None)
         }
     }

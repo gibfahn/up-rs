@@ -67,7 +67,7 @@ pub fn run(opts: Opts) -> Result<()> {
                 generate::git::run_single(git_opts)?;
             }
             Some(GenerateLib::Defaults(ref defaults_opts)) => {
-                trace!("Options: {:?}", defaults_opts);
+                trace!("Options: {defaults_opts:?}");
                 // TODO(gib): implement defaults generation.
                 unimplemented!("Allow generating defaults yaml.");
             }

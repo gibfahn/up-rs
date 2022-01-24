@@ -59,7 +59,7 @@ pub(crate) fn run(configs: &[GitConfig]) -> Result<TaskStatus> {
         Ok(TaskStatus::Passed)
     } else {
         for error in &errors {
-            error!("{:?}", error);
+            error!("{error:?}");
         }
         let mut errors_iter = errors.into_iter();
         Err(errors_iter.next().ok_or(E::UnexpectedNone)?)

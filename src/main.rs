@@ -97,13 +97,9 @@ fn main() -> Result<()> {
     slog_stdlog::init()?;
 
     trace!("Starting up.");
-    debug!(
-        "Writing full logs to {} (symlink to '{}')",
-        &log_path_link.display(),
-        &log_path.display()
-    );
+    debug!("Writing full logs to {log_path_link:?} (symlink to '{log_path:?}')",);
 
-    trace!("Received args: {:#?}", opts);
+    trace!("Received args: {opts:#?}");
     trace!(
         "Current env: {:?}",
         env::vars()
@@ -114,10 +110,11 @@ fn main() -> Result<()> {
     up_rs::run(opts)?;
 
     // No need to log the time we took to run by default unless it actually took some time.
-    if now.elapsed() > Duration::from_secs(10) {
-        info!("Up-rs ran successfully in {:?}", now.elapsed());
+    let now_elapsed = now.elapsed();
+    if now_elapsed > Duration::from_secs(10) {
+        info!("Up-rs ran successfully in {now_elapsed:?}");
     } else {
-        debug!("Up-rs ran successfully in {:?}", now.elapsed());
+        debug!("Up-rs ran successfully in {now_elapsed:?}");
     }
     trace!("Finished up.");
     Ok(())

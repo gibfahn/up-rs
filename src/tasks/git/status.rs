@@ -48,8 +48,7 @@ pub(super) fn warn_for_unpushed_changes(
         let statuses = repo_statuses(repo)?;
         if !statuses.is_empty() {
             warn!(
-                "Repo '{}' has uncommitted changes:\n{}",
-                git_path.display(),
+                "Repo '{git_path:?}' has uncommitted changes:\n{}",
                 status_short(repo, &statuses)
             );
         }
@@ -64,8 +63,7 @@ pub(super) fn warn_for_unpushed_changes(
         })?;
         if !stash_messages.is_empty() {
             warn!(
-                "Repo '{}' has stashed changes:\n{:#?}",
-                git_path.display(),
+                "Repo '{git_path:?}' has stashed changes:\n{:#?}",
                 stash_messages
             );
         }
@@ -78,9 +76,7 @@ pub(super) fn warn_for_unpushed_changes(
             // Warn for any commits not in @{push}
             if unmerged_commits(repo, &push_branch, &branch)? {
                 warn!(
-                    "Repo '{}' branch '{}' has changes that aren't in @{{push}}.",
-                    git_path.display(),
-                    &branch_name,
+                    "Repo '{git_path:?}' branch '{branch_name}' has changes that aren't in @{{push}}.",
                 );
             }
         } else {
@@ -89,18 +85,14 @@ pub(super) fn warn_for_unpushed_changes(
                     // If no push, warn for any commits not in @{upstream}
                     if unmerged_commits(repo, &upstream_branch, &branch)? {
                         warn!(
-                            "Repo '{}' branch '{}' has changes that aren't in @{{upstream}}.",
-                            git_path.display(),
-                            &branch_name,
+                            "Repo '{git_path:?}' branch '{branch_name}' has changes that aren't in @{{upstream}}.",
                         );
                     }
                 }
                 Err(e) if e.code() == ErrorCode::NotFound => {
                     // Warn for any branches with no @{upstream} or @{push}
                     warn!(
-                        "Repo '{}' branch '{}' has no @{{upstream}} or @{{push}} branch.",
-                        git_path.display(),
-                        &branch_name,
+                        "Repo '{git_path:?}' branch '{branch_name}' has no @{{upstream}} or @{{push}} branch.",
                     );
                 }
                 Err(e) => {
@@ -134,8 +126,7 @@ pub(super) fn warn_for_unpushed_changes(
     }
     if !unmerged_branches.is_empty() {
         warn!(
-            "Repo '{}' has unmerged fork branches: {} .",
-            git_path.display(),
+            "Repo '{git_path:?}' has unmerged fork branches: {} .",
             unmerged_branches.join(" "),
         );
     }

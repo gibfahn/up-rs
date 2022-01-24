@@ -39,7 +39,7 @@ impl ResolveEnv for LinkOptions {
 /// dotfiles.
 pub(crate) fn run(config: LinkOptions, up_dir: &Path) -> Result<TaskStatus> {
     let now: DateTime<Utc> = Utc::now();
-    debug!("UTC time is: {}", now);
+    debug!("UTC time is: {now}");
 
     let from_dir = PathBuf::from(config.from_dir);
     let to_dir = PathBuf::from(config.to_dir);
@@ -50,10 +50,7 @@ pub(crate) fn run(config: LinkOptions, up_dir: &Path) -> Result<TaskStatus> {
 
     // Create the backup dir if it doesn't exist.
     if !backup_dir.exists() {
-        debug!(
-            "Backup dir '{}' doesn't exist, creating it.",
-            backup_dir.display()
-        );
+        debug!("Backup dir '{backup_dir:?}' doesn't exist, creating it.",);
         fs::create_dir_all(&backup_dir).map_err(|e| LinkError::CreateDirError {
             path: backup_dir.clone(),
             source: e,
@@ -61,10 +58,7 @@ pub(crate) fn run(config: LinkOptions, up_dir: &Path) -> Result<TaskStatus> {
     }
     let backup_dir = resolve_directory(backup_dir, "Backup")?;
 
-    debug!(
-        "Linking from {:?} to {:?} (backup dir {:?}).",
-        from_dir, to_dir, backup_dir
-    );
+    debug!("Linking from {from_dir:?} to {to_dir:?} (backup dir {backup_dir:?}).",);
     debug!(
         "to_dir contents: {:?}",
         fs::read_dir(&to_dir)?
@@ -91,10 +85,7 @@ pub(crate) fn run(config: LinkOptions, up_dir: &Path) -> Result<TaskStatus> {
 
     // Remove backup dir if not empty.
     if let Err(err) = fs::remove_dir(&backup_dir) {
-        warn!(
-            "Backup dir {:?} non-empty, check contents: {:?}",
-            backup_dir, err
-        );
+        warn!("Backup dir {backup_dir:?} non-empty, check contents: {err:?}",);
     }
 
     debug!(
@@ -146,7 +137,7 @@ fn create_parent_dir(to_dir: &Path, rel_path: &Path, backup_dir: &Path) -> Resul
     fs::create_dir_all(to_path_parent).or_else(|_err| {
         info!("Failed to create parent dir, walking up the tree to see if there's a file that needs to become a directory.");
         for path in rel_path.ancestors().skip(1).filter(|p| p != &Path::new("")) {
-            debug!("Checking path {:?}", path);
+            debug!("Checking path {path:?}");
             let abs_path = to_dir.join(path);
             // The path is a file/dir/symlink, or a broken symlink.
             if abs_path.exists() || abs_path.symlink_metadata().is_ok() {
@@ -155,25 +146,23 @@ fn create_parent_dir(to_dir: &Path, rel_path: &Path, backup_dir: &Path) -> Resul
                         abs_path);
                 warn!(
                     "File will be overwritten by parent directory of link.\n  \
-                     File: {:?}\n  Link: {:?}",
-                    &abs_path, &to_path
+                     File: {abs_path:?}\n  Link: {to_path:?}",
                 );
                 if abs_path.is_file() {
                     if let Some(parent_path) = &path.parent() {
-                        info!("Path: {:?}, parent: {:?}", path, parent_path);
+                        info!("Path: {path:?}, parent: {parent_path:?}");
                         if parent_path != &Path::new("") {
                             let path = backup_dir.join(parent_path);
                             fs::create_dir_all(&path).map_err(|e| LinkError::CreateDirError{path, source: e})?;
                         }
                         let backup_path = backup_dir.join(path);
                         info!(
-                            "Moving file to backup: {:?} -> {:?}",
-                            &abs_path, &backup_path
+                            "Moving file to backup: {abs_path:?} -> {backup_path:?}",
                         );
                         fs::rename(&abs_path, backup_path)?;
                     }
                 } else {
-                    info!("Removing symlink: {:?}", abs_path);
+                    info!("Removing symlink: {abs_path:?}");
                     fs::remove_file(abs_path)?;
                 }
             }
@@ -209,15 +198,12 @@ fn link_path(
                 Ok(existing_link) => {
                     if existing_link == from_path.path() {
                         debug!(
-                            "Link at {:?} already points to {:?}, skipping.",
-                            to_path, existing_link
+                            "Link at {to_path:?} already points to {existing_link:?}, skipping.",
                         );
                         return Ok(false);
                     }
                     warn!(
-                        "Link at {:?} points to {:?}, changing to {:?}.",
-                        to_path,
-                        existing_link,
+                        "Link at {to_path:?} points to {existing_link:?}, changing to {:?}.",
                         from_path.path()
                     );
                     fs::remove_file(&to_path).map_err(|e| LinkError::DeleteError {
@@ -231,8 +217,7 @@ fn link_path(
             }
         } else if to_path_file_type.is_dir() {
             warn!(
-                "Expected file or link at {:?}, found directory, moving to {:?}",
-                to_path, backup_dir
+                "Expected file or link at {to_path:?}, found directory, moving to {backup_dir:?}",
             );
             let backup_path = backup_dir.join(rel_path);
             fs::create_dir_all(&backup_path).map_err(|e| LinkError::CreateDirError {
@@ -245,7 +230,7 @@ fn link_path(
                 source: e,
             })?;
         } else if to_path_file_type.is_file() {
-            warn!("Existing file at {:?}, moving to {:?}", to_path, backup_dir);
+            warn!("Existing file at {to_path:?}, moving to {backup_dir:?}");
             let backup_path = backup_dir.join(rel_path);
             let backup_parent_path = get_parent_path(&backup_path)?;
             fs::create_dir_all(backup_parent_path).map_err(|e| LinkError::CreateDirError {
@@ -263,9 +248,9 @@ fn link_path(
     } else if to_path.symlink_metadata().is_ok() {
         files::remove_broken_symlink(&to_path)?;
     } else {
-        trace!("File '{:?}' doesn't exist.", to_path);
+        trace!("File '{to_path:?}' doesn't exist.");
     }
-    info!("Linking:\n  From: {:?}\n  To: {:?}", from_path, to_path);
+    info!("Linking:\n  From: {from_path:?}\n  To: {to_path:?}");
     unix::fs::symlink(from_path.path(), &to_path)
         // If we got here, we did work, so return true.
         .map(|()| true)

@@ -23,11 +23,8 @@ pub(super) fn checkout_branch(
     match repo.find_branch(short_branch, BranchType::Local) {
         Ok(_) => (),
         Err(e) if e.code() == ErrorCode::NotFound => {
-            debug!(
-                "Branch {short_branch} doesn't exist, creating it...",
-                short_branch = short_branch,
-            );
-            let branch_target = format!("{}/{}", upstream_remote_name, short_branch);
+            debug!("Branch {short_branch} doesn't exist, creating it...",);
+            let branch_target = format!("{upstream_remote_name}/{short_branch}");
             let branch_commit = repo
                 .find_branch(&branch_target, BranchType::Remote)?
                 .get()
@@ -41,16 +38,9 @@ pub(super) fn checkout_branch(
         Ok(current_head) => {
             // A branch is currently checked out.
             let current_head = current_head.name();
-            trace!(
-                "Current head is {:?}, branch_name is {}",
-                current_head,
-                branch_name
-            );
+            trace!("Current head is {current_head:?}, branch_name is {branch_name}",);
             if !force && !repo.head_detached()? && current_head == Some(branch_name) {
-                debug!(
-                    "Repo head is already {}, skipping branch checkout...",
-                    branch_name,
-                );
+                debug!("Repo head is already {branch_name}, skipping branch checkout...",);
                 return Ok(());
             }
         }
@@ -65,7 +55,7 @@ pub(super) fn checkout_branch(
     if !force {
         ensure_repo_clean(repo)?;
     }
-    debug!("Setting head to {branch_name}", branch_name = branch_name);
+    debug!("Setting head to {branch_name}");
     set_and_checkout_head(repo, branch_name, force)?;
     Ok(())
 }
@@ -85,7 +75,7 @@ pub(super) fn set_and_checkout_head(
     force: bool,
 ) -> Result<()> {
     if force {
-        debug!("Force checking out {}", branch_name);
+        debug!("Force checking out {branch_name}");
     } else {
         ensure_repo_clean(repo)?;
     }
@@ -152,15 +142,15 @@ pub(super) fn needs_checkout(repo: &Repository, branch_name: &str) -> bool {
             .ok_or_else(|| eyre!("Current branch is not valid UTF-8"))
     }) {
         Ok(current_branch) if current_branch == branch_name => {
-            debug!("Already on branch: '{}'", branch_name);
+            debug!("Already on branch: '{branch_name}'");
             false
         }
         Ok(current_branch) => {
-            debug!("Current branch: {}", current_branch);
+            debug!("Current branch: {current_branch}");
             true
         }
         Err(e) => {
-            debug!("Current branch errored: {}", e);
+            debug!("Current branch errored: {e}");
             true
         }
     }

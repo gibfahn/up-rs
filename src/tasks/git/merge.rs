@@ -15,7 +15,7 @@ pub(super) fn do_merge<'a>(
     // Do merge analysis
     let analysis = repo.merge_analysis(&[fetch_commit])?;
 
-    debug!("Merge analysis: {:?}", &analysis);
+    debug!("Merge analysis: {analysis:?}");
 
     // Do the merge
     if analysis.0.is_fast_forward() {
@@ -31,7 +31,7 @@ pub(super) fn do_merge<'a>(
                 branch_name,
                 fetch_commit.id(),
                 true,
-                &format!("Setting {} to {}", branch_name, fetch_commit.id()),
+                &format!("Setting {branch_name} to {}", fetch_commit.id()),
             )?;
             set_and_checkout_head(repo, branch_name, false)?;
         }
@@ -51,8 +51,8 @@ fn fast_forward(repo: &Repository, lb: &mut Reference, rc: &git2::AnnotatedCommi
         Some(s) => s.to_string(),
         None => String::from_utf8_lossy(lb.name_bytes()).to_string(),
     };
-    let msg = format!("Fast-Forward: Setting {} to id: {}", name, rc.id());
-    debug!("{}", msg);
+    let msg = format!("Fast-Forward: Setting {name} to id: {}", rc.id());
+    debug!("{msg}");
     ensure_repo_clean(repo)?;
     lb.set_target(rc.id(), &msg)?;
     // Force checkout as we already changed what the HEAD branch points to, and we

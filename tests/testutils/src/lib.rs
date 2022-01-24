@@ -29,7 +29,7 @@ fn test_project_dir() -> PathBuf {
 pub fn test_binary_cmd(binary_name: &str, temp_dir: &Path) -> Command {
     let mut cmd = Command::cargo_bin(binary_name).unwrap();
     // Set temp dir to be inside our test's temp dir.
-    cmd.env("TMPDIR", temp_dir.join(format!("{}_temp_dir", binary_name)));
+    cmd.env("TMPDIR", temp_dir.join(format!("{binary_name}_temp_dir")));
     // Always print colours, even when output is not a tty.
     cmd.env("RUST_LOG_STYLE", "always");
     // Show backtrace on exit, nightly only for now.
@@ -69,7 +69,7 @@ pub fn fixture_dir(function_path: &str) -> PathBuf {
 pub fn temp_dir(binary_name: &str, function_path: &str) -> Result<PathBuf> {
     let os_temp_dir = env::temp_dir().canonicalize()?;
     let mut temp_dir = os_temp_dir.clone();
-    temp_dir.push(format!("{}_test_tempdirs", binary_name));
+    temp_dir.push(format!("{binary_name}_test_tempdirs"));
     temp_dir.push(function_path.replace("::", "/"));
     assert!(temp_dir.starts_with(os_temp_dir));
     let remove_dir_result = fs::remove_dir_all(&temp_dir);
@@ -102,11 +102,10 @@ macro_rules! function_path {
 ///
 /// Fails if any of the underlying file system operations fail.
 pub fn copy_all(from_dir: &Path, to_dir: &Path) -> Result<()> {
-    println!("Copying everything in {:?} to {:?}", from_dir, to_dir);
+    println!("Copying everything in {from_dir:?} to {to_dir:?}");
     assert!(
         from_dir.exists(),
-        "Cannot copy from non-existent directory {:?}.",
-        from_dir
+        "Cannot copy from non-existent directory {from_dir:?}.",
     );
     for from_path in WalkDir::new(&from_dir)
         .min_depth(1)
@@ -117,7 +116,7 @@ pub fn copy_all(from_dir: &Path, to_dir: &Path) -> Result<()> {
         let from_path = from_path.path();
 
         let rel_path = from_path.strip_prefix(&from_dir)?;
-        println!("Copying: {:?}", &rel_path);
+        println!("Copying: {rel_path:?}");
         let to_path = to_dir.join(rel_path);
 
         let file_type = from_path_metadata.file_type();

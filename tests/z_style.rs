@@ -139,9 +139,8 @@ fn no_todo() {
             for disallowed_string in DISALLOWED_STRINGS {
                 if text.contains(disallowed_string) {
                     println!(
-                        "ERROR: {:?} contains disallowed string '{}'",
-                        file.path(),
-                        disallowed_string,
+                        "ERROR: {path:?} contains disallowed string '{disallowed_string}'",
+                        path = file.path(),
                     );
                     return true;
                 }
@@ -153,8 +152,7 @@ fn no_todo() {
 
     assert!(
         files_with_todos.is_empty(),
-        "\nFiles with blocking todos should not be committed to the main branch, use TODO: instead\n{:#?}\n",
-        files_with_todos,
+        "\nFiles with blocking todos should not be committed to the main branch, use TODO: instead\n{files_with_todos:#?}\n",
     );
 }
 
@@ -208,7 +206,7 @@ fn cargo_cmd(current_dir: &Path, fmt: CargoCmdType) -> Output {
         .iter(),
     });
     cmd.current_dir(current_dir);
-    println!("Running '{:?}' in '{:?}'", cmd, current_dir);
+    println!("Running '{cmd:?}' in '{current_dir:?}'");
     let cmd_output = cmd.output().unwrap();
     println!("  status: {}", cmd_output.status);
     if !cmd_output.stdout.is_empty() {

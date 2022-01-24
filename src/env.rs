@@ -24,7 +24,7 @@ pub fn get_env(
     let mut unresolved_env = Vec::new();
 
     if let Some(config_env) = input_env {
-        trace!("Provided env: {:#?}", config_env);
+        trace!("Provided env: {config_env:#?}");
         let mut calculated_env = HashMap::new();
         for (key, val) in config_env.iter() {
             calculated_env.insert(
@@ -53,10 +53,10 @@ pub fn get_env(
     }
 
     // Resolve unresolved env vars.
-    debug!("Unresolved env: {:?}", unresolved_env);
+    debug!("Unresolved env: {unresolved_env:?}");
     while !unresolved_env.is_empty() {
-        trace!("Env so far: {:#?}", env);
-        trace!("Still unresolved env: {:#?}", unresolved_env);
+        trace!("Env so far: {env:#?}");
+        trace!("Still unresolved env: {unresolved_env:#?}");
         let mut resolved_indices = Vec::new();
         for (index, key) in unresolved_env.iter().enumerate() {
             let val = env.get(key).ok_or_else(|| eyre!("How did we get here?"))?;
@@ -80,7 +80,7 @@ pub fn get_env(
                 .ok_or_else(|| eyre!("How did we get here?"))?;
             *val_ref = resolved_val;
         }
-        trace!("resolved indices: {:?}", resolved_indices);
+        trace!("resolved indices: {resolved_indices:?}");
         if resolved_indices.is_empty() {
             bail!(
                 "Errors resolving env, do you have cycles? Unresolved env: {:#?}",
@@ -100,7 +100,7 @@ pub fn get_env(
             .collect();
     }
 
-    debug!("Expanded config env: {:#?}", env);
+    debug!("Expanded config env: {env:#?}");
     Ok(env)
 }
 

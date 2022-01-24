@@ -68,7 +68,7 @@ pub(super) fn plist_path(domain: &str) -> Result<PathBuf, E> {
 
     // If user passed com.foo.bar.plist, trim it to com.foo.bar
     let domain = domain.trim_end_matches(".plist");
-    let domain_filename = format!("{}.plist", domain);
+    let domain_filename = format!("{domain}.plist");
 
     let home_dir = dirs::home_dir().ok_or(E::MissingHomeDir)?;
 
@@ -136,7 +136,7 @@ pub(super) fn write_defaults_values(
     let backup_dir = up_dir.join("backup/defaults");
 
     let plist_path = plist_path(domain)?;
-    debug!("Plist path: {:?}", plist_path);
+    debug!("Plist path: {plist_path:?}");
 
     let plist_path_exists = plist_path.exists();
 
@@ -149,7 +149,7 @@ pub(super) fn write_defaults_values(
         plist::Value::Dictionary(Dictionary::new())
     };
 
-    trace!("Plist: {:?}", plist_value);
+    trace!("Plist: {plist_value:?}");
 
     // Whether we changed anything.
     let mut values_changed = false;
@@ -169,13 +169,10 @@ pub(super) fn write_defaults_values(
             }
         }
         values_changed = true;
-        info!(
-            "Changing default {} {}: {:?} -> {:?}",
-            domain, key, old_value, new_value
-        );
+        info!("Changing default {domain} {key}: {old_value:?} -> {new_value:?}",);
 
         let plist_type = get_plist_value_type(&plist_value);
-        trace!("Plist type: {:?}", plist_type);
+        trace!("Plist type: {plist_type:?}");
 
         plist_value
             .as_dictionary_mut()
@@ -201,11 +198,7 @@ pub(super) fn write_defaults_values(
                     })?,
             );
 
-        trace!(
-            "Backing up plist file {:?} -> {:?}",
-            plist_path,
-            backup_plist_path
-        );
+        trace!("Backing up plist file {plist_path:?} -> {backup_plist_path:?}",);
         fs::create_dir_all(&backup_dir).map_err(|e| E::DirCreation {
             path: backup_dir.clone(),
             source: e,
@@ -216,10 +209,7 @@ pub(super) fn write_defaults_values(
             source: e,
         })?;
     } else {
-        warn!(
-            "Defaults plist doesn't exist, creating it: {:?}",
-            plist_path
-        );
+        warn!("Defaults plist doesn't exist, creating it: {plist_path:?}");
     }
 
     if !plist_path_exists || is_binary(&plist_path)? {
@@ -235,7 +225,7 @@ pub(super) fn write_defaults_values(
             source: e,
         })?;
     }
-    trace!("Plist updated at {:?}", &plist_path);
+    trace!("Plist updated at {plist_path:?}");
 
     Ok(values_changed)
 }

@@ -33,7 +33,7 @@ pub fn run(generate_git_configs: &[GenerateGitConfig]) -> Result<TaskStatus> {
         Ok(TaskStatus::Passed)
     } else {
         for error in &errors {
-            error!("{:?}", error);
+            error!("{error:?}");
         }
         let first_error = errors.into_iter().next().ok_or(E::UnexpectedNone)?;
         Err(first_error)
@@ -46,7 +46,7 @@ pub fn run_single(generate_git_config: &GenerateGitConfig) -> Result<()> {
         path = generate_git_config.path.display()
     );
     let mut git_task = Task::from(&generate_git_config.path)?;
-    debug!("Existing git config: {:?}", git_task);
+    debug!("Existing git config: {git_task:?}");
     let mut git_configs = Vec::new();
     let home_dir = dirs::home_dir().ok_or(E::MissingHomeDir)?;
     let home_dir = home_dir.to_str().ok_or_else(|| E::InvalidUTF8Path {
@@ -68,10 +68,10 @@ pub fn run_single(generate_git_config: &GenerateGitConfig) -> Result<()> {
 
     git_task.config.data = Some(serde_yaml::to_value(git_configs)?);
 
-    debug!("New git config: {:?}", git_task);
+    debug!("New git config: {git_task:?}");
     let mut serialized_task = GENERATED_PRELUDE_COMMENT.to_owned();
     serialized_task.push_str(&serde_yaml::to_string(&git_task.config)?);
-    trace!("New yaml file: <<<{}>>>", serialized_task);
+    trace!("New yaml file: <<<{serialized_task}>>>");
     fs::write(&generate_git_config.path, serialized_task)?;
     info!(
         "Git repo layout generated for task '{}' and written to '{:?}'",
@@ -109,7 +109,7 @@ impl ResolveEnv for Vec<GenerateGitConfig> {
 fn find_repos(search_paths: &[PathBuf], excludes: Option<&Vec<String>>) -> Vec<PathBuf> {
     let mut repo_paths = Vec::new();
     for path in search_paths {
-        trace!("Searching in '{}'", &path.display());
+        trace!("Searching in '{path:?}'");
 
         let mut it = WalkDir::new(path).into_iter();
         'walkdir: loop {
@@ -134,7 +134,7 @@ fn find_repos(search_paths: &[PathBuf], excludes: Option<&Vec<String>>) -> Vec<P
             // Add anything that has a .git dir inside it.
             if entry.file_type().is_dir() && entry.path().join(".git").is_dir() {
                 // Found matching entry, add it.
-                trace!("Entry: {:?}", &entry);
+                trace!("Entry: {entry:?}");
                 repo_paths.push(entry.path().to_path_buf());
 
                 // Stop iterating, we don't want git repos inside other git repos.
@@ -142,7 +142,7 @@ fn find_repos(search_paths: &[PathBuf], excludes: Option<&Vec<String>>) -> Vec<P
             }
         }
     }
-    debug!("Found repo paths: {:?}", repo_paths);
+    debug!("Found repo paths: {repo_paths:?}");
     repo_paths
 }
 
@@ -183,7 +183,7 @@ fn parse_git_config(
     })?;
     let replaced_path = replaced_path
         .strip_prefix(home_dir)
-        .map_or_else(|| replaced_path.to_owned(), |p| format!("~{}", p));
+        .map_or_else(|| replaced_path.to_owned(), |p| format!("~{p}"));
 
     let config = GitConfig {
         path: replaced_path,
@@ -191,7 +191,7 @@ fn parse_git_config(
         remotes,
         prune,
     };
-    trace!("Parsed GitConfig: {:?}", &config);
+    trace!("Parsed GitConfig: {config:?}");
     Ok(config)
 }
 

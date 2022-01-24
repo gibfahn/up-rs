@@ -60,8 +60,8 @@ impl UpConfig {
             // File exists, use file.
             (Ok(up_yaml_path), _) if up_yaml_path.exists() => up_yaml_path,
             (result, Some(fallback_url)) => {
-                info!("Config path not found, falling back to {}", fallback_url);
-                debug!("Yaml path failure: {:?}", result);
+                info!("Config path not found, falling back to {fallback_url}");
+                debug!("Yaml path failure: {result:?}");
                 if result.is_ok() {
                     config_path_explicitly_specified = false;
                 }
@@ -78,13 +78,13 @@ impl UpConfig {
             let read_result = fs::read(&up_yaml_path);
             if let Ok(file_contents) = read_result {
                 let config_str = String::from_utf8_lossy(&file_contents);
-                debug!("config_str: {:?}", config_str);
+                debug!("config_str: {config_str:?}");
                 if config_str.is_empty() {
                     debug!("Yaml file was empty, using default config.");
                 } else {
                     config_yaml = serde_yaml::from_str::<ConfigYaml>(&config_str)?;
                 };
-                debug!("Config_yaml: {:?}", config_yaml);
+                debug!("Config_yaml: {config_yaml:?}");
             }
             Some(up_yaml_path)
         } else if config_path_explicitly_specified {
@@ -119,7 +119,7 @@ impl UpConfig {
     /// If the default is used, the file will be returned, even it the config
     /// path doesn't exist.
     fn get_up_yaml_path(args_config_path: &str) -> Result<PathBuf> {
-        debug!("args_config_file: {}", args_config_path);
+        debug!("args_config_file: {args_config_path}");
         let mut config_path: PathBuf;
         if args_config_path == "$XDG_CONFIG_HOME/up/up.yaml" {
             let up_config_env = env::var("UP_CONFIG");
@@ -166,11 +166,11 @@ If the `fallback_url` is of the form org/repo , then assume it is a github.com r
 */
 fn get_fallback_config_path(mut fallback_url: String, fallback_path: String) -> Result<PathBuf> {
     if !fallback_url.contains("://") {
-        fallback_url = format!("https://github.com/{}", fallback_url);
+        fallback_url = format!("https://github.com/{fallback_url}");
     }
     let fallback_repo_path = env::temp_dir().join("up-rs/fallback_repo");
     fs::create_dir_all(&fallback_repo_path)
-        .with_context(|| format!("Failed to create {:?}", fallback_repo_path))?;
+        .with_context(|| format!("Failed to create {fallback_repo_path:?}"))?;
 
     let fallback_config_path = fallback_repo_path.join(fallback_path);
     git::update::update(

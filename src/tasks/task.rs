@@ -118,7 +118,7 @@ impl Task {
             path: path.to_owned(),
             source: e,
         })?;
-        trace!("Task '{:?}' contents: <<<{}>>>", &path, &s);
+        trace!("Task '{path:?}' contents: <<<{s}>>>");
         let config = serde_yaml::from_str::<TaskConfig>(&s).map_err(|e| E::InvalidYaml {
             path: path.to_owned(),
             source: e,
@@ -139,7 +139,7 @@ impl Task {
             start_time,
             status: TaskStatus::Incomplete,
         };
-        debug!("Task '{}': {:?}", &task.name, task);
+        debug!("Task '{name}': {task:?}", name = &task.name);
         Ok(task)
     }
 
@@ -162,24 +162,22 @@ impl Task {
     where
         F: Fn(&str) -> Result<String, E>,
     {
-        info!("Running task '{}'", &self.name);
+        let name = &self.name;
+        info!("Running task '{name}'");
 
         if let Some(mut cmd) = self.config.run_if_cmd.clone() {
-            debug!("Running '{}' run_if command.", &self.name);
+            debug!("Running '{name}' run_if command.");
             for s in &mut cmd {
                 *s = env_fn(s)?;
             }
             // TODO(gib): Allow choosing how to validate run_if_cmd output (stdout, zero exit
             // code, non-zero exit code).
             if !self.run_command(CommandType::RunIf, &cmd, env)? {
-                debug!("Skipping task '{}' as run_if command failed.", &self.name);
+                debug!("Skipping task '{name}' as run_if command failed.");
                 return Ok(TaskStatus::Skipped);
             }
         } else {
-            debug!(
-                "You haven't specified a run_if command for '{}', so it will always be run",
-                &self.name
-            );
+            debug!("You haven't specified a run_if command for '{name}', so it will always be run",);
         }
 
         if let Some(lib) = &self.config.run_lib {
@@ -227,7 +225,7 @@ impl Task {
         }
 
         if let Some(mut cmd) = self.config.run_cmd.clone() {
-            debug!("Running '{}' run command.", &self.name);
+            debug!("Running '{name}' run command.");
             for s in &mut cmd {
                 *s = env_fn(s)?;
             }
@@ -291,7 +289,7 @@ impl Task {
             .env_clear()
             .envs(env.iter())
             .stdin(Stdio::inherit());
-        trace!("Running command: {:?}", &command);
+        trace!("Running command: {command:?}");
         Ok(command)
     }
 
@@ -303,6 +301,7 @@ impl Task {
         output: &Output,
         elapsed_time: Duration,
     ) {
+        let name = &self.name;
         let level = if command_success {
             Level::Debug
         } else {
@@ -313,27 +312,20 @@ impl Task {
         // TODO(gib): Document error codes.
         log!(
             level,
-            "Task '{}' {} ran in {:?} with {}",
-            &self.name,
-            command_type,
-            elapsed_time,
+            "Task '{name}' {command_type} ran in {elapsed_time:?} with {}",
             output.status
         );
         if !output.stdout.is_empty() {
             log!(
                 level,
-                "Task '{}' {} stdout:\n<<<\n{}>>>\n",
-                &self.name,
-                command_type,
+                "Task '{name}' {command_type} stdout:\n<<<\n{}>>>\n",
                 String::from_utf8_lossy(&output.stdout),
             );
         }
         if !output.stderr.is_empty() {
             log!(
                 level,
-                "Task '{}' {} command stderr:\n<<<\n{}>>>\n",
-                &self.name,
-                command_type,
+                "Task '{name}' {command_type} command stderr:\n<<<\n{}>>>\n",
                 String::from_utf8_lossy(&output.stderr),
             );
         }

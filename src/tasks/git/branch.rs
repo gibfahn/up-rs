@@ -21,11 +21,7 @@ pub(in crate::tasks::git) fn delete_branch(repo: &Repository, branch: &mut Branc
 pub(super) fn shorten_branch_ref(branch: &str) -> &str {
     let short_branch = branch.trim_start_matches("refs/heads/");
     let short_branch = short_branch.trim_start_matches("refs/remotes/");
-    trace!(
-        "Shortened branch: {branch} -> {short_branch}",
-        branch = branch,
-        short_branch = short_branch
-    );
+    trace!("Shortened branch: {branch} -> {short_branch}",);
     short_branch
 }
 
@@ -38,7 +34,7 @@ pub(in crate::tasks::git) fn get_push_branch<'a>(
     branch: &str,
     config: &git2::Config,
 ) -> Result<Option<Branch<'a>>> {
-    debug!("Getting push branch for {}", branch);
+    debug!("Getting push branch for {branch}");
 
     match get_push_remote(branch, config)? {
         Some(remote) => {
@@ -52,8 +48,8 @@ pub(in crate::tasks::git) fn get_push_branch<'a>(
                 Err(e) => return Err(e.into()),
             }
 
-            let remote_ref = format!("{}/{}", remote, branch);
-            trace!("Checking push remote for matching branch {}", &remote_ref);
+            let remote_ref = format!("{remote}/{branch}");
+            trace!("Checking push remote for matching branch {remote_ref}");
             match repo.find_branch(&remote_ref, BranchType::Remote) {
                 Ok(branch) => Ok(Some(branch)),
                 Err(e) if e.code() == ErrorCode::NotFound => Ok(None),
@@ -66,10 +62,10 @@ pub(in crate::tasks::git) fn get_push_branch<'a>(
 
 /// Get the push remote if it exists.
 fn get_push_remote(branch: &str, config: &git2::Config) -> Result<Option<String>> {
-    debug!("Getting push remote for {}", branch);
+    debug!("Getting push remote for {branch}");
 
-    let push_remote_branch_config = format!("branch.{}.pushRemote", branch);
-    trace!("Checking config value: {}", &push_remote_branch_config);
+    let push_remote_branch_config = format!("branch.{branch}.pushRemote");
+    trace!("Checking config value: {push_remote_branch_config}");
 
     // If git config branch.<branch>.pushRemote exists return that.
     if let Some(val) = get_config_value(config, &push_remote_branch_config)? {
@@ -77,7 +73,7 @@ fn get_push_remote(branch: &str, config: &git2::Config) -> Result<Option<String>
     }
 
     let push_remote_default_config = "remote.pushDefault";
-    trace!("Checking config value: {}", push_remote_default_config);
+    trace!("Checking config value: {push_remote_default_config}");
 
     // If git config remote.pushDefault exists return that.
     if let Some(val) = get_config_value(config, push_remote_default_config)? {

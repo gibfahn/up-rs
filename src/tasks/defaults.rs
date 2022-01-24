@@ -65,7 +65,7 @@ pub(crate) fn run(config: DefaultsConfig, up_dir: &Path) -> Result<TaskStatus> {
         Ok(TaskStatus::Passed)
     } else {
         for error in &errors {
-            error!("{:?}", error);
+            error!("{error:?}");
         }
         let mut errors_iter = errors.into_iter();
         Err(errors_iter.next().ok_or(E::UnexpectedNone)?)
@@ -229,15 +229,15 @@ pub(crate) fn read(defaults_opts: DefaultsReadOptions) -> Result<(), E> {
             defaults_opts.key,
         )
     };
-    debug!("Domain: {:?}, Key: {:?}", domain, key);
+    debug!("Domain: {domain:?}, Key: {key:?}");
     let plist_path = plist_path(&domain)?;
-    debug!("Plist path: {:?}", plist_path);
+    debug!("Plist path: {plist_path:?}");
 
     let plist: plist::Value = plist::from_file(&plist_path).map_err(|e| E::PlistRead {
         path: plist_path,
         source: e,
     })?;
-    trace!("Plist: {:?}", plist);
+    trace!("Plist: {plist:?}");
 
     let value = match key.as_ref() {
         Some(key) => plist
@@ -291,7 +291,7 @@ pub(crate) fn write(defaults_opts: DefaultsWriteOptions, up_dir: &Path) -> Resul
             key: defaults_opts.key,
         });
     };
-    debug!("Domain: {:?}, Key: {:?}, Value: {:?}", domain, key, value);
+    debug!("Domain: {domain:?}, Key: {key:?}, Value: {value:?}");
     let mut prefs = HashMap::new();
 
     let new_value: plist::Value =
@@ -301,7 +301,7 @@ pub(crate) fn write(defaults_opts: DefaultsWriteOptions, up_dir: &Path) -> Resul
             value: value.clone(),
             source: e,
         })?;
-    trace!("Serialized Plist value: {:?}", new_value);
+    trace!("Serialized Plist value: {new_value:?}");
 
     prefs.insert(key, new_value);
 

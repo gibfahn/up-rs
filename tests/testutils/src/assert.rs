@@ -2,11 +2,10 @@ use std::{fs, path::Path};
 
 /// Panic if there is a file, directory, or link at the path.
 pub fn nothing_at(path: &Path) {
-    assert!(!path.exists(), "Path '{:?}' shouldn't exist.", &path);
+    assert!(!path.exists(), "Path '{path:?}' shouldn't exist.");
     assert!(
         path.symlink_metadata().is_err(),
-        "Path '{:?}' should not be a symlink, but found: '{:?}'.",
-        &path,
+        "Path '{path:?}' should not be a symlink, but found: '{:?}'.",
         path.symlink_metadata().unwrap()
     );
 }
@@ -14,21 +13,19 @@ pub fn nothing_at(path: &Path) {
 /// Panic if there is not a file at the path, or if the contents don't match.
 pub fn file(path: &Path, contents: &str) {
     if !path.is_file() {
-        println!("Path: {:?}", path)
+        println!("Path: {path:?}")
     };
     assert!(
         path.exists(),
         "Expected path to be a file, but it doesn't exist.\n  \
-         Path: {:?}",
-        path
+         Path: {path:?}"
     );
     assert!(
         path.is_file(),
         "Expected path to be a file, but it has the wrong type.\n  \
-         Path: {:?}\n  \
+         Path: {path:?}\n  \
          Is directory: {}\n  \
          Is symlink: {}",
-        path,
         path.is_dir(),
         path.symlink_metadata().unwrap().file_type().is_symlink()
     );
@@ -37,9 +34,7 @@ pub fn file(path: &Path, contents: &str) {
     assert_eq!(
         contents,
         actual_contents,
-        "\n  Expected file contents don't match actual file contents..\n  Expected: \n<<<\n{}>>>\n  Actual: \n<<<\n{}>>>",
-        contents,
-        actual_contents,
+        "\n  Expected file contents don't match actual file contents..\n  Expected: \n<<<\n{contents}>>>\n  Actual: \n<<<\n{actual_contents}>>>",
     );
 }
 
@@ -48,16 +43,14 @@ pub fn dir(path: &Path) {
     assert!(
         path.exists(),
         "Expected path to be a directory, but it doesn't exist.\n  \
-         Path: {:?}",
-        path
+         Path: {path:?}",
     );
     assert!(
         path.is_dir(),
         "Expected path to be a directory, but it isn't.\n  \
-         Path: {:?}\n  \
+         Path: {path:?}\n  \
          Is file: {}\n  \
          Is symlink: {}",
-        path,
         path.is_file(),
         path.symlink_metadata().unwrap().file_type().is_symlink()
     );
@@ -69,16 +62,14 @@ pub fn link(path: &Path, destination: &Path) {
     assert!(
         path.exists(),
         "Expected path to be a link, but it doesn't exist.\n  \
-         Path: {:?}",
-        path
+         Path: {path:?}",
     );
     assert!(
         path.symlink_metadata().unwrap().file_type().is_symlink(),
         "Expected path to be a symlink, but it has the wrong type.\n  \
-         Path: {:?}\n  \
+         Path: {path:?}\n  \
          Is file: {}\n  \
          Is directory: {}",
-        path,
         path.is_file(),
         path.is_dir()
     );
@@ -96,8 +87,6 @@ pub fn contains_all(text: &str, patterns: &[&str]) {
 pub fn contains(text: &str, pattern: &str) {
     assert!(
         text.contains(pattern),
-        "\n  Expected text to contain pattern.\n  Pattern: {:?}\n  Text: <<<{}>>>",
-        pattern,
-        text
+        "\n  Expected text to contain pattern.\n  Pattern: {pattern:?}\n  Text: <<<{text}>>>",
     );
 }
