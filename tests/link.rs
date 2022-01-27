@@ -290,10 +290,9 @@ fn run_link_cmd(
         .iter(),
     );
 
-    let assert_cmd = if result.to_bool() {
+    if result.to_bool() {
         cmd.assert().success()
     } else {
         cmd.assert().failure()
-    };
-    assert_cmd
+    }
 }

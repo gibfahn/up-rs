@@ -7,7 +7,7 @@ use color_eyre::eyre::{Context, Result};
 use displaydoc::Display;
 use git2::Repository;
 use log::{debug, error, info, trace};
-use rayon::prelude::*;
+use rayon::{iter::Either, prelude::*};
 use thiserror::Error;
 use walkdir::WalkDir;
 
@@ -22,15 +22,22 @@ use crate::{
     },
 };
 
-// TODO(gib): Return TaskStatus::Skipped if we didn't change anything.
-pub fn run(generate_git_configs: &[GenerateGitConfig]) -> Result<TaskStatus> {
-    let errors: Vec<_> = generate_git_configs
-        .par_iter()
-        .map(run_single)
-        .filter_map(Result::err)
-        .collect();
+pub fn run(configs: &[GenerateGitConfig]) -> Result<TaskStatus> {
+    let (statuses, errors): (Vec<_>, Vec<_>) =
+        configs
+            .par_iter()
+            .map(run_single)
+            .partition_map(|x| match x {
+                Ok(status) => Either::Left(status),
+                Err(e) => Either::Right(e),
+            });
+
     if errors.is_empty() {
-        Ok(TaskStatus::Passed)
+        if statuses.iter().all(|s| matches!(s, TaskStatus::Skipped)) {
+            Ok(TaskStatus::Skipped)
+        } else {
+            Ok(TaskStatus::Passed)
+        }
     } else {
         for error in &errors {
             error!("{error:?}");
@@ -40,13 +47,14 @@ pub fn run(generate_git_configs: &[GenerateGitConfig]) -> Result<TaskStatus> {
     }
 }
 
-pub fn run_single(generate_git_config: &GenerateGitConfig) -> Result<()> {
+pub fn run_single(generate_git_config: &GenerateGitConfig) -> Result<TaskStatus> {
     debug!(
         "Generating git config for: {path}",
         path = generate_git_config.path.display()
     );
     let mut git_task = Task::from(&generate_git_config.path)?;
     debug!("Existing git config: {git_task:?}");
+    let name = git_task.name.as_str();
     let mut git_configs = Vec::new();
     let home_dir = dirs::home_dir().ok_or(E::MissingHomeDir)?;
     let home_dir = home_dir.to_str().ok_or_else(|| E::InvalidUTF8Path {
@@ -72,12 +80,17 @@ pub fn run_single(generate_git_config: &GenerateGitConfig) -> Result<()> {
     let mut serialized_task = GENERATED_PRELUDE_COMMENT.to_owned();
     serialized_task.push_str(&serde_yaml::to_string(&git_task.config)?);
     trace!("New yaml file: <<<{serialized_task}>>>");
+    if serialized_task == fs::read_to_string(&generate_git_config.path)? {
+        info!("Skipped task '{name}' as git repo layout unchanged.",);
+        return Ok(TaskStatus::Skipped);
+    }
+
     fs::write(&generate_git_config.path, serialized_task)?;
     info!(
-        "Git repo layout generated for task '{}' and written to '{:?}'",
-        git_task.name, generate_git_config.path
+        "Git repo layout generated for task '{name}' and written to '{path:?}'",
+        path = generate_git_config.path
     );
-    Ok(())
+    Ok(TaskStatus::Passed)
 }
 
 impl ResolveEnv for Vec<GenerateGitConfig> {

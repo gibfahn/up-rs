@@ -7,11 +7,13 @@ use log::debug;
 use super::status::ensure_repo_clean;
 use crate::tasks::git::{checkout::set_and_checkout_head, errors::GitError as E};
 
-pub(super) fn do_merge<'a>(
+/// Fast-forward merge, returns "Skipped" if nothing was updated.
+/// Returns whether we did any work (`false` means skipped).
+pub(super) fn do_ff_merge<'a>(
     repo: &'a Repository,
     branch_name: &str,
     fetch_commit: &git2::AnnotatedCommit<'a>,
-) -> Result<()> {
+) -> Result<bool> {
     // Do merge analysis
     let analysis = repo.merge_analysis(&[fetch_commit])?;
 
@@ -35,15 +37,16 @@ pub(super) fn do_merge<'a>(
             )?;
             set_and_checkout_head(repo, branch_name, false)?;
         }
+        Ok(true)
     } else if analysis.0.is_up_to_date() {
         debug!("Skipping fast-forward merge as already up-to-date.");
+        Ok(false)
     } else {
         bail!(E::CannotFastForwardMerge {
             analysis: analysis.0,
             preference: analysis.1
         });
     }
-    Ok(())
 }
 
 fn fast_forward(repo: &Repository, lb: &mut Reference, rc: &git2::AnnotatedCommit) -> Result<()> {

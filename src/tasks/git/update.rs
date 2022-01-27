@@ -14,22 +14,33 @@ use itertools::Itertools;
 use log::{debug, trace, warn};
 use url::Url;
 
-use crate::tasks::git::{
-    branch::{calculate_head, get_branch_name, get_push_branch, shorten_branch_ref},
-    checkout::{checkout_branch, needs_checkout},
-    errors::GitError as E,
-    fetch::{remote_callbacks, set_remote_head},
-    merge::do_merge,
-    prune::prune_merged_branches,
-    status::warn_for_unpushed_changes,
-    GitConfig, GitRemote,
+use crate::tasks::{
+    git::{
+        branch::{calculate_head, get_branch_name, get_push_branch, shorten_branch_ref},
+        checkout::{checkout_branch, needs_checkout},
+        errors::GitError as E,
+        fetch::{remote_callbacks, set_remote_head},
+        merge::do_ff_merge,
+        prune::prune_merged_branches,
+        status::warn_for_unpushed_changes,
+        GitConfig, GitRemote,
+    },
+    task::TaskStatus,
 };
 
-pub(crate) fn update(git_config: &GitConfig) -> Result<()> {
+pub(crate) fn update(git_config: &GitConfig) -> Result<TaskStatus> {
     let now = Instant::now();
-    let result = real_update(git_config).with_context(|| E::GitUpdate {
-        path: PathBuf::from(git_config.path.clone()),
-    });
+    let result = real_update(git_config)
+        .map(|did_work| {
+            if did_work {
+                TaskStatus::Passed
+            } else {
+                TaskStatus::Skipped
+            }
+        })
+        .with_context(|| E::GitUpdate {
+            path: PathBuf::from(git_config.path.clone()),
+        });
     let elapsed_time = now.elapsed();
     // TODO(gib): configurable logging for long actions.
     if elapsed_time > Duration::from_secs(60) {
@@ -41,12 +52,15 @@ pub(crate) fn update(git_config: &GitConfig) -> Result<()> {
     result
 }
 
+/// Update a git repo, returns `true` if we did any work (or `false` if we skipped).
 // TODO(gib): remove more stuff from this function.
 // TODO(gib): Handle the case where a repo update has changed the default
 // branch, e.g. master -> main, and now there's a branch with an upstream
 // pointing to nothing.
 #[allow(clippy::too_many_lines)]
-pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
+pub(crate) fn real_update(git_config: &GitConfig) -> Result<bool> {
+    let mut did_work = false;
+
     // Create dir if it doesn't exist.
     let git_path = PathBuf::from(git_config.path.clone());
     debug!("Updating git repo '{git_path:?}'");
@@ -59,6 +73,7 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
             path: git_path.clone(),
             source: e,
         })?;
+        did_work = true;
     }
 
     // Initialize repo if it doesn't exist.
@@ -67,6 +82,7 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
         Err(e) => {
             if e.code() == ErrorCode::NotFound {
                 newly_created_repo = true;
+                did_work = true;
                 Repository::init(&git_path)?
             } else {
                 debug!(
@@ -114,8 +130,11 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
                 name: default_remote_name.clone(),
             })?;
 
-    if !newly_created_repo && git_config.prune {
-        prune_merged_branches(&repo, &default_remote_name)?;
+    if !newly_created_repo
+        && git_config.prune
+        && prune_merged_branches(&repo, &default_remote_name)?
+    {
+        did_work = true;
     }
 
     let branch_name: String = if let Some(branch_name) = &git_config.branch {
@@ -136,6 +155,7 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
             &default_remote_name,
             newly_created_repo,
         )?;
+        did_work = true;
     }
 
     // TODO(gib): use `repo.revparse_ext(&push_revision)?.1` when available.
@@ -145,11 +165,13 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
         let push_revision = format!("{short_branch}@{{push}}");
         let merge_commit = repo.reference_to_annotated_commit(push_branch.get())?;
         let push_branch_name = get_branch_name(&push_branch)?;
-        do_merge(&repo, &branch_name, &merge_commit).with_context(|| E::Merge {
+        if do_ff_merge(&repo, &branch_name, &merge_commit).with_context(|| E::Merge {
             branch: branch_name,
             merge_rev: push_revision,
             merge_ref: push_branch_name,
-        })?;
+        })? {
+            did_work = true;
+        }
     } else {
         debug!("Branch doesn't have an @{{push}} branch, checking @{{upstream}} instead.");
         let up_revision = format!("{short_branch}@{{upstream}}");
@@ -160,11 +182,13 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
             Ok(upstream_branch) => {
                 let upstream_commit = repo.reference_to_annotated_commit(upstream_branch.get())?;
                 let upstream_branch_name = get_branch_name(&upstream_branch)?;
-                do_merge(&repo, &branch_name, &upstream_commit).with_context(|| E::Merge {
+                if do_ff_merge(&repo, &branch_name, &upstream_commit).with_context(|| E::Merge {
                     branch: branch_name,
                     merge_rev: up_revision,
                     merge_ref: upstream_branch_name,
-                })?;
+                })? {
+                    did_work = true;
+                }
             }
             Err(e) if e.code() == ErrorCode::NotFound => {
                 debug!("Skipping update to remote ref as branch doesn't have an upstream.");
@@ -173,20 +197,22 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<()> {
                 return Err(e.into());
             }
         }
-    }
+    };
     drop(default_remote); // Can't mutably use repo while this value is around.
     if !newly_created_repo {
         warn_for_unpushed_changes(&mut repo, &user_git_config, &git_path)?;
     }
-    Ok(())
+    Ok(did_work)
 }
 
-fn set_up_remote(repo: &Repository, remote_config: &GitRemote) -> Result<()> {
+fn set_up_remote(repo: &Repository, remote_config: &GitRemote) -> Result<bool> {
+    let mut did_work = false;
     let remote_name = &remote_config.name;
 
     // TODO(gib): Check remote URL matches, else delete and recreate.
     let mut remote = repo.find_remote(remote_name).or_else(|e| {
         debug!("Finding requested remote failed, creating it (error was: {e})",);
+        did_work = true;
         repo.remote(remote_name, &remote_config.fetch_url)
     })?;
     if let Some(url) = remote.url() {
@@ -196,10 +222,12 @@ fn set_up_remote(repo: &Repository, remote_config: &GitRemote) -> Result<()> {
                 new_url = remote_config.fetch_url
             );
             repo.remote_set_url(remote_name, &remote_config.fetch_url)?;
+            did_work = true;
         }
     }
     if let Some(push_url) = &remote_config.push_url {
         repo.remote_set_pushurl(remote_name, Some(push_url))?;
+        did_work = true;
     }
     let fetch_refspecs: [&str; 0] = [];
     {
@@ -264,8 +292,10 @@ fn set_up_remote(repo: &Repository, remote_config: &GitRemote) -> Result<()> {
         remote.name(),
         &default_branch
     );
-    set_remote_head(repo, &remote, &default_branch)?;
-    Ok(())
+    if set_remote_head(repo, &remote, &default_branch)? {
+        did_work = true;
+    };
+    Ok(did_work)
 }
 
 /// Get a string from a config object if defined.

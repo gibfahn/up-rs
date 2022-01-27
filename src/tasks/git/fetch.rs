@@ -64,7 +64,8 @@ pub(super) fn set_remote_head(
     repo: &Repository,
     remote: &Remote,
     default_branch: &str,
-) -> Result<()> {
+) -> Result<bool> {
+    let mut did_work = false;
     let remote_name = remote.name().ok_or(E::RemoteNameMissing)?;
     let remote_ref = format!("refs/remotes/{remote_name}/HEAD");
     let short_branch = shorten_branch_ref(default_branch);
@@ -86,12 +87,14 @@ pub(super) fn set_remote_head(
                     true,
                     "up-rs overwrite remote head",
                 )?;
+                did_work = true;
             }
         }
         Err(e) if e.code() == ErrorCode::NotFound => {
             repo.reference_symbolic(&remote_ref, &remote_head, false, "up-rs set remote head")?;
+            did_work = true;
         }
         Err(e) => return Err(e.into()),
     }
-    Ok(())
+    Ok(did_work)
 }

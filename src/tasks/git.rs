@@ -1,11 +1,11 @@
 use std::convert::From;
 
 use clap::Parser;
-use color_eyre::eyre::{eyre, Context, Result};
+use color_eyre::eyre::Result;
 use displaydoc::Display;
 use git2::Remote;
 use log::error;
-use rayon::prelude::*;
+use rayon::{iter::Either, prelude::*};
 use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -48,22 +48,27 @@ const fn prune_default() -> bool {
     false
 }
 
-// TODO(gib): Return TaskStatus::Skipped if we didn't do anything.
 pub(crate) fn run(configs: &[GitConfig]) -> Result<TaskStatus> {
-    let errors: Vec<_> = configs
+    let (statuses, errors): (Vec<_>, Vec<_>) = configs
         .par_iter()
         .map(update::update)
-        .filter_map(Result::err)
-        .collect();
+        .partition_map(|x| match x {
+            Ok(status) => Either::Left(status),
+            Err(e) => Either::Right(e),
+        });
+
     if errors.is_empty() {
-        Ok(TaskStatus::Passed)
+        if statuses.iter().all(|s| matches!(s, TaskStatus::Skipped)) {
+            Ok(TaskStatus::Skipped)
+        } else {
+            Ok(TaskStatus::Passed)
+        }
     } else {
         for error in &errors {
             error!("{error:?}");
         }
-        let mut errors_iter = errors.into_iter();
-        Err(errors_iter.next().ok_or(E::UnexpectedNone)?)
-            .with_context(|| eyre!("{:?}", errors_iter.collect::<Vec<_>>()))
+        let first_error = errors.into_iter().next().ok_or(E::UnexpectedNone)?;
+        Err(first_error)
     }
 }
 

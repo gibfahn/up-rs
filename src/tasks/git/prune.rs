@@ -16,11 +16,12 @@ use crate::tasks::git::{
 ///
 /// If the branch to be pruned is the currently checked out branch, switch to the HEAD branch of the
 /// `remote_name` remote.
-pub(super) fn prune_merged_branches(repo: &Repository, remote_name: &str) -> Result<()> {
+/// Returns whether we did any work (`false` means we skipped).
+pub(super) fn prune_merged_branches(repo: &Repository, remote_name: &str) -> Result<bool> {
     let branches_to_prune = branches_to_prune(repo)?;
     if branches_to_prune.is_empty() {
         debug!("Nothing to prune.");
-        return Ok(());
+        return Ok(false);
     }
     ensure_repo_clean(repo)?;
     debug!(
@@ -45,7 +46,7 @@ pub(super) fn prune_merged_branches(repo: &Repository, remote_name: &str) -> Res
         }
         delete_branch(repo, &mut branch)?;
     }
-    Ok(())
+    Ok(true)
 }
 
 /// Work out branches that we can prune.
