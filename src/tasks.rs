@@ -172,7 +172,7 @@ fn run_tasks(
             let task = run_task(
                 tasks
                     .remove(&task)
-                    .ok_or_else(|| eyre!("Task '{}' was missing.", task))?,
+                    .ok_or_else(|| eyre!("Task '{task}' was missing."))?,
                 env,
                 up_dir,
             );
