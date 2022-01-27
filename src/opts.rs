@@ -72,7 +72,7 @@ pub struct Opts {
 }
 
 fn from_level(level: &str) -> Result<Level> {
-    Level::from_str(level).map_err(|()| eyre!("Failed to parse level {}", level))
+    Level::from_str(level).map_err(|()| eyre!("Failed to parse level {level}"))
 }
 
 /// Settings for colouring output.

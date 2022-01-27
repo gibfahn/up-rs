@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use assert_cmd::cargo::cargo_bin;
-use duct::cmd;
 use testutils::assert;
 
 #[cfg(target_os = "macos")]
@@ -73,6 +72,8 @@ fn up_run_passing() {
 
     #[cfg(target_os = "macos")]
     {
+        use duct::cmd;
+
         // Defaults Task: Check values were set correctly.
         let actual_value = cmd!("defaults", "read", test_plist).read().unwrap();
         assert_eq!(actual_value, EXPECTED_DEFAULTS_VALUE);

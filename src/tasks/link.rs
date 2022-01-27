@@ -212,7 +212,7 @@ fn link_path(
                     })?;
                 }
                 Err(e) => {
-                    bail!("read_link returned error {:?} for {:?}", e, to_path);
+                    bail!("read_link returned error {e:?} for {to_path:?}");
                 }
             }
         } else if to_path_file_type.is_dir() {

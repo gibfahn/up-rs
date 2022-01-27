@@ -36,7 +36,7 @@ pub fn get_env(
                             unresolved_env.push(key.clone());
                             Ok(None)
                         } else {
-                            Err(eyre!("Value {} not found in inherited_env or env vars.", k))
+                            Err(eyre!("Value {k} not found in inherited_env or env vars."))
                         }
                     }
                 })
@@ -82,10 +82,7 @@ pub fn get_env(
         }
         trace!("resolved indices: {resolved_indices:?}");
         if resolved_indices.is_empty() {
-            bail!(
-                "Errors resolving env, do you have cycles? Unresolved env: {:#?}",
-                unresolved_env
-            );
+            bail!("Errors resolving env, do you have cycles? Unresolved env: {unresolved_env:#?}",);
         }
         unresolved_env = unresolved_env
             .into_iter()
