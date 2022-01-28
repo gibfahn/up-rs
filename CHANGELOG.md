@@ -1,3 +1,14 @@
+<a name="0.13.3"></a>
+## [0.13.3][] (2022-01-28)
+
+
+#### Bug Fixes
+
+* **generate:**  skip git update if nothing changed ([7129a033](https://github.com/gibfahn/up-rs/commit/7129a0331a8e96c3e8907024ca7cc99c198c26e2))
+* **task:**  add a suggestion when the task to execute isn't executable ([75e00a28](https://github.com/gibfahn/up-rs/commit/75e00a288f481d2fbd82803f20822447794ae023))
+
+
+
 <a name="0.13.2"></a>
 ## [0.13.2][] (2021-12-02)
 
@@ -560,3 +571,4 @@
 [0.13.0]: https://github.com/gibfahn/up-rs/releases/tag/0.13.0
 [0.13.1]: https://github.com/gibfahn/up-rs/releases/tag/0.13.1
 [0.13.2]: https://github.com/gibfahn/up-rs/releases/tag/0.13.2
+[0.13.3]: https://github.com/gibfahn/up-rs/releases/tag/0.13.3
