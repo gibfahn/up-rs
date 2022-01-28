@@ -24,14 +24,12 @@ fi
 
 # Default target is set in Dockerfile ~/.cargo/config as x86_64-unknown-linux-musl
 set -x
-# Building my own image until https://github.com/emk/rust-musl-builder/issues/123 is fixed.
-#   docker build --build-arg OPENSSL_VERSION=1.1.1l -t gibfahn/rust-musl-builder .
-#   docker push gibfahn/rust-musl-builder
 docker run --rm -it \
+  --pull=always \
   -v "${XDG_CACHE_HOME:-$HOME/.cache}"/docker/cargo/registry:/opt/rust/cargo/registry \
   -v "${XDG_CACHE_HOME:-$HOME/.cache}"/docker/cargo/git:/opt/rust/cargo/git \
   -v "$project_root":/workspace \
   -e CARGO_HOME=/opt/rust/cargo \
   -u root -w /workspace \
-  gibfahn/rust-musl-builder \
+  ekidd/rust-musl-builder \
   "${build_args[@]}"
