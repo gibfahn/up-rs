@@ -11,7 +11,7 @@ The Release process is still somewhat manual, and only works on macOS for now.
 
 1. Ensure all changes are pushed, check that CI on the latest commit was green.
   You can also check this badge: ![Master CI Status](https://github.com/gibfahn/up-rs/workflows/Rust/badge.svg)
-2. Run the [bin/release.sh][] script.
+2. Run the [meta/release.sh][] script.
 3. Go to the [GitHub Releases][] page and check everything is working properly.
 
 [CHANGELOG.md]: /CHANGELOG.md

@@ -9,7 +9,7 @@ cd $project_dir
 
 set -x
 
-bin/cargo-docker build --release
+meta/cargo-docker build --release
 
 docker run -it --rm -w /root \
   -v "$PWD"/target/x86_64-unknown-linux-musl/release/up:/usr/local/bin/up \

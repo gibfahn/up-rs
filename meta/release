@@ -72,14 +72,14 @@ main() {
   # Check the documentation is buildable.
   log_and_run cargo doc
   # Tests musl static Linux binaries.
-  log_and_run bin/cargo-docker
+  log_and_run meta/cargo-docker
   # Runs end-to-end bootstrap tests.
-  log_and_run bin/bootstrap-test
+  log_and_run meta/bootstrap-test
 
   # Build Darwin release binaries (without the CI feature).
   log_and_run cargo build --release
   # Builds musl static Linux release binaries.
-  log_and_run bin/cargo-docker build --release
+  log_and_run meta/cargo-docker build --release
 
   latest_crate_version=$(curl https://crates.io/api/v1/crates/up-rs | jq -r .crate.newest_version)
   if [[ $latest_crate_version == $new_version ]]; then

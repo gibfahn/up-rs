@@ -61,7 +61,7 @@ The easiest way to build is with docker.
 Run this script to build and test locally.
 
 ```bash
-bin/cargo-docker
+meta/cargo-docker
 ```
 
 #### Cross-Compiled Linux Build
