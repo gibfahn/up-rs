@@ -292,12 +292,15 @@ pub enum TaskError {
     EmptyCmd,
     /// Task '{name}' had no run command.
     MissingCmd { name: String },
-    /// Task '{name}' {command_type} failed. Command: {cmd:?}.
+    /**
+    Task '{name}' {command_type} failed.Command: {cmd:?}.{suggestion}
+    */
     CmdFailed {
         command_type: CommandType,
         name: String,
         source: io::Error,
         cmd: Vec<String>,
+        suggestion: String,
     },
     /// Task '{name}' {command_type} failed with exit code {code}. Command: {cmd:?}.
     CmdNonZero {

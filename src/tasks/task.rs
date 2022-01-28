@@ -4,6 +4,7 @@ use std::{
     fs,
     path::{Path, PathBuf},
     process::{Command, Output, Stdio},
+    string::String,
     time::{Duration, Instant},
 };
 
@@ -254,11 +255,21 @@ impl Task {
         let mut command = Self::get_command(cmd, env)?;
 
         let now = Instant::now();
-        let output = command.output().map_err(|e| E::CmdFailed {
-            command_type,
-            name: self.name.clone(),
-            cmd: cmd.into(),
-            source: e,
+        let output = command.output().map_err(|e| {
+            let suggestion = match e.kind() {
+                std::io::ErrorKind::PermissionDenied => format!(
+                    "\n Suggestion: Try making the file executable with `chmod +x {path}`",
+                    path = cmd.get(0).map_or("", String::as_str)
+                ),
+                _ => String::new(),
+            };
+            E::CmdFailed {
+                command_type,
+                name: self.name.clone(),
+                cmd: cmd.into(),
+                source: e,
+                suggestion,
+            }
         })?;
 
         let elapsed_time = now.elapsed();
