@@ -230,28 +230,31 @@ pub(super) fn write_defaults_values(
     Ok(values_changed)
 }
 
+#[cfg(test)]
 mod tests {
+    use serial_test::serial;
 
-    // TODO(gib): Re-add this once I fix the use of $HOME in
-    // config::yaml_paths_tests::get_yaml_paths(), which affects this test. #[test]
-    // fn plist_path_tests() {
-    //     {
-    //         let domain_path = super::plist_path("NSGlobalDomain").unwrap();
-    //         assert_eq!(
-    //             dirs::home_dir()
-    //                 .unwrap()
-    //                 .join("Library/Preferences/.GlobalPreferences.plist"),
-    //             domain_path
-    //         );
-    //     }
+    #[test]
+    #[serial(home_dir)] // Test relies on or changes the $HOME env var.
+    fn plist_path_tests() {
+        {
+            let domain_path = super::plist_path("NSGlobalDomain").unwrap();
+            assert_eq!(
+                dirs::home_dir()
+                    .unwrap()
+                    .join("Library/Preferences/.GlobalPreferences.plist"),
+                domain_path
+            );
+        }
 
-    //     {
-    //         let domain_path = super::plist_path("com.apple.Safari").unwrap();
-    //         assert_eq!(
-    //
-    // dirs::home_dir().unwrap().join("Library/Containers/com.apple.Safari/Data/Library/Preferences/
-    // com.apple.Safari.plist"),             domain_path
-    //         );
-    //     }
-    // }
+        {
+            let domain_path = super::plist_path("com.apple.Safari").unwrap();
+            assert_eq!(
+                dirs::home_dir().unwrap().join(
+                    "Library/Containers/com.apple.Safari/Data/Library/Preferences/com.apple.Safari.plist"
+                ),
+                domain_path
+            );
+        }
+    }
 }

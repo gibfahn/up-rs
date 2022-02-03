@@ -196,11 +196,14 @@ fn get_fallback_config_path(mut fallback_url: String, fallback_path: String) -> 
 mod yaml_paths_tests {
     use std::env;
 
+    use serial_test::serial;
+
     use super::UpConfig;
 
     /// Test possible options for the up.yaml. All run in one file as they
     /// modify the shared test environment.
     #[test]
+    #[serial(home_dir)] // Test relies on or changes the $HOME env var.
     fn get_yaml_paths() {
         let orig_home = env::var("HOME").unwrap();
 

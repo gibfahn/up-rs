@@ -57,6 +57,7 @@ testutils = { path = "./tests/testutils" }
 ignore = "0.4.18"
 assert_cmd = "2.0.4"
 predicates = "2.1.1"
+serial_test = "0.5.1"
 
 [features]
 CI = [] # Enabled when running in CI.
