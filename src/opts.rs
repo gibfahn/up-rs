@@ -1,6 +1,6 @@
 use std::{path::PathBuf, str::FromStr};
 
-use clap::{AppSettings, ArgEnum, Parser, ValueHint};
+use clap::{ArgEnum, Parser, ValueHint};
 use clap_complete::Shell;
 use color_eyre::eyre::{eyre, Result};
 use serde_derive::{Deserialize, Serialize};
@@ -46,8 +46,7 @@ For debugging, run with `RUST_LIB_BACKTRACE=1` to show error/panic traces.
 Logs from the latest run are available at $TMPDIR/up-rs/logs/up-rs_latest.log by default.
 */
 #[derive(Debug, Parser)]
-/// Show full help when running `up help <subcommand>`.
-#[clap(version, setting(AppSettings::UseLongFormatForHelpSubcommand))]
+#[clap(version)]
 pub struct Opts {
     /// Set the logging level explicitly (options: Off, Error, Warn, Info,
     /// Debug, Trace).
