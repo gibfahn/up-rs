@@ -58,7 +58,10 @@ pub(crate) fn run(config: DefaultsConfig, up_dir: &Path) -> Result<TaskStatus> {
     }
 
     if passed.into_iter().any(|r| r) {
-        warn!("Defaults values have been changed, these may not take effect until you restart the system or run `sudo killall cfprefsd`");
+        warn!(
+            "Defaults values have been changed, these may not take effect until you restart the \
+             system or run `sudo killall cfprefsd`"
+        );
     }
 
     if errors.is_empty() {

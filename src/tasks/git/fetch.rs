@@ -27,20 +27,23 @@ pub(super) fn remote_callbacks(count: &mut usize) -> RemoteCallbacks {
                 // to the system keychain. This argument isn't present on other platforms.
                 let ssh_add_keychain = if cfg!(target_os = "macos") { "-K " } else { "" };
                 format!(
-                    "\nIf 'git clone {url}' works, you probably need to add your ssh keys to the ssh-agent. \
-                    Try running 'ssh-add {ssh_add_keychain}-A' or 'ssh-add {ssh_add_keychain}~/.ssh/*id_{{rsa,ed25519}}'."
-                 )
+                    "\nIf 'git clone {url}' works, you probably need to add your ssh keys to the \
+                     ssh-agent. Try running 'ssh-add {ssh_add_keychain}-A' or 'ssh-add \
+                     {ssh_add_keychain}~/.ssh/*id_{{rsa,ed25519}}'."
+                )
             } else {
                 String::new()
             };
-            let message = format!("Authentication failure while trying to fetch git repository.{extra}\n\
-            url: {url}, username_from_url: {username_from_url:?}, allowed_types: {allowed_types:?}"
-                );
+            let message = format!(
+                "Authentication failure while trying to fetch git repository.{extra}\nurl: {url}, \
+                 username_from_url: {username_from_url:?}, allowed_types: {allowed_types:?}"
+            );
             return Err(git2::Error::new(ErrorCode::Auth, ErrorClass::Ssh, message));
         }
         debug!("SSH_AUTH_SOCK: {:?}", std::env::var("SSH_AUTH_SOCK"));
         debug!(
-            "Fetching credentials, url: {url}, username_from_url: {username_from_url:?}, count: {count}, allowed_types: {allowed_types:?}"
+            "Fetching credentials, url: {url}, username_from_url: {username_from_url:?}, count: \
+             {count}, allowed_types: {allowed_types:?}"
         );
         let username = username_from_url.unwrap_or("git");
         if allowed_types.contains(CredentialType::USERNAME) {

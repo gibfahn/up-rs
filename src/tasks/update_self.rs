@@ -60,7 +60,8 @@ pub(crate) fn run(opts: &UpdateSelfOptions) -> Result<TaskStatus> {
             <= semver::Version::parse(CURRENT_VERSION)?
         {
             debug!(
-                "Skipping up-rs update, current version '{CURRENT_VERSION}' is not older than latest GitHub version '{latest_github_release}'",
+                "Skipping up-rs update, current version '{CURRENT_VERSION}' is not older than \
+                 latest GitHub version '{latest_github_release}'",
             );
             return Ok(TaskStatus::Skipped);
         }
@@ -100,7 +101,8 @@ pub(crate) fn run(opts: &UpdateSelfOptions) -> Result<TaskStatus> {
         Ok(TaskStatus::Passed)
     } else {
         debug!(
-            "Skipping up-rs update, current version '{CURRENT_VERSION}' and new version '{new_version}'",
+            "Skipping up-rs update, current version '{CURRENT_VERSION}' and new version \
+             '{new_version}'",
         );
         Ok(TaskStatus::Skipped)
     }

@@ -17,24 +17,21 @@ pub fn file(path: &Path, contents: &str) {
     };
     assert!(
         path.exists(),
-        "Expected path to be a file, but it doesn't exist.\n  \
-         Path: {path:?}"
+        "Expected path to be a file, but it doesn't exist.\n  Path: {path:?}"
     );
     assert!(
         path.is_file(),
-        "Expected path to be a file, but it has the wrong type.\n  \
-         Path: {path:?}\n  \
-         Is directory: {}\n  \
-         Is symlink: {}",
+        "Expected path to be a file, but it has the wrong type.\n  Path: {path:?}\n  Is \
+         directory: {}\n  Is symlink: {}",
         path.is_dir(),
         path.symlink_metadata().unwrap().file_type().is_symlink()
     );
 
     let actual_contents = fs::read_to_string(path).unwrap();
     assert_eq!(
-        contents,
-        actual_contents,
-        "\n  Expected file contents don't match actual file contents..\n  Expected: \n<<<\n{contents}>>>\n  Actual: \n<<<\n{actual_contents}>>>",
+        contents, actual_contents,
+        "\n  Expected file contents don't match actual file contents..\n  Expected: \
+         \n<<<\n{contents}>>>\n  Actual: \n<<<\n{actual_contents}>>>",
     );
 }
 
@@ -42,15 +39,12 @@ pub fn file(path: &Path, contents: &str) {
 pub fn dir(path: &Path) {
     assert!(
         path.exists(),
-        "Expected path to be a directory, but it doesn't exist.\n  \
-         Path: {path:?}",
+        "Expected path to be a directory, but it doesn't exist.\n  Path: {path:?}",
     );
     assert!(
         path.is_dir(),
-        "Expected path to be a directory, but it isn't.\n  \
-         Path: {path:?}\n  \
-         Is file: {}\n  \
-         Is symlink: {}",
+        "Expected path to be a directory, but it isn't.\n  Path: {path:?}\n  Is file: {}\n  Is \
+         symlink: {}",
         path.is_file(),
         path.symlink_metadata().unwrap().file_type().is_symlink()
     );
@@ -61,15 +55,12 @@ pub fn dir(path: &Path) {
 pub fn link(path: &Path, destination: &Path) {
     assert!(
         path.exists(),
-        "Expected path to be a link, but it doesn't exist.\n  \
-         Path: {path:?}",
+        "Expected path to be a link, but it doesn't exist.\n  Path: {path:?}",
     );
     assert!(
         path.symlink_metadata().unwrap().file_type().is_symlink(),
-        "Expected path to be a symlink, but it has the wrong type.\n  \
-         Path: {path:?}\n  \
-         Is file: {}\n  \
-         Is directory: {}",
+        "Expected path to be a symlink, but it has the wrong type.\n  Path: {path:?}\n  Is file: \
+         {}\n  Is directory: {}",
         path.is_file(),
         path.is_dir()
     );

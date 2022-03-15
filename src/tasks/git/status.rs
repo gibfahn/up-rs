@@ -76,7 +76,8 @@ pub(super) fn warn_for_unpushed_changes(
             // Warn for any commits not in @{push}
             if unmerged_commits(repo, &push_branch, &branch)? {
                 warn!(
-                    "Repo {git_path:?} branch '{branch_name}' has changes that aren't in @{{push}}.",
+                    "Repo {git_path:?} branch '{branch_name}' has changes that aren't in \
+                     @{{push}}.",
                 );
             }
         } else {
@@ -85,14 +86,16 @@ pub(super) fn warn_for_unpushed_changes(
                     // If no push, warn for any commits not in @{upstream}
                     if unmerged_commits(repo, &upstream_branch, &branch)? {
                         warn!(
-                            "Repo {git_path:?} branch '{branch_name}' has changes that aren't in @{{upstream}}.",
+                            "Repo {git_path:?} branch '{branch_name}' has changes that aren't in \
+                             @{{upstream}}.",
                         );
                     }
                 }
                 Err(e) if e.code() == ErrorCode::NotFound => {
                     // Warn for any branches with no @{upstream} or @{push}
                     warn!(
-                        "Repo {git_path:?} branch '{branch_name}' has no @{{upstream}} or @{{push}} branch.",
+                        "Repo {git_path:?} branch '{branch_name}' has no @{{upstream}} or \
+                         @{{push}} branch.",
                     );
                 }
                 Err(e) => {

@@ -251,7 +251,8 @@ mod tests {
             let domain_path = super::plist_path("com.apple.Safari").unwrap();
             assert_eq!(
                 dirs::home_dir().unwrap().join(
-                    "Library/Containers/com.apple.Safari/Data/Library/Preferences/com.apple.Safari.plist"
+                    "Library/Containers/com.apple.Safari/Data/Library/Preferences/com.apple.\
+                     Safari.plist"
                 ),
                 domain_path
             );

@@ -135,30 +135,37 @@ fn create_parent_dir(to_dir: &Path, rel_path: &Path, backup_dir: &Path) -> Resul
     let to_path = to_dir.join(rel_path);
     let to_path_parent = get_parent_path(&to_path)?;
     fs::create_dir_all(to_path_parent).or_else(|_err| {
-        info!("Failed to create parent dir, walking up the tree to see if there's a file that needs to become a directory.");
+        info!(
+            "Failed to create parent dir, walking up the tree to see if there's a file that needs \
+             to become a directory."
+        );
         for path in rel_path.ancestors().skip(1).filter(|p| p != &Path::new("")) {
             debug!("Checking path {path:?}");
             let abs_path = to_dir.join(path);
             // The path is a file/dir/symlink, or a broken symlink.
             if abs_path.exists() || abs_path.symlink_metadata().is_ok() {
-                ensure!(!abs_path.is_dir(),
-                        "Failed to create the parent directory for the symlink. We assumed it was because one of the parent directories was a file or symlink, but that doesn't seem to be the case, as the first file we've come across that exists is a directory.\n  Path: {:?}",
-                        abs_path);
+                ensure!(
+                    !abs_path.is_dir(),
+                    "Failed to create the parent directory for the symlink. We assumed it was \
+                     because one of the parent directories was a file or symlink, but that \
+                     doesn't seem to be the case, as the first file we've come across that exists \
+                     is a directory.\n  Path: {:?}",
+                    abs_path
+                );
                 warn!(
-                    "File will be overwritten by parent directory of link.\n  \
-                     File: {abs_path:?}\n  Link: {to_path:?}",
+                    "File will be overwritten by parent directory of link.\n  File: \
+                     {abs_path:?}\n  Link: {to_path:?}",
                 );
                 if abs_path.is_file() {
                     if let Some(parent_path) = &path.parent() {
                         info!("Path: {path:?}, parent: {parent_path:?}");
                         if parent_path != &Path::new("") {
                             let path = backup_dir.join(parent_path);
-                            fs::create_dir_all(&path).map_err(|e| LinkError::CreateDirError{path, source: e})?;
+                            fs::create_dir_all(&path)
+                                .map_err(|e| LinkError::CreateDirError { path, source: e })?;
                         }
                         let backup_path = backup_dir.join(path);
-                        info!(
-                            "Moving file to backup: {abs_path:?} -> {backup_path:?}",
-                        );
+                        info!("Moving file to backup: {abs_path:?} -> {backup_path:?}",);
                         fs::rename(&abs_path, backup_path)?;
                     }
                 } else {
@@ -169,7 +176,8 @@ fn create_parent_dir(to_dir: &Path, rel_path: &Path, backup_dir: &Path) -> Resul
         }
         // We should be able to create the directory now (if not bail with a Failure error).
         let to_parent_path = get_parent_path(&to_path)?;
-        fs::create_dir_all(to_parent_path).with_context(|| format!("Failed to create parent dir {:?}.", to_path.parent()))
+        fs::create_dir_all(to_parent_path)
+            .with_context(|| format!("Failed to create parent dir {:?}.", to_path.parent()))
     })
 }
 

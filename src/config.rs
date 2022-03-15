@@ -128,7 +128,8 @@ impl UpConfig {
                 let config_path = PathBuf::from(config_path);
                 ensure!(
                     config_path.exists(),
-                    "Config path specified in UP_CONFIG env var doesn't exist.\n  config_path: {:?}",
+                    "Config path specified in UP_CONFIG env var doesn't exist.\n  config_path: \
+                     {:?}",
                     &config_path,
                 );
                 return Ok(config_path);

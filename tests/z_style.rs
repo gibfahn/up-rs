@@ -152,7 +152,8 @@ fn no_todo() {
 
     assert!(
         files_with_todos.is_empty(),
-        "\nFiles with blocking todos should not be committed to the main branch, use TODO: instead\n{files_with_todos:#?}\n",
+        "\nFiles with blocking todos should not be committed to the main branch, use TODO: \
+         instead\n{files_with_todos:#?}\n",
     );
 }
 

@@ -22,5 +22,9 @@ reorder_impl_items = true
 # Use `MyStruct {a, b, c}` where possible not `MyStruct {a: a, b: b, c: c}`.
 use_field_init_shorthand = true
 
-# Error on TODOs.
+# Try to format long strings.
+# https://github.com/rust-lang/rustfmt/issues/3863
+format_strings = true
+
+# Error on TODOs (use FIXME for long-running things).
 # report_todo = "Always"
