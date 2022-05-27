@@ -1,5 +1,6 @@
 use std::{
-    fs, io,
+    fs,
+    io::{self, ErrorKind},
     os::unix,
     path::{Path, PathBuf},
 };
@@ -84,8 +85,13 @@ pub(crate) fn run(config: LinkOptions, up_dir: &Path) -> Result<TaskStatus> {
     }
 
     // Remove backup dir if not empty.
-    if let Err(err) = fs::remove_dir(&backup_dir) {
-        warn!("Backup dir {backup_dir:?} non-empty, check contents: {err:?}",);
+    match fs::remove_dir(&backup_dir) {
+        Err(e) if e.kind() == ErrorKind::NotFound => {
+            trace!("Looks like another link process already cleaned the backup directory.");
+        }
+
+        Err(e) => warn!("Backup dir {backup_dir:?} non-empty, check contents: {e:?}"),
+        Ok(_) => (),
     }
 
     debug!(
