@@ -7,7 +7,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-walkdir = "2.3.1"
-color-eyre = "0.5.11"
-assert_cmd = "2.0.2"
-predicates = "2.1.0"
+walkdir = "2.3.2"
+color-eyre = "0.6.1"
+assert_cmd = "2.0.4"
+predicates = "2.1.1"
