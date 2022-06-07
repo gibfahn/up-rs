@@ -11,7 +11,8 @@
     clippy::implicit_return,
     clippy::missing_inline_in_public_items,
     clippy::missing_docs_in_private_items,
-    clippy::missing_errors_doc
+    clippy::missing_errors_doc,
+    clippy::use_self
 )]
 use color_eyre::eyre::Result;
 use log::trace;
