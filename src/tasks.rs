@@ -160,7 +160,7 @@ pub fn run(
 
     match tasks_action {
         TasksAction::List => println!("{}", tasks.keys().join("\n")),
-        TasksAction::Run => run_tasks(bootstrap_tasks, tasks, &env, &config.up_dir)?,
+        TasksAction::Run => run_tasks(bootstrap_tasks, tasks, &env, &config.up_dir, config.keep_going)?,
     }
     Ok(())
 }
@@ -170,6 +170,7 @@ fn run_tasks(
     mut tasks: HashMap<String, task::Task>,
     env: &HashMap<String, String>,
     up_dir: &Path,
+    keep_going: bool,
 ) -> Result<()> {
     let mut completed_tasks = Vec::new();
     if !bootstrap_tasks.is_empty() {
@@ -181,8 +182,10 @@ fn run_tasks(
                 env,
                 up_dir,
             );
-            if let TaskStatus::Failed(e) = task.status {
-                bail!(e);
+            if !keep_going {
+                if let TaskStatus::Failed(e) = task.status {
+                    bail!(e);
+                }
             }
             completed_tasks.push(task);
         }

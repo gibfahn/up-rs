@@ -21,6 +21,7 @@ pub struct UpConfig {
     pub up_yaml_path: Option<PathBuf>,
     pub config_yaml: ConfigYaml,
     pub bootstrap: bool,
+    pub keep_going: bool,
     pub tasks: Option<Vec<String>>,
     pub up_dir: PathBuf,
 }
@@ -94,11 +95,13 @@ impl UpConfig {
         };
 
         let bootstrap = run_options.bootstrap;
+        let keep_going = run_options.keep_going;
 
         Ok(Self {
             up_yaml_path,
             config_yaml,
             bootstrap,
+            keep_going,
             up_dir: get_up_dir(opts.up_dir.as_ref()),
             tasks: run_options.tasks,
         })

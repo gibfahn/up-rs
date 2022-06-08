@@ -112,6 +112,9 @@ pub(crate) struct RunOptions {
     /// parallel. Designed for first-time setup.
     #[clap(short, long)]
     pub(crate) bootstrap: bool,
+    /// Keep going even if a bootstrap task fails.
+    #[clap(short, long)]
+    pub(crate) keep_going: bool,
     /// Fallback git repo URL to download to get the config.
     #[clap(short = 'f', long, value_hint = ValueHint::Url)]
     pub(crate) fallback_url: Option<String>,
