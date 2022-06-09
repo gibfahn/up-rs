@@ -210,6 +210,11 @@ pub(super) fn write_defaults_values(
         })?;
     } else {
         warn!("Defaults plist doesn't exist, creating it: {plist_path:?}");
+        let plist_dirpath = plist_path.parent().ok_or(E::UnexpectedNone)?;
+        fs::create_dir_all(&plist_dirpath).map_err(|e| E::DirCreation {
+            path: plist_dirpath.to_owned(),
+            source: e,
+        })?;
     }
 
     if !plist_path_exists || is_binary(&plist_path)? {
