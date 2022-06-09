@@ -79,7 +79,7 @@ main() {
   log_and_run meta/bootstrap-test
 
   # Build Darwin release binaries (without the CI feature).
-  log_and_run cargo build --release
+  log_and_run meta/build_macos
   # Builds musl static Linux release binaries.
   log_and_run meta/cargo-docker build --release
 

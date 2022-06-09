@@ -1,0 +1,23 @@
+#!/usr/bin/env zsh
+
+# Build a universal macOS binary
+
+set -euo pipefail
+
+set -x
+
+# If this fails run:
+#   rustup target add aarch64-apple-darwin
+
+cargo build --release --target=x86_64-apple-darwin
+cargo build --release --target=aarch64-apple-darwin
+
+# Create a fake target triple.
+mkdir -p target/universal-apple-darwin/release/
+
+lipo -create \
+  -output target/universal-apple-darwin/release/up \
+  target/aarch64-apple-darwin/release/up \
+  target/x86_64-apple-darwin/release/up
+
+echo target/universal-apple-darwin/release/up
