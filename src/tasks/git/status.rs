@@ -1,3 +1,4 @@
+use std::fmt::Write as _; // import without risk of name clashing
 use std::path::Path;
 
 use color_eyre::eyre::{ensure, Result};
@@ -264,8 +265,9 @@ fn status_short(repo: &Repository, statuses: &git2::Statuses) -> String {
         .iter()
         .filter(|e| e.status() == git2::Status::WT_NEW)
     {
-        output += &format!(
-            "?? {}\n",
+        let _ = writeln!(
+            output,
+            "?? {}",
             entry
                 .index_to_workdir()
                 .unwrap()

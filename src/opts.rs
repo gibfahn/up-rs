@@ -123,7 +123,17 @@ pub(crate) struct RunOptions {
     pub(crate) fallback_path: String,
     /// Optionally pass one or more tasks to run. The default is to run all
     /// tasks. This option can be provided multiple times.
-    #[clap(short, long, multiple_values(false), multiple_occurrences(true))]
+    #[clap(
+        short, long,
+        // You can pass multiple components.
+        multiple_values(true),
+        // You can pass this option multiple times, e.g. `-t foo -t bar`.
+        multiple_occurrences(true),
+        // You can use a comma to separate values, e.g. `-t foo,bar`.
+        use_value_delimiter(true),
+        // You must use a comma to separate values not a space, so can't do `-t foo bar`
+        require_value_delimiter(true),
+    )]
     pub(crate) tasks: Option<Vec<String>>,
 }
 
