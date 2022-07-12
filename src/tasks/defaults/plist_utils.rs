@@ -248,14 +248,17 @@ mod tests {
         }
 
         {
-            let domain_path = super::plist_path("com.apple.Safari").unwrap();
-            assert_eq!(
-                dirs::home_dir().unwrap().join(
-                    "Library/Containers/com.apple.Safari/Data/Library/Preferences/com.apple.\
-                     Safari.plist"
-                ),
-                domain_path
+            let mut expected_plist_path = dirs::home_dir().unwrap().join(
+                "Library/Containers/com.apple.Safari/Data/Library/Preferences/com.apple.Safari.\
+                 plist",
             );
+            if !expected_plist_path.exists() {
+                expected_plist_path = dirs::home_dir()
+                    .unwrap()
+                    .join("Library/Preferences/com.apple.Safari.plist");
+            }
+            let domain_path = super::plist_path("com.apple.Safari").unwrap();
+            assert_eq!(expected_plist_path, domain_path);
         }
     }
 }
