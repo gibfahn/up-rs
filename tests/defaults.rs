@@ -17,14 +17,14 @@ fn defaults_read_global() {
     // defaults own format).
     {
         let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
-        cmd.args(&["defaults", "read", "-g", "com.apple.sound.beep.sound"]);
+        cmd.args(["defaults", "read", "-g", "com.apple.sound.beep.sound"]);
         cmd.assert().success().stdout(expected_value.clone());
     }
 
     // Providing a full absolute path to a plist file should also work.
     {
         let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
-        cmd.args(&[
+        cmd.args([
             "defaults",
             "read",
             &format!(
@@ -40,7 +40,7 @@ fn defaults_read_global() {
     // a value to `defaults read`.
     {
         let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
-        cmd.args(&[
+        cmd.args([
             "defaults",
             "read",
             "-g",
@@ -72,7 +72,7 @@ fn defaults_read_local() {
     // defaults own format).
     {
         let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
-        cmd.args(&[
+        cmd.args([
             "defaults",
             "read",
             "com.apple.finder",
@@ -84,7 +84,7 @@ fn defaults_read_local() {
     // A .plist extension should be allowed too.
     {
         let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
-        cmd.args(&[
+        cmd.args([
             "defaults",
             "read",
             "com.apple.finder.plist",
@@ -96,7 +96,7 @@ fn defaults_read_local() {
     // Providing a full absolute path to a plist file should also work.
     {
         let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
-        cmd.args(&[
+        cmd.args([
             "defaults",
             "read",
             &format!(
@@ -163,7 +163,7 @@ fn defaults_write_local() {
     // Check we agree with `defaults` about the original value.
     for (n, (_, _, orig_check_value, _, _)) in test_values.iter().enumerate() {
         let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
-        cmd.args(&[
+        cmd.args([
             "defaults",
             "read",
             &domain,
@@ -179,7 +179,7 @@ fn defaults_write_local() {
         let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
 
         let defaults_key = format!("defaults_write_local_{n}");
-        cmd.args(&["defaults", "write", &domain, &defaults_key, new_value]);
+        cmd.args(["defaults", "write", &domain, &defaults_key, new_value]);
         cmd.assert()
             .success()
             .stderr(predicate::str::contains(format!(

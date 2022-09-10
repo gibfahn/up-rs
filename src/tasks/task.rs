@@ -95,7 +95,7 @@ const fn default_false() -> bool {
 }
 
 /// Shell commands we run.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CommandType {
     /// run_if_cmd field in the yaml.
     RunIf,
