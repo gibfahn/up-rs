@@ -6,6 +6,7 @@ use log::{debug, trace};
 use thiserror::Error;
 
 use self::EnvError as E;
+use crate::files::home_dir_str;
 
 // TODO(gib): add tests for cyclical config values etc.
 pub fn get_env(
@@ -26,22 +27,27 @@ pub fn get_env(
     if let Some(config_env) = input_env {
         trace!("Provided env: {config_env:#?}");
         let mut calculated_env = HashMap::new();
+        let home_dir_string = home_dir_str()?;
         for (key, val) in config_env.iter() {
             calculated_env.insert(
                 key.clone(),
-                shellexpand::full_with_context(val, dirs::home_dir, |k| {
-                    env.get(k).map_or_else(
-                        || {
-                            if config_env.contains_key(k) {
-                                unresolved_env.push(key.clone());
-                                Ok(None)
-                            } else {
-                                Err(eyre!("Value {k} not found in inherited_env or env vars."))
-                            }
-                        },
-                        |val| Ok(Some(val)),
-                    )
-                })
+                shellexpand::full_with_context(
+                    val,
+                    || Some(&home_dir_string),
+                    |k| {
+                        env.get(k).map_or_else(
+                            || {
+                                if config_env.contains_key(k) {
+                                    unresolved_env.push(key.clone());
+                                    Ok(None)
+                                } else {
+                                    Err(eyre!("Value {k} not found in inherited_env or env vars."))
+                                }
+                            },
+                            |val| Ok(Some(val)),
+                        )
+                    },
+                )
                 .map_err(|e| E::EnvLookup {
                     var: e.var_name,
                     source: e.cause,
@@ -106,7 +112,7 @@ pub fn get_env(
 #[derive(Error, Debug, Display)]
 /// Errors thrown by this file.
 pub enum EnvError {
-    /// Env lookup error, please define '{var}' in your up.yaml:"
+    /// Env lookup error, please define '{var:?}' in your up.yaml:"
     EnvLookup {
         var: String,
         source: color_eyre::eyre::Error,

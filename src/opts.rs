@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use clap::{ArgEnum, Parser, ValueHint};
+use clap::{Parser, ValueEnum, ValueHint};
 use clap_complete::Shell;
 use serde_derive::{Deserialize, Serialize};
 
@@ -64,7 +64,7 @@ pub struct Opts {
     #[clap(long, default_value = "trace", env = "FILE_RUST_LOG")]
     pub file_log_level: String,
     /// Whether to color terminal output.
-    #[clap(long, default_value = "auto", ignore_case = true, arg_enum)]
+    #[clap(long, default_value = "auto", ignore_case = true, value_enum)]
     pub color: Color,
     /// Path to the up.yaml file for up.
     #[clap(long, short = 'c', default_value = "$XDG_CONFIG_HOME/up/up.yaml", value_hint = ValueHint::FilePath)]
@@ -77,7 +77,7 @@ pub struct Opts {
 /// Auto: Colour on if stderr isatty, else off.
 /// Always: Always enable colours.
 /// Never: Never enable colours.
-#[derive(Debug, ArgEnum, Clone)]
+#[derive(Debug, ValueEnum, Clone)]
 pub enum Color {
     Auto,
     Always,
@@ -122,17 +122,7 @@ pub(crate) struct RunOptions {
     pub(crate) fallback_path: String,
     /// Optionally pass one or more tasks to run. The default is to run all
     /// tasks. This option can be provided multiple times.
-    #[clap(
-        short, long,
-        // You can pass multiple components.
-        multiple_values(true),
-        // You can pass this option multiple times, e.g. `-t foo -t bar`.
-        multiple_occurrences(true),
-        // You can use a comma to separate values, e.g. `-t foo,bar`.
-        use_value_delimiter(true),
-        // You must use a comma to separate values not a space, so can't do `-t foo bar`
-        require_value_delimiter(true),
-    )]
+    #[clap(short, long, value_delimiter = ',')]
     pub(crate) tasks: Option<Vec<String>>,
 }
 
@@ -190,7 +180,7 @@ pub(crate) struct UpdateSelfOptions {
 #[derive(Debug, Parser)]
 pub(crate) struct CompletionsOptions {
     /// Shell for which to generate completions.
-    #[clap(arg_enum)]
+    #[clap(value_enum)]
     pub(crate) shell: Shell,
 }
 
@@ -215,10 +205,10 @@ pub(crate) enum GenerateLib {
 #[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct GenerateGitConfig {
     /// Path to yaml file to update.
-    #[clap(long, parse(from_str), value_hint = ValueHint::FilePath)]
+    #[clap(long, value_hint = ValueHint::FilePath)]
     pub(crate) path: PathBuf,
     /// Paths to search within.
-    #[clap(long, parse(from_str), default_value = "~", value_hint = ValueHint::DirPath)]
+    #[clap(long, default_value = "~", value_hint = ValueHint::DirPath)]
     pub(crate) search_paths: Vec<PathBuf>,
     /// Exclude paths containing this value. e.g. '/tmp/' to exclude anything in
     /// a tmp dir.
@@ -236,7 +226,7 @@ pub struct GenerateGitConfig {
 #[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct GenerateDefaultsConfig {
     /// Path to yaml file to update.
-    #[clap(long, parse(from_str), value_hint = ValueHint::FilePath)]
+    #[clap(long, value_hint = ValueHint::FilePath)]
     pub(crate) path: PathBuf,
 }
 

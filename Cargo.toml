@@ -21,8 +21,8 @@ path = "src/main.rs"
 
 [dependencies]
 chrono = "0.4.23"
-clap = { version = "3.2.23", features = ["derive", "env"] }
-clap_complete = "3.2.5"
+clap = { version = "4.0.29", features = ["derive", "env"] }
+clap_complete = "4.0.6"
 color-eyre = "0.6.2"
 dirs = "4.0.0"
 displaydoc = "0.2.3"
@@ -40,7 +40,7 @@ serde = "1.0.150"
 serde_derive = "1.0.150"
 serde_json = "1.0.89"
 serde_yaml = "0.9.14"
-shellexpand = "2.1.2"
+shellexpand = "3.0.0"
 thiserror = "1.0.37"
 toml = "0.5.10"
 url = "2.3.1"

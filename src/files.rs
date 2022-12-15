@@ -1,4 +1,5 @@
 use std::{
+    borrow::ToOwned,
     fs,
     path::{Path, PathBuf},
 };
@@ -33,4 +34,16 @@ pub(crate) fn remove_broken_symlink(path: &Path) -> Result<(), UpError> {
     })?;
 
     Ok(())
+}
+
+/// Get the home directory as a string.
+pub(crate) fn home_dir_str() -> Result<String, UpError> {
+    let home_dir_pathbuf = dirs::home_dir().ok_or_else(|| UpError::NoHomeDir)?;
+    dirs::home_dir()
+        .ok_or(UpError::NoHomeDir)?
+        .to_str()
+        .map(ToOwned::to_owned)
+        .ok_or(UpError::InvalidUTF8Path {
+            path: home_dir_pathbuf,
+        })
 }

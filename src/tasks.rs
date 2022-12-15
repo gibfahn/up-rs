@@ -17,7 +17,12 @@ use self::{
     task::{CommandType, Task},
     TaskError as E,
 };
-use crate::{config, env::get_env, files::remove_broken_symlink, tasks::task::TaskStatus};
+use crate::{
+    config,
+    env::get_env,
+    files::{home_dir_str, remove_broken_symlink},
+    tasks::task::TaskStatus,
+};
 
 pub mod completions;
 pub mod defaults;
@@ -249,9 +254,12 @@ fn run_tasks(
 
 fn run_task(mut task: Task, env: &HashMap<String, String>, up_dir: &Path) -> Task {
     let env_fn = &|s: &str| {
-        let out = shellexpand::full_with_context(s, dirs::home_dir, |k| {
-            env.get(k).ok_or_else(|| eyre!("Value not found")).map(Some)
-        })
+        let home_dir_string = home_dir_str().map_err(|_| E::MissingHomeDir)?;
+        let out = shellexpand::full_with_context(
+            s,
+            || Some(home_dir_string),
+            |k| env.get(k).ok_or_else(|| eyre!("Value not found")).map(Some),
+        )
         .map(std::borrow::Cow::into_owned)
         .map_err(|e| E::ResolveEnv {
             var: e.var_name,
@@ -322,6 +330,8 @@ pub enum TaskError {
         path: PathBuf,
         source: serde_yaml::Error,
     },
+    /// Unable to calculate the current user's home directory.
+    MissingHomeDir,
     /// Env lookup error, please define '{var}' in your up.yaml
     ResolveEnv {
         var: String,

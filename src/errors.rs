@@ -10,4 +10,8 @@ pub enum UpError {
     DeleteError { path: PathBuf, source: io::Error },
     /// IO Failure for path '{path}'.
     IoError { path: PathBuf, source: io::Error },
+    /// Couldn't calculate the current user's home directory.
+    NoHomeDir,
+    /// Path contained invalid UTF-8 characters: {path:?}
+    InvalidUTF8Path { path: PathBuf },
 }
