@@ -1,10 +1,8 @@
-use std::{path::PathBuf, str::FromStr};
+use std::path::PathBuf;
 
 use clap::{ArgEnum, Parser, ValueHint};
 use clap_complete::Shell;
-use color_eyre::eyre::{eyre, Result};
 use serde_derive::{Deserialize, Serialize};
-use slog::Level;
 
 pub(crate) const FALLBACK_CONFIG_PATH: &str = "dotfiles/.config/up/up.yaml";
 pub(crate) const LATEST_RELEASE_URL: &str =
@@ -50,16 +48,21 @@ Logs from the latest run are available at $TMPDIR/up-rs/logs/up-rs_latest.log by
 pub struct Opts {
     /// Set the logging level explicitly (options: Off, Error, Warn, Info,
     /// Debug, Trace).
-    #[clap(long, short = 'l', default_value = "info", env = "LOG_LEVEL", parse(try_from_str = from_level))]
-    pub log_level: Level,
+    #[clap(
+        long,
+        short = 'l',
+        default_value = "up=info,up_rs=info",
+        env = "RUST_LOG"
+    )]
+    pub log_level: String,
     /// Directory to use for up-rs's own files (e.g. logs, backup files etc). Default:
     /// $TMPDIR/up-rs.
     #[clap(long, value_hint = ValueHint::DirPath)]
     pub up_dir: Option<PathBuf>,
     /// Set the file logging level explicitly (options: Off, Error, Warn, Info,
     /// Debug, Trace).
-    #[clap(long, default_value = "debug", env = "FILE_LOG_LEVEL", parse(try_from_str = from_level))]
-    pub file_log_level: Level,
+    #[clap(long, default_value = "trace", env = "FILE_RUST_LOG")]
+    pub file_log_level: String,
     /// Whether to color terminal output.
     #[clap(long, default_value = "auto", ignore_case = true, arg_enum)]
     pub color: Color,
@@ -68,10 +71,6 @@ pub struct Opts {
     pub(crate) config: String,
     #[clap(subcommand)]
     pub(crate) cmd: Option<SubCommand>,
-}
-
-fn from_level(level: &str) -> Result<Level> {
-    Level::from_str(level).map_err(|()| eyre!("Failed to parse level {level}"))
 }
 
 /// Settings for colouring output.

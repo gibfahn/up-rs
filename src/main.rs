@@ -19,6 +19,7 @@ use std::{
     io,
     os::unix,
     path::PathBuf,
+    sync::Arc,
     time::{Duration, Instant},
 };
 
@@ -26,8 +27,9 @@ use chrono::Utc;
 use color_eyre::eyre::{bail, Result};
 use displaydoc::Display;
 use log::{debug, info, trace};
-use slog::{o, Drain, Duplicate, FnValue, LevelFilter, Logger};
 use thiserror::Error;
+use tracing::metadata::LevelFilter;
+use tracing_subscriber::{prelude::*, EnvFilter};
 use up_rs::opts::Color;
 
 /// Env vars to avoid printing when we log the current environment.
@@ -41,27 +43,16 @@ fn main() -> Result<()> {
     // Get starting time.
     let now = Instant::now();
 
-    color_eyre::install()?;
+    color_eyre::config::HookBuilder::default()
+        // Avoids printing these lines when liv fails:
+        // ```
+        // Backtrace omitted. Run with RUST_BACKTRACE=1 environment variable to display it.
+        // Run with RUST_BACKTRACE=full to include source snippets.
+        // ```
+        .display_env_section(false)
+        .install()?;
 
     let opts = up_rs::opts::parse();
-
-    // TODO(gib): Don't need dates in stderr as we have them in file logger.
-    // Create stderr logger.
-    let stderr_decorator_builder = slog_term::TermDecorator::new().stderr();
-
-    let stderr_decorator = match &opts.color {
-        Color::Auto => stderr_decorator_builder,
-        Color::Always => stderr_decorator_builder.force_color(),
-        Color::Never => stderr_decorator_builder.force_plain(),
-    }
-    .build();
-
-    let stderr_drain = slog_term::CompactFormat::new(stderr_decorator)
-        .build()
-        .fuse();
-    let stderr_async_drain = slog_async::Async::new(stderr_drain).build().fuse();
-
-    let stderr_level_filter = LevelFilter::new(stderr_async_drain, opts.log_level);
 
     let LogPaths {
         log_path,
@@ -69,32 +60,40 @@ fn main() -> Result<()> {
         log_file,
     } = get_log_path_file(opts.up_dir.as_ref())
         .map_err(|e| MainError::LogFileSetupFailed { source: e })?;
-    // Create file logger.
-    let file_decorator = slog_term::PlainSyncDecorator::new(log_file);
-    let file_drain = slog_term::FullFormat::new(file_decorator).build().fuse();
 
-    let log_kv_pairs = o!("place" =>
-       FnValue(move |info| {
-           format!("{}:{} {}",
-                   info.file(),
-                   info.line(),
-                   info.module(),
-                   )
-       })
-    );
+    let stderr_log = tracing_subscriber::fmt::layer()
+        .with_ansi(matches!(&opts.color, Color::Auto | Color::Always))
+        .compact()
+        .with_target(false)
+        .without_time()
+        .with_writer(std::io::stderr);
 
-    let file_level_filter = LevelFilter::new(file_drain, opts.file_log_level);
-    let root_logger = Logger::root(
-        Duplicate::new(stderr_level_filter, file_level_filter).fuse(),
-        log_kv_pairs,
-    );
+    // A layer that logs events to a file.
+    let file_log = tracing_subscriber::fmt::layer()
+        .with_writer(Arc::new(log_file))
+        .with_target(true)
+        .with_file(true)
+        .with_line_number(true)
+        .pretty()
+        .with_ansi(false);
 
-    // slog_stdlog uses the logger from slog_scope, so set a logger there
-    // In the future probably want to use proper scoped loggers.
-    let _guard = slog_scope::set_global_logger(root_logger);
-
-    // Register slog_stdlog as a log handler with the log crate.
-    slog_stdlog::init()?;
+    tracing_subscriber::registry()
+        .with(
+            stderr_log
+                .with_filter(
+                    EnvFilter::builder()
+                        .with_default_directive(LevelFilter::INFO.into())
+                        .parse_lossy(&opts.log_level),
+                )
+                .and_then(
+                    file_log.with_filter(
+                        EnvFilter::builder()
+                            .with_default_directive(LevelFilter::INFO.into())
+                            .parse_lossy(&opts.log_level),
+                    ),
+                ),
+        )
+        .init();
 
     trace!("Starting up.");
     debug!("Writing full logs to {log_path_link:?} (symlink to '{log_path:?}')",);
