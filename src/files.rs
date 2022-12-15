@@ -27,7 +27,7 @@ pub(crate) fn remove_broken_symlink(path: &Path) -> Result<(), UpError> {
             source: e
         })?
     );
-    fs::remove_file(&path).map_err(|e| UpError::DeleteError {
+    fs::remove_file(path).map_err(|e| UpError::DeleteError {
         path: path.to_owned(),
         source: e,
     })?;

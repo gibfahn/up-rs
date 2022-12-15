@@ -183,8 +183,7 @@ fn defaults_write_local() {
         cmd.assert()
             .success()
             .stderr(predicate::str::contains(format!(
-                "Changing default {} {}",
-                domain, defaults_key
+                "Changing default {domain} {defaults_key}"
             )));
     }
 

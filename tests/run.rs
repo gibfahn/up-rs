@@ -43,7 +43,7 @@ fn up_run_passing() {
     #[cfg(target_os = "macos")]
     {
         let mut cmd = std::process::Command::new("defaults");
-        cmd.args(&["delete", test_plist]);
+        cmd.args(["delete", test_plist]);
         cmd.output().unwrap();
     }
 

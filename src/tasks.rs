@@ -98,7 +98,7 @@ pub fn run(
     // If in macOS, don't let the display sleep until the command exits.
     #[cfg(target_os = "macos")]
     Command::new("caffeinate")
-        .args(&["-ds", "-w", &std::process::id().to_string()])
+        .args(["-ds", "-w", &std::process::id().to_string()])
         .spawn()?;
 
     // TODO(gib): Handle and filter by constraints.

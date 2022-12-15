@@ -50,7 +50,7 @@ fn real_clone() {
     // Clone again to the same directory, different branch.
     {
         up_git_cmd(&git_path, &temp_dir)
-            .args(&["--branch", "test"])
+            .args(["--branch", "test"])
             .assert()
             .success();
         check_repo(
@@ -98,7 +98,7 @@ fn real_clone() {
             true,
         );
         let mut cmd = up_git_cmd(&git_path, &temp_dir);
-        cmd.args(&["--branch", "test"]);
+        cmd.args(["--branch", "test"]);
         cmd.assert().success();
         check_repo(
             &git_path,
@@ -125,7 +125,7 @@ fn real_clone() {
 
         let mut cmd = up_git_cmd(&git_path, &temp_dir);
         // This time try to prune.
-        cmd.args(&["--branch", "test", "--prune"]);
+        cmd.args(["--branch", "test", "--prune"]);
         cmd.assert().success();
         check_repo(
             &git_path,
@@ -203,7 +203,7 @@ fn up_git_cmd(git_path: &str, temp_dir: &Path) -> Command {
 /// Run a `git` command to test the internal git setup works as expected.
 fn run_git_cmd(git_path: &str, args: &[&str], success: bool) -> String {
     let assert = Command::new("git")
-        .args(&["-C", git_path])
+        .args(["-C", git_path])
         .args(args)
         .assert();
     let assert = match success {

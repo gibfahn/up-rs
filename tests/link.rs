@@ -94,8 +94,8 @@ fn hidden_and_nested() {
         get_home_dotfile_dirs(testutils::function_path!());
     // If this symlink is correct, it shouldn't make a difference.
     unix::fs::symlink(
-        &dotfile_dir.join("existing_link"),
-        &home_dir.join("existing_link"),
+        dotfile_dir.join("existing_link"),
+        home_dir.join("existing_link"),
     )
     .unwrap();
     run_link_cmd(&dotfile_dir, &home_dir, &temp_dir, LinkResult::Success);
@@ -192,7 +192,7 @@ fn missing_from_dir() {
 #[test]
 fn missing_to_dir() {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
-    fs::create_dir(&temp_dir.join("dotfile_dir")).unwrap();
+    fs::create_dir(temp_dir.join("dotfile_dir")).unwrap();
     let assert = run_link_cmd(
         &temp_dir.join("dotfile_dir"),
         &temp_dir.join("home_dir"),
@@ -214,10 +214,10 @@ fn missing_to_dir() {
 #[test]
 fn uncreateable_backup_dir() {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
-    fs::create_dir(&temp_dir.join("dotfile_dir")).unwrap();
-    fs::create_dir(&temp_dir.join("home_dir")).unwrap();
-    fs::create_dir_all(&temp_dir.join("up-rs/backup")).unwrap();
-    File::create(&temp_dir.join("up-rs/backup/link")).unwrap();
+    fs::create_dir(temp_dir.join("dotfile_dir")).unwrap();
+    fs::create_dir(temp_dir.join("home_dir")).unwrap();
+    fs::create_dir_all(temp_dir.join("up-rs/backup")).unwrap();
+    File::create(temp_dir.join("up-rs/backup/link")).unwrap();
     let assert = run_link_cmd(
         &temp_dir.join("dotfile_dir"),
         &temp_dir.join("home_dir"),

@@ -46,7 +46,7 @@ fn up_list_passing() {
 fn check_list(args: &[&str], envs: &HashMap<&str, PathBuf>, temp_dir: &Path) -> String {
     let mut cmd = testutils::test_binary_cmd("up", temp_dir);
     cmd.envs(envs);
-    cmd.args(&[
+    cmd.args([
         "--config",
         temp_dir.join("up_config_dir/up.yaml").to_str().unwrap(),
         "list",

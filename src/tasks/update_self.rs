@@ -77,13 +77,13 @@ pub(crate) fn run(opts: &UpdateSelfOptions) -> Result<TaskStatus> {
     let mut response = reqwest::blocking::get(&opts.url)?.error_for_status()?;
 
     fs::create_dir_all(&temp_dir).with_context(|| E::CreateDir { path: temp_dir })?;
-    let mut dest = File::create(&temp_path).with_context(|| E::CreateFile {
+    let mut dest = File::create(temp_path).with_context(|| E::CreateFile {
         path: temp_path.clone(),
     })?;
     io::copy(&mut response, &mut dest).context(E::Copy {})?;
 
     let permissions = Permissions::from_mode(0o755);
-    fs::set_permissions(&temp_path, permissions).with_context(|| E::SetPermissions {
+    fs::set_permissions(temp_path, permissions).with_context(|| E::SetPermissions {
         path: temp_path.clone(),
     })?;
 
@@ -94,7 +94,7 @@ pub(crate) fn run(opts: &UpdateSelfOptions) -> Result<TaskStatus> {
         .trim_start_matches(concat!(env!("CARGO_PKG_NAME"), " "));
     if semver::Version::parse(new_version)? > semver::Version::parse(CURRENT_VERSION)? {
         info!("Updating up-rs from '{CURRENT_VERSION}' to '{new_version}'",);
-        fs::rename(&temp_path, &up_path).with_context(|| E::Rename {
+        fs::rename(temp_path, &up_path).with_context(|| E::Rename {
             from: temp_path.clone(),
             to: up_path.clone(),
         })?;

@@ -29,16 +29,18 @@ pub fn get_env(
         for (key, val) in config_env.iter() {
             calculated_env.insert(
                 key.clone(),
-                shellexpand::full_with_context(val, dirs::home_dir, |k| match env.get(k) {
-                    Some(val) => Ok(Some(val)),
-                    None => {
-                        if config_env.contains_key(k) {
-                            unresolved_env.push(key.clone());
-                            Ok(None)
-                        } else {
-                            Err(eyre!("Value {k} not found in inherited_env or env vars."))
-                        }
-                    }
+                shellexpand::full_with_context(val, dirs::home_dir, |k| {
+                    env.get(k).map_or_else(
+                        || {
+                            if config_env.contains_key(k) {
+                                unresolved_env.push(key.clone());
+                                Ok(None)
+                            } else {
+                                Err(eyre!("Value {k} not found in inherited_env or env vars."))
+                            }
+                        },
+                        |val| Ok(Some(val)),
+                    )
                 })
                 .map_err(|e| E::EnvLookup {
                     var: e.var_name,

@@ -115,7 +115,7 @@ impl Display for CommandType {
 impl Task {
     pub fn from(path: &Path) -> Result<Self> {
         let start_time = Instant::now();
-        let s = fs::read_to_string(&path).map_err(|e| E::ReadFile {
+        let s = fs::read_to_string(path).map_err(|e| E::ReadFile {
             path: path.to_owned(),
             source: e,
         })?;
@@ -294,7 +294,7 @@ impl Task {
 
     pub fn get_command(cmd: &[String], env: &HashMap<String, String>) -> Result<Command, E> {
         // TODO(gib): set current dir.
-        let mut command = Command::new(&cmd.get(0).ok_or(E::EmptyCmd)?);
+        let mut command = Command::new(cmd.get(0).ok_or(E::EmptyCmd)?);
         command
             .args(cmd.get(1..).unwrap_or(&[]))
             .env_clear()
@@ -355,14 +355,14 @@ fn parse_task_config<F, T: ResolveEnv + Default + for<'de> serde::Deserialize<'d
 where
     F: Fn(&str) -> Result<String, E>,
 {
-    let data = if let Some(data) = maybe_data {
-        data
-    } else if has_default {
-        return Ok(T::default());
-    } else {
-        return Err(E::TaskDataRequired {
-            task: task_name.to_string(),
-        });
+    let data = match maybe_data {
+        Some(data) => data,
+        None if has_default => return Ok(T::default()),
+        None => {
+            return Err(E::TaskDataRequired {
+                task: task_name.to_string(),
+            });
+        }
     };
 
     let mut raw_opts: T =

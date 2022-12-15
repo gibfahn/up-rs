@@ -165,7 +165,7 @@ fn parse_git_config(
     remote_order: &[String],
     home_dir: &str,
 ) -> Result<GitConfig> {
-    let repo = Repository::open(&path)?;
+    let repo = Repository::open(path)?;
 
     let mut sorted_remote_names = Vec::new();
     {
