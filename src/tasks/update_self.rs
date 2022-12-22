@@ -10,7 +10,7 @@ use std::{
 use chrono::Utc;
 use color_eyre::eyre::{Context, Result};
 use displaydoc::Display;
-use log::{debug, info, trace};
+use tracing::{debug, info, trace};
 use serde_derive::Deserialize;
 use thiserror::Error;
 

@@ -1,6 +1,6 @@
 use color_eyre::eyre::{Context, Result};
 use git2::{Branch, BranchType, Direction, ErrorCode, Remote, Repository};
-use log::{debug, trace, warn};
+use tracing::{debug, trace, warn};
 
 use crate::tasks::git::{errors::GitError as E, fetch::remote_callbacks, update::get_config_value};
 

@@ -26,7 +26,7 @@ use std::{
 use chrono::Utc;
 use color_eyre::eyre::{bail, Result};
 use displaydoc::Display;
-use log::{debug, info, trace};
+use tracing::{debug, info, trace};
 use thiserror::Error;
 use tracing::metadata::LevelFilter;
 use tracing_subscriber::{prelude::*, EnvFilter};

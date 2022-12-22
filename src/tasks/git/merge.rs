@@ -2,7 +2,7 @@ use std::str;
 
 use color_eyre::eyre::{bail, Result};
 use git2::{Reference, Repository};
-use log::debug;
+use tracing::debug;
 
 use super::status::ensure_repo_clean;
 use crate::tasks::git::{checkout::set_and_checkout_head, errors::GitError as E};

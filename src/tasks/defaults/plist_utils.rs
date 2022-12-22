@@ -5,7 +5,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use log::{debug, info, trace, warn};
+use tracing::{debug, info, trace, warn};
 use plist::Dictionary;
 
 use crate::tasks::defaults::DefaultsError as E;

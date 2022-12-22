@@ -2,7 +2,7 @@ use std::{thread, time::Duration};
 
 use color_eyre::eyre::Result;
 use git2::{Cred, CredentialType, ErrorClass, ErrorCode, Remote, RemoteCallbacks, Repository};
-use log::{debug, warn};
+use tracing::{debug, warn};
 
 use crate::tasks::git::{branch::shorten_branch_ref, errors::GitError as E};
 

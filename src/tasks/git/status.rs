@@ -3,7 +3,7 @@ use std::path::Path;
 
 use color_eyre::eyre::{ensure, Result};
 use git2::{BranchType, Config, ErrorCode, Repository, StatusOptions, Statuses, SubmoduleIgnore};
-use log::{trace, warn};
+use tracing::{trace, warn};
 
 use crate::tasks::git::{
     branch::{get_branch_name, get_push_branch},

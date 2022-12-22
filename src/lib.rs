@@ -15,7 +15,7 @@
     clippy::use_self
 )]
 use color_eyre::eyre::Result;
-use log::trace;
+use tracing::trace;
 use opts::{DefaultsSubcommand, GenerateLib};
 use tasks::{defaults, TasksAction, TasksDir};
 

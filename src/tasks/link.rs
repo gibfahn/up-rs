@@ -8,7 +8,7 @@ use std::{
 use chrono::{DateTime, Utc};
 use color_eyre::eyre::{bail, ensure, Context, Result};
 use displaydoc::Display;
-use log::{debug, info, trace, warn};
+use tracing::{debug, info, trace, warn};
 use thiserror::Error;
 use walkdir::{DirEntry, WalkDir};
 

@@ -1,6 +1,6 @@
 use color_eyre::eyre::Result;
 use git2::{Branch, BranchType, Repository};
-use log::{debug, trace};
+use tracing::{debug, trace};
 
 use crate::tasks::git::{
     branch::{delete_branch, get_branch_name, shorten_branch_ref},

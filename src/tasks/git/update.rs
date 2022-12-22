@@ -11,7 +11,7 @@ use std::{
 use color_eyre::eyre::{bail, Context, Result};
 use git2::{BranchType, ConfigLevel, ErrorCode, FetchOptions, Repository};
 use itertools::Itertools;
-use log::{debug, trace, warn};
+use tracing::{debug, trace, warn};
 use url::Url;
 
 use crate::tasks::{

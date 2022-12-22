@@ -17,7 +17,7 @@ use std::{
 
 use color_eyre::eyre::{eyre, Context, Result};
 use displaydoc::Display;
-use log::{debug, error, trace, warn};
+use tracing::{debug, error, trace, warn};
 use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
 

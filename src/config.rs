@@ -7,7 +7,7 @@ use std::{
 };
 
 use color_eyre::eyre::{bail, ensure, eyre, Context, Result};
-use log::{debug, info, trace};
+use tracing::{debug, info, trace};
 use serde_derive::{Deserialize, Serialize};
 
 use crate::{

@@ -6,7 +6,7 @@ use std::{
 use color_eyre::eyre::{Context, Result};
 use displaydoc::Display;
 use git2::Repository;
-use log::{debug, error, info, trace};
+use tracing::{debug, error, info, trace};
 use rayon::{iter::Either, prelude::*};
 use thiserror::Error;
 use walkdir::WalkDir;

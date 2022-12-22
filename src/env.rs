@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use color_eyre::eyre::{bail, eyre, Result};
 use displaydoc::Display;
-use log::{debug, trace};
+use tracing::{debug, trace};
 use thiserror::Error;
 
 use self::EnvError as E;

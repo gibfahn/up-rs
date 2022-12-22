@@ -9,8 +9,9 @@ use std::{
 };
 
 use color_eyre::eyre::{eyre, Result};
-use log::{debug, info, log, trace, Level};
+use log::{log, Level};
 use serde_derive::{Deserialize, Serialize};
+use tracing::{debug, info, trace};
 
 use crate::{
     generate,

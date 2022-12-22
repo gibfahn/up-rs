@@ -9,7 +9,7 @@ use std::{
 use color_eyre::eyre::{bail, eyre, Result};
 use displaydoc::Display;
 use itertools::Itertools;
-use log::{debug, error, info, trace, warn};
+use tracing::{debug, error, info, trace, warn};
 use rayon::prelude::*;
 use thiserror::Error;
 
