@@ -8,8 +8,8 @@ use std::{
 use chrono::{DateTime, Utc};
 use color_eyre::eyre::{bail, ensure, Context, Result};
 use displaydoc::Display;
-use tracing::{debug, info, trace, warn};
 use thiserror::Error;
+use tracing::{debug, info, trace, warn};
 use walkdir::{DirEntry, WalkDir};
 
 use crate::{

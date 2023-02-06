@@ -107,7 +107,7 @@ pub fn copy_all(from_dir: &Path, to_dir: &Path) -> Result<()> {
         from_dir.exists(),
         "Cannot copy from non-existent directory {from_dir:?}.",
     );
-    for from_path in WalkDir::new(&from_dir)
+    for from_path in WalkDir::new(from_dir)
         .min_depth(1)
         .into_iter()
         .filter_map(Result::ok)
@@ -115,7 +115,7 @@ pub fn copy_all(from_dir: &Path, to_dir: &Path) -> Result<()> {
         let from_path_metadata = from_path.metadata()?;
         let from_path = from_path.path();
 
-        let rel_path = from_path.strip_prefix(&from_dir)?;
+        let rel_path = from_path.strip_prefix(from_dir)?;
         println!("Copying: {rel_path:?}");
         let to_path = to_dir.join(rel_path);
 
@@ -124,7 +124,7 @@ pub fn copy_all(from_dir: &Path, to_dir: &Path) -> Result<()> {
         if file_type.is_dir() {
             fs::create_dir(to_path)?;
         } else if file_type.is_symlink() {
-            unix::fs::symlink(fs::read_link(&from_path)?, to_path)?;
+            unix::fs::symlink(fs::read_link(from_path)?, to_path)?;
         } else if file_type.is_file() {
             fs::copy(from_path, to_path)?;
         }

@@ -17,9 +17,9 @@ use std::{
 
 use color_eyre::eyre::{eyre, Context, Result};
 use displaydoc::Display;
-use tracing::{debug, error, trace, warn};
 use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
+use tracing::{debug, error, trace, warn};
 
 use crate::{
     opts::{DefaultsReadOptions, DefaultsWriteOptions},

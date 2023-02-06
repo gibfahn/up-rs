@@ -7,8 +7,8 @@ use std::{
 };
 
 use color_eyre::eyre::{bail, ensure, eyre, Context, Result};
-use tracing::{debug, info, trace};
 use serde_derive::{Deserialize, Serialize};
+use tracing::{debug, info, trace};
 
 use crate::{
     get_up_dir,

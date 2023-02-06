@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use color_eyre::eyre::{bail, eyre, Result};
 use displaydoc::Display;
-use tracing::{debug, trace};
 use thiserror::Error;
+use tracing::{debug, trace};
 
 use self::EnvError as E;
 use crate::files::home_dir_str;

@@ -4,10 +4,10 @@ use clap::Parser;
 use color_eyre::eyre::Result;
 use displaydoc::Display;
 use git2::Remote;
-use tracing::error;
 use rayon::{iter::Either, prelude::*};
 use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
+use tracing::error;
 
 use self::GitTaskError as E;
 use crate::{

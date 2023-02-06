@@ -6,9 +6,9 @@ use std::{
 use color_eyre::eyre::{Context, Result};
 use displaydoc::Display;
 use git2::Repository;
-use tracing::{debug, error, info, trace};
 use rayon::{iter::Either, prelude::*};
 use thiserror::Error;
+use tracing::{debug, error, info, trace};
 use walkdir::WalkDir;
 
 use self::GenerateGitError as E;

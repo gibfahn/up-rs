@@ -9,9 +9,9 @@ use std::{
 use color_eyre::eyre::{bail, eyre, Result};
 use displaydoc::Display;
 use itertools::Itertools;
-use tracing::{debug, error, info, trace, warn};
 use rayon::prelude::*;
 use thiserror::Error;
+use tracing::{debug, error, info, trace, warn};
 
 use self::{
     task::{CommandType, Task},

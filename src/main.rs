@@ -26,9 +26,8 @@ use std::{
 use chrono::Utc;
 use color_eyre::eyre::{bail, Result};
 use displaydoc::Display;
-use tracing::{debug, info, trace};
 use thiserror::Error;
-use tracing::metadata::LevelFilter;
+use tracing::{debug, info, metadata::LevelFilter, trace};
 use tracing_subscriber::{prelude::*, EnvFilter};
 use up_rs::opts::Color;
 

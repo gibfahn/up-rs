@@ -10,9 +10,9 @@ use std::{
 use chrono::Utc;
 use color_eyre::eyre::{Context, Result};
 use displaydoc::Display;
-use tracing::{debug, info, trace};
 use serde_derive::Deserialize;
 use thiserror::Error;
+use tracing::{debug, info, trace};
 
 use self::UpdateSelfError as E;
 use crate::{

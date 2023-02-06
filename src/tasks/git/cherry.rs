@@ -2,8 +2,8 @@ use std::{collections::HashSet, io::Read};
 
 use color_eyre::eyre::Result;
 use git2::{Branch, DiffFormat, DiffOptions, Oid, Repository, Revwalk};
-use tracing::trace;
 use ring::digest::{Context, Digest, SHA256};
+use tracing::trace;
 
 use crate::tasks::git::{branch::get_branch_name, errors::GitError as E};
 

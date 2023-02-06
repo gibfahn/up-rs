@@ -116,7 +116,6 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<bool> {
     trace!(
         "Branches: {:?}",
         repo.branches(None)?
-            .into_iter()
             .map_ok(|(branch, _)| get_branch_name(&branch))
             .collect::<Vec<_>>()
     );
