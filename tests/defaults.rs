@@ -123,7 +123,7 @@ fn test_defaults_write_local() {
         (
             "string",
             "initial value\nline 2",
-            "\"initial value\\nline 2\"",
+            "|-\n  initial value\n  line 2",
             "\"new value\\nnew line 2\"",
             "new value\nnew line 2",
         ),
