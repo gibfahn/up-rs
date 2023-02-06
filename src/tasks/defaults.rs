@@ -109,9 +109,6 @@ pub enum DefaultsError {
         source: std::io::Error,
     },
 
-    /// Expected the plist value to serialize to a yaml string starting with '---\n' but it wasn't.
-    ExpectedYamlString,
-
     /**
     Unable to copy file.
 
@@ -260,14 +257,11 @@ pub(crate) fn read(defaults_opts: DefaultsReadOptions) -> Result<(), E> {
 
     print!(
         "{}",
-        serde_yaml::to_string(value)
-            .map_err(|e| E::SerializationFailed {
-                domain,
-                key,
-                source: e
-            })?
-            .strip_prefix("---\n")
-            .ok_or(E::ExpectedYamlString {})?
+        serde_yaml::to_string(value).map_err(|e| E::SerializationFailed {
+            domain,
+            key,
+            source: e
+        })?
     );
     Ok(())
 }
