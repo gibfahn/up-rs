@@ -50,7 +50,9 @@ main() {
     new_version=$changelog_version
   else
     log_section "Updating changelog..."
-    read "new_version?New version (old version is ${last_release?}): "
+    default_new_release=$(awk -F '.' '{print $1 "." $2 "." $3+1}' <<<$last_release)
+    read "new_version?New version (current version: ${last_release?}, default new version: ${default_new_release}): "
+    [[ -z $new_version ]] && new_version=$default_new_release
     # TODO(gib): make this follow (and link to in CHANGELOG.md) https://keepachangelog.com/en/1.0.0/
     clog -C CHANGELOG.md --from="${last_release?}" --setversion="${new_version?}"
     # Make the header a link pointing to the release.
