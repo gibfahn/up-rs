@@ -36,8 +36,10 @@ main() {
   # Test Darwin
   log_and_run cargo test --release --features=CI
 
-  # TODO(gib): automatically calculate new version from conventional commit messages.
-  changelog_version=$(head -1 CHANGELOG.md | awk -F'"' '{print $2}')
+  # Takes a line like:
+  # `## [0.13.4](https://github.com/gibfahn/up-rs/releases/tag/0.13.4) (2023-02-07)`
+  # and extracts the `0.13.4`.
+  changelog_version=$(awk <CHANGELOG.md '{ if ($1 == "##") { print $2; exit; }}' | sed -E 's/\[([^]]+)].*/\1/')
   last_tag=$(git tag -l | gsort -V | tail -1)
   tag_before_last=$(git tag -l | gsort -V | tail -2 | head -1)
   last_release=$(gh release list -L 1 | awk '{print $1}')
@@ -50,14 +52,11 @@ main() {
     new_version=$changelog_version
   else
     log_section "Updating changelog..."
+    # TODO(gib): automatically calculate new version from conventional commit messages.
     default_new_release=$(awk -F '.' '{print $1 "." $2 "." $3+1}' <<<$last_release)
     read "new_version?New version (current version: ${last_release?}, default new version: ${default_new_release}): "
     [[ -z $new_version ]] && new_version=$default_new_release
-    # TODO(gib): make this follow (and link to in CHANGELOG.md) https://keepachangelog.com/en/1.0.0/
-    clog -C CHANGELOG.md --from="${last_release?}" --setversion="${new_version?}"
-    # Make the header a link pointing to the release.
-    gsed -i "s/^## ${new_version?} (/## [${new_version?}][] (/" CHANGELOG.md
-    echo "[${new_version?}]: https://github.com/gibfahn/up-rs/releases/tag/${new_version?}" >>CHANGELOG.md
+    git cliff --tag="${new_version?}" --prepend CHANGELOG.md "${last_release}"..
 
     log_section "Updating Cargo.toml..."
     gsed -i -E "0,/^version = \"${last_release?}\"\$/s//version = \"${new_version?}\"/" Cargo.toml
@@ -98,7 +97,7 @@ main() {
   cp target/release/up out/up-Darwin
   cp target/x86_64-unknown-linux-musl/release/up out/up-Linux
   gh release create "${new_version?}" --target=main \
-    --notes="${new_version?}"$'\n\n'"$(clog --from="${last_release?}" --setversion="${new_version?}")" \
+    --notes="${new_version?}"$'\n\n'"$(git cliff --tag="${new_version?}" --strip=all "${last_release}"..)" \
     out/up-Darwin out/up-Linux
   rm -r out
 
