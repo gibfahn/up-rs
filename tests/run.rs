@@ -28,7 +28,7 @@ const EXPECTED_DEFAULTS_VALUE: &str = r#"{
 
 /// Run a full up with a bunch of configuration and check things work.
 #[test]
-fn up_run_passing() {
+fn test_up_run_passing() {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
 
     testutils::copy_all(

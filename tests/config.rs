@@ -1,7 +1,7 @@
 use std::fs;
 
 #[test]
-fn empty_yaml() {
+fn test_empty_yaml() {
     let fixtures_dir = testutils::fixture_dir(testutils::function_path!());
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
     testutils::copy_all(&fixtures_dir, &temp_dir).unwrap();
@@ -13,7 +13,7 @@ fn empty_yaml() {
 }
 
 #[test]
-fn basic_yaml() {
+fn test_basic_yaml() {
     let fixtures_dir = testutils::fixture_dir(testutils::function_path!());
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
     testutils::copy_all(&fixtures_dir, &temp_dir).unwrap();

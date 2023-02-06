@@ -11,7 +11,7 @@ use testutils::assert;
 /// Set up a basic home_dir, run the link function against it, and make sure we
 /// get the expected changes.
 #[test]
-fn new_link() {
+fn test_new_link() {
     let (home_dir, dotfile_dir, backup_dir, temp_dir) =
         get_home_dotfile_dirs(testutils::function_path!());
     // Create empty dir (can't check in as git doesn't store dirs without contents.
@@ -33,7 +33,7 @@ fn new_link() {
 /// Set up a basic home_dir, run the link function against it, and make sure we
 /// get the expected changes.
 #[test]
-fn backup_files() {
+fn test_backup_files() {
     let (home_dir, dotfile_dir, backup_dir, temp_dir) =
         get_home_dotfile_dirs(testutils::function_path!());
     run_link_cmd(&dotfile_dir, &home_dir, &temp_dir, LinkResult::Success);
@@ -89,7 +89,7 @@ fn backup_files() {
 }
 
 #[test]
-fn hidden_and_nested() {
+fn test_hidden_and_nested() {
     let (home_dir, dotfile_dir, backup_dir, temp_dir) =
         get_home_dotfile_dirs(testutils::function_path!());
     // If this symlink is correct, it shouldn't make a difference.
@@ -170,7 +170,7 @@ fn hidden_and_nested() {
 
 /// Pass a from_dir that doesn't exist and make sure we fail.
 #[test]
-fn missing_from_dir() {
+fn test_missing_from_dir() {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
     let cmd_assert = run_link_cmd(
         &temp_dir.join("dotfile_dir"),
@@ -190,7 +190,7 @@ fn missing_from_dir() {
 
 /// Pass a to_dir that doesn't exist and make sure we fail.
 #[test]
-fn missing_to_dir() {
+fn test_missing_to_dir() {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
     fs::create_dir(temp_dir.join("dotfile_dir")).unwrap();
     let assert = run_link_cmd(
@@ -212,7 +212,7 @@ fn missing_to_dir() {
 /// Make sure we fail if the backup dir can't be created (e.g. because it's
 /// already a file).
 #[test]
-fn uncreateable_backup_dir() {
+fn test_uncreateable_backup_dir() {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
     fs::create_dir(temp_dir.join("dotfile_dir")).unwrap();
     fs::create_dir(temp_dir.join("home_dir")).unwrap();

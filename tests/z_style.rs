@@ -10,7 +10,7 @@ use std::{
 
 /// Fail if rustfmt (cargo fmt) hasn't been run.
 #[test]
-fn rustfmt() {
+fn test_rustfmt() {
     let current_dir = env::current_dir().unwrap();
     let check_output;
 
@@ -37,7 +37,7 @@ fn rustfmt() {
 
 /// Fail if rustfmt (cargo fmt) hasn't been run on testutils.
 #[test]
-fn testutils_rustfmt() {
+fn test_testutils_rustfmt() {
     let current_dir = env::current_dir().unwrap().join("tests/testutils");
     let check_output;
 
@@ -64,7 +64,7 @@ fn testutils_rustfmt() {
 
 /// Fail if cargo clippy hasn't been run.
 #[test]
-fn clippy() {
+fn test_clippy() {
     let current_dir = env::current_dir().unwrap();
     let clippy_output;
 
@@ -91,7 +91,7 @@ fn clippy() {
 
 /// Fail if cargo clippy hasn't been run on testutils.
 #[test]
-fn testutils_clippy() {
+fn test_testutils_clippy() {
     let current_dir = env::current_dir().unwrap().join("tests/testutils");
     let clippy_output;
 
@@ -118,7 +118,7 @@ fn testutils_clippy() {
 
 // #[cfg(feature = "CI")]
 #[test]
-fn no_todo() {
+fn test_no_todo() {
     const DISALLOWED_STRINGS: [&str; 4] = ["XXX(", "XXX:", "todo!", "dbg!"];
     let files_with_todos = ignore::WalkBuilder::new("./")
         // Check hidden files too.

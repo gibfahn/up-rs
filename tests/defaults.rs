@@ -5,7 +5,7 @@ use duct::cmd;
 use predicates::prelude::*;
 
 #[test]
-fn defaults_read_global() {
+fn test_defaults_read_global() {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
 
     let mut expected_value = cmd!("defaults", "read", "-g", "com.apple.sound.beep.sound")
@@ -54,7 +54,7 @@ fn defaults_read_global() {
 }
 
 #[test]
-fn defaults_read_local() {
+fn test_defaults_read_local() {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
 
     // Four-letter codes for view modes: `icnv`, `clmv`, `glyv`, `Nlsv`
@@ -110,7 +110,7 @@ fn defaults_read_local() {
 }
 
 #[test]
-fn defaults_write_local() {
+fn test_defaults_write_local() {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
 
     let domain = format!("co.fahn.up-rs.test-{}", testutils::function_path!());

@@ -5,7 +5,7 @@ use testutils::assert;
 
 /// Make sure we can't run this without required args.
 #[test]
-fn missing_args() {
+fn test_missing_args() {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
     let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
     cmd.args(["git"].iter());
@@ -14,7 +14,7 @@ fn missing_args() {
 
 /// Actually try cloning a git repository and make sure we can update.
 #[test]
-fn real_clone() {
+fn test_real_clone() {
     // Repo commit history:
     //
     // ❯ g la

@@ -5,7 +5,7 @@ use walkdir::WalkDir;
 
 /// Test that we can generate tasks from a sample workspace.
 #[test]
-fn generate_passing() {
+fn test_generate_passing() {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
 
     testutils::copy_all(
@@ -57,7 +57,7 @@ fn generate_passing() {
     assert::file(
         &temp_dir.join("up_config_dir/tasks/git_1.yaml"),
         &format!(
-            include_str!("fixtures/generate/generate_passing/expected_tasks/git_1.yaml"),
+            include_str!("fixtures/generate/test_generate_passing/expected_tasks/git_1.yaml"),
             root_dir = temp_dir.display(),
         ),
     );
@@ -65,7 +65,7 @@ fn generate_passing() {
     assert::file(
         &temp_dir.join("up_config_dir/tasks/git_2.yaml"),
         &format!(
-            include_str!("fixtures/generate/generate_passing/expected_tasks/git_2.yaml"),
+            include_str!("fixtures/generate/test_generate_passing/expected_tasks/git_2.yaml"),
             root_dir = temp_dir.display(),
         ),
     );

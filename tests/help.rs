@@ -3,7 +3,7 @@ use std::path::Path;
 use predicates::prelude::*;
 
 #[test]
-fn help_test() {
+fn test_help_test() {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
 
     check_help("-h", &temp_dir);
@@ -11,7 +11,7 @@ fn help_test() {
 }
 
 #[test]
-fn version_test() {
+fn test_version_test() {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
 
     check_version("-V", &temp_dir);
