@@ -28,7 +28,7 @@ dirs = "4.0.0"
 displaydoc = "0.2.3"
 duct = "0.13.6"
 envy = "0.4.2"
-git2 = { version = "0.15.0", features = ["vendored-openssl"] }
+git2 = { version = "0.16.1", features = ["vendored-openssl"] }
 itertools = "0.10.5"
 log = "0.4.17"
 plist = "1.4.0"
