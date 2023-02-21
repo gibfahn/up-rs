@@ -183,7 +183,7 @@ fn create_parent_dir(to_dir: &Path, rel_path: &Path, backup_dir: &Path) -> Resul
         // We should be able to create the directory now (if not bail with a Failure error).
         let to_parent_path = get_parent_path(&to_path)?;
         fs::create_dir_all(to_parent_path)
-            .with_context(|| format!("Failed to create parent dir {:?}.", to_path.parent()))
+            .wrap_err_with(|| format!("Failed to create parent dir {:?}.", to_path.parent()))
     })
 }
 

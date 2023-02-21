@@ -186,7 +186,7 @@ fn parse_git_config(
         remotes.push(GitRemote::from(
             &repo
                 .find_remote(&name)
-                .with_context(|| E::InvalidRemote { name })?,
+                .wrap_err_with(|| E::InvalidRemote { name })?,
         )?);
     }
 

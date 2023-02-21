@@ -174,7 +174,7 @@ fn get_fallback_config_path(mut fallback_url: String, fallback_path: String) -> 
     }
     let fallback_repo_path = env::temp_dir().join("up-rs/fallback_repo");
     fs::create_dir_all(&fallback_repo_path)
-        .with_context(|| format!("Failed to create {fallback_repo_path:?}"))?;
+        .wrap_err_with(|| format!("Failed to create {fallback_repo_path:?}"))?;
 
     let fallback_config_path = fallback_repo_path.join(fallback_path);
     git::update::update(

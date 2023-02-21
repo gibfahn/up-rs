@@ -106,7 +106,7 @@ pub(super) fn calculate_head(repo: &Repository, remote: &mut Remote) -> Result<S
             remote.disconnect()?;
             default_branch
         }
-        Err(head_err) => Err(head_err).context(E::NoHeadSet)?,
+        Err(head_err) => Err(head_err).wrap_err(E::NoHeadSet)?,
     })
 }
 

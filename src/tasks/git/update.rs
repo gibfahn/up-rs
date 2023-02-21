@@ -38,7 +38,7 @@ pub(crate) fn update(git_config: &GitConfig) -> Result<TaskStatus> {
                 TaskStatus::Skipped
             }
         })
-        .with_context(|| E::GitUpdate {
+        .wrap_err_with(|| E::GitUpdate {
             path: PathBuf::from(git_config.path.clone()),
         });
     let elapsed_time = now.elapsed();
@@ -164,7 +164,7 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<bool> {
         let push_revision = format!("{short_branch}@{{push}}");
         let merge_commit = repo.reference_to_annotated_commit(push_branch.get())?;
         let push_branch_name = get_branch_name(&push_branch)?;
-        if do_ff_merge(&repo, &branch_name, &merge_commit).with_context(|| E::Merge {
+        if do_ff_merge(&repo, &branch_name, &merge_commit).wrap_err_with(|| E::Merge {
             branch: branch_name,
             merge_rev: push_revision,
             merge_ref: push_branch_name,
@@ -181,7 +181,7 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<bool> {
             Ok(upstream_branch) => {
                 let upstream_commit = repo.reference_to_annotated_commit(upstream_branch.get())?;
                 let upstream_branch_name = get_branch_name(&upstream_branch)?;
-                if do_ff_merge(&repo, &branch_name, &upstream_commit).with_context(|| E::Merge {
+                if do_ff_merge(&repo, &branch_name, &upstream_commit).wrap_err_with(|| E::Merge {
                     branch: branch_name,
                     merge_rev: up_revision,
                     merge_ref: upstream_branch_name,

@@ -72,7 +72,7 @@ pub(crate) fn run(config: DefaultsConfig, up_dir: &Path) -> Result<TaskStatus> {
         }
         let mut errors_iter = errors.into_iter();
         Err(errors_iter.next().ok_or(E::UnexpectedNone)?)
-            .with_context(|| eyre!("{:?}", errors_iter.collect::<Vec<_>>()))
+            .wrap_err_with(|| eyre!("{:?}", errors_iter.collect::<Vec<_>>()))
     }
 }
 
