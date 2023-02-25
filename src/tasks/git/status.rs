@@ -2,14 +2,10 @@ use std::fmt::Write as _; // import without risk of name clashing
 use std::path::Path;
 
 use color_eyre::eyre::{ensure, Result};
-use git2::{BranchType, Config, ErrorCode, Repository, StatusOptions, Statuses, SubmoduleIgnore};
+use gix::{BranchType, Config, ErrorCode, Repository, StatusOptions, Statuses, SubmoduleIgnore};
 use tracing::{trace, warn};
 
-use crate::tasks::git::{
-    branch::{get_branch_name, get_push_branch},
-    cherry::unmerged_commits,
-    errors::GitError as E,
-};
+use crate::tasks::git::{branch::get_branch_name, cherry::unmerged_commits, errors::GitError as E};
 
 /// Check the repo is clean, equivalent to running `git status --porcelain` and
 /// checking everything looks good.
@@ -156,35 +152,35 @@ fn repo_statuses(repo: &Repository) -> Result<Statuses> {
 /// This version of the output prefixes each path with two status columns and
 /// shows submodule status information.
 #[allow(clippy::too_many_lines, clippy::useless_let_if_seq)]
-fn status_short(repo: &Repository, statuses: &git2::Statuses) -> String {
+fn status_short(repo: &Repository, statuses: &gix::Statuses) -> String {
     let mut output = String::new();
     for entry in statuses
         .iter()
-        .filter(|e| e.status() != git2::Status::CURRENT)
+        .filter(|e| e.status() != gix::Status::CURRENT)
     {
         let mut index_status = match entry.status() {
-            s if s.contains(git2::Status::INDEX_NEW) => 'A',
-            s if s.contains(git2::Status::INDEX_MODIFIED) => 'M',
-            s if s.contains(git2::Status::INDEX_DELETED) => 'D',
-            s if s.contains(git2::Status::INDEX_RENAMED) => 'R',
-            s if s.contains(git2::Status::INDEX_TYPECHANGE) => 'T',
+            s if s.contains(gix::Status::INDEX_NEW) => 'A',
+            s if s.contains(gix::Status::INDEX_MODIFIED) => 'M',
+            s if s.contains(gix::Status::INDEX_DELETED) => 'D',
+            s if s.contains(gix::Status::INDEX_RENAMED) => 'R',
+            s if s.contains(gix::Status::INDEX_TYPECHANGE) => 'T',
             _ => ' ',
         };
         let mut worktree_status = match entry.status() {
-            s if s.contains(git2::Status::WT_NEW) => {
+            s if s.contains(gix::Status::WT_NEW) => {
                 if index_status == ' ' {
                     index_status = '?';
                 }
                 '?'
             }
-            s if s.contains(git2::Status::WT_MODIFIED) => 'M',
-            s if s.contains(git2::Status::WT_DELETED) => 'D',
-            s if s.contains(git2::Status::WT_RENAMED) => 'R',
-            s if s.contains(git2::Status::WT_TYPECHANGE) => 'T',
+            s if s.contains(gix::Status::WT_MODIFIED) => 'M',
+            s if s.contains(gix::Status::WT_DELETED) => 'D',
+            s if s.contains(gix::Status::WT_RENAMED) => 'R',
+            s if s.contains(gix::Status::WT_TYPECHANGE) => 'T',
             _ => ' ',
         };
 
-        if entry.status().contains(git2::Status::IGNORED) {
+        if entry.status().contains(gix::Status::IGNORED) {
             index_status = '!';
             worktree_status = '!';
         }

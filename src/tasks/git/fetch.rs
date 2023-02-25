@@ -1,7 +1,7 @@
 use std::{thread, time::Duration};
 
 use color_eyre::eyre::Result;
-use git2::{Cred, CredentialType, ErrorClass, ErrorCode, Remote, RemoteCallbacks, Repository};
+use gix::{Cred, CredentialType, ErrorClass, ErrorCode, Remote, RemoteCallbacks, Repository};
 use tracing::{debug, warn};
 
 use crate::tasks::git::{branch::shorten_branch_ref, errors::GitError as E};
@@ -38,7 +38,7 @@ pub(super) fn remote_callbacks(count: &mut usize) -> RemoteCallbacks {
                 "Authentication failure while trying to fetch git repository.{extra}\nurl: {url}, \
                  username_from_url: {username_from_url:?}, allowed_types: {allowed_types:?}"
             );
-            return Err(git2::Error::new(ErrorCode::Auth, ErrorClass::Ssh, message));
+            return Err(gix::Error::new(ErrorCode::Auth, ErrorClass::Ssh, message));
         }
         debug!("SSH_AUTH_SOCK: {:?}", std::env::var("SSH_AUTH_SOCK"));
         debug!(
@@ -51,8 +51,8 @@ pub(super) fn remote_callbacks(count: &mut usize) -> RemoteCallbacks {
         } else if allowed_types.contains(CredentialType::SSH_KEY) {
             Cred::ssh_key_from_agent(username)
         } else if allowed_types.contains(CredentialType::USER_PASS_PLAINTEXT) {
-            let git_config = git2::Config::open_default()?;
-            git2::Cred::credential_helper(&git_config, url, None)
+            let git_config = gix::Config::open_default()?;
+            gix::Cred::credential_helper(&git_config, url, None)
         } else {
             Cred::default()
         }

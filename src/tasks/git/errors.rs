@@ -1,7 +1,7 @@
 use std::{io, path::PathBuf};
 
 use displaydoc::Display;
-use git2::{MergeAnalysis, MergePreference};
+use gix::{MergeAnalysis, MergePreference};
 use thiserror::Error;
 
 #[derive(Error, Debug, Display)]
@@ -16,13 +16,16 @@ pub enum GitError {
     /// Current branch is not valid UTF-8
     InvalidBranchError,
     /// Branch list error
-    BranchError { source: git2::Error },
+    BranchError { source: gix::Error },
     /// No default head branch set, and couldn't calculate one.
     NoHeadSet,
     /// Remote name unset.
     RemoteNameMissing,
     /// Couldn't find remote {name}
-    RemoteNotFound { name: String, source: git2::Error },
+    RemoteNotFound {
+        name: String,
+        source: gix::remote::find::existing::Error,
+    },
     /** Repo has uncommitted changes, refusing to update. Status:
      * {status}
      */
@@ -30,7 +33,7 @@ pub enum GitError {
     /// Fetch failed for remote '{remote}'.{extra_info}
     FetchFailed {
         remote: String,
-        source: git2::Error,
+        source: gix::Error,
         extra_info: String,
     },
     /// Couldn't find oid for branch '{branch_name}'.

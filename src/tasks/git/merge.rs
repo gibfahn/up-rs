@@ -1,7 +1,7 @@
 use std::str;
 
 use color_eyre::eyre::{bail, Result};
-use git2::{Reference, Repository};
+use gix::{Reference, Repository};
 use tracing::debug;
 
 use super::status::ensure_repo_clean;
@@ -12,7 +12,7 @@ use crate::tasks::git::{checkout::set_and_checkout_head, errors::GitError as E};
 pub(super) fn do_ff_merge<'a>(
     repo: &'a Repository,
     branch_name: &str,
-    fetch_commit: &git2::AnnotatedCommit<'a>,
+    fetch_commit: &gix::AnnotatedCommit<'a>,
 ) -> Result<bool> {
     // Do merge analysis
     let analysis = repo.merge_analysis(&[fetch_commit])?;
@@ -49,7 +49,7 @@ pub(super) fn do_ff_merge<'a>(
     }
 }
 
-fn fast_forward(repo: &Repository, lb: &mut Reference, rc: &git2::AnnotatedCommit) -> Result<()> {
+fn fast_forward(repo: &Repository, lb: &mut Reference, rc: &gix::AnnotatedCommit) -> Result<()> {
     let name = lb.name().map_or_else(
         || String::from_utf8_lossy(lb.name_bytes()).to_string(),
         std::string::ToString::to_string,

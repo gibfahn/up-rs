@@ -28,7 +28,7 @@ dirs = "4.0.0"
 displaydoc = "0.2.3"
 duct = "0.13.6"
 envy = "0.4.2"
-git2 = { version = "0.16.1", features = ["vendored-openssl"] }
+# git2 = { version = "0.16.1", features = ["vendored-openssl"] }
 itertools = "0.10.5"
 log = "0.4.17"
 plist = "1.4.0"
@@ -48,6 +48,7 @@ users = "0.11.0"
 walkdir = "2.3.2"
 tracing = "0.1.37"
 tracing-subscriber = {version = "0.3.16", features = ["env-filter"]}
+gix = "0.36.0"
 
 [dev-dependencies]
 testutils = { path = "./tests/testutils" }

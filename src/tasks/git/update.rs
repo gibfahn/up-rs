@@ -9,7 +9,7 @@ use std::{
 };
 
 use color_eyre::eyre::{bail, Context, Result};
-use git2::{BranchType, ConfigLevel, ErrorCode, FetchOptions, Repository};
+use gix::Repository;
 use itertools::Itertools;
 use tracing::{debug, trace, warn};
 use url::Url;
@@ -77,57 +77,39 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<bool> {
     }
 
     // Initialize repo if it doesn't exist.
-    let mut repo = match Repository::open(&git_path) {
+    let mut repo = match gix::open(&git_path) {
         Ok(repo) => repo,
-        Err(e) => {
-            if e.code() == ErrorCode::NotFound {
+        Err(e) => match e {
+            gix::open::Error::NotARepository { source, path } => {
                 newly_created_repo = true;
                 did_work = true;
-                Repository::init(&git_path)?
-            } else {
-                debug!(
-                    "Failed to open repository: {code:?}\n  {e}",
-                    code = e.code()
-                );
+                gix::init(&git_path)?
+            }
+            _ => {
+                debug!("Failed to open repository: {e}",);
                 bail!(e);
             }
-        }
+        },
     };
 
     if newly_created_repo {
         debug!("Newly created repo, will force overwrite repo contents.");
     }
 
-    // Opens the global, XDG, and system files in order.
-    let mut user_git_config = git2::Config::open_default()?;
-    // Then add the local one if defined.
-    let local_git_config_path = git_path.join(".git/config");
-    if local_git_config_path.exists() {
-        user_git_config.add_file(&local_git_config_path, ConfigLevel::Local, false)?;
-    }
-
     for remote_config in &git_config.remotes {
         set_up_remote(&repo, remote_config)?;
     }
-    debug!(
-        "Created remotes: {:?}",
-        repo.remotes()?.iter().collect::<Vec<_>>()
-    );
-    trace!(
-        "Branches: {:?}",
-        repo.branches(None)?
-            .map_ok(|(branch, _)| get_branch_name(&branch))
-            .collect::<Vec<_>>()
-    );
+    debug!("Created remotes: {:?}", repo.remote_names());
+    trace!("Branches: {:?}", repo.branch_names());
 
     // The first remote specified is the default remote.
     let default_remote_name = git_config.remotes.get(0).ok_or(E::NoRemotes)?.name.clone();
-    let mut default_remote =
-        repo.find_remote(&default_remote_name)
-            .map_err(|e| E::RemoteNotFound {
-                source: e,
-                name: default_remote_name.clone(),
-            })?;
+    let mut default_remote = repo
+        .find_remote(default_remote_name.as_str())
+        .map_err(|e| E::RemoteNotFound {
+            source: e,
+            name: default_remote_name.clone(),
+        })?;
 
     if !newly_created_repo
         && git_config.prune
@@ -159,7 +141,7 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<bool> {
 
     // TODO(gib): use `repo.revparse_ext(&push_revision)?.1` when available.
     // Refs: https://github.com/libgit2/libgit2/issues/5689
-    if let Some(push_branch) = get_push_branch(&repo, short_branch, &user_git_config)? {
+    if let Some(push_branch) = get_push_branch(&repo, short_branch)? {
         debug!("Checking for a @{{push}} branch.");
         let push_revision = format!("{short_branch}@{{push}}");
         let merge_commit = repo.reference_to_annotated_commit(push_branch.get())?;
@@ -181,10 +163,12 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<bool> {
             Ok(upstream_branch) => {
                 let upstream_commit = repo.reference_to_annotated_commit(upstream_branch.get())?;
                 let upstream_branch_name = get_branch_name(&upstream_branch)?;
-                if do_ff_merge(&repo, &branch_name, &upstream_commit).wrap_err_with(|| E::Merge {
-                    branch: branch_name,
-                    merge_rev: up_revision,
-                    merge_ref: upstream_branch_name,
+                if do_ff_merge(&repo, &branch_name, &upstream_commit).wrap_err_with(|| {
+                    E::Merge {
+                        branch: branch_name,
+                        merge_rev: up_revision,
+                        merge_ref: upstream_branch_name,
+                    }
                 })? {
                     did_work = true;
                 }

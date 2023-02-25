@@ -1,9 +1,7 @@
 use std::{convert::Into, str};
 
 use color_eyre::eyre::{bail, eyre, Result};
-use git2::{
-    build::CheckoutBuilder, BranchType, ErrorCode, FetchOptions, Repository, SubmoduleUpdateOptions,
-};
+use gix::Repository;
 use tracing::{debug, trace};
 
 use crate::tasks::git::{fetch::remote_callbacks, status::ensure_repo_clean};

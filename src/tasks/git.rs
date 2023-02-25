@@ -1,9 +1,9 @@
 use std::convert::From;
 
 use clap::Parser;
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{Context, Result};
 use displaydoc::Display;
-use git2::Remote;
+use gix::{bstr::ByteVec, remote::Direction, Remote};
 use rayon::{iter::Either, prelude::*};
 use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
@@ -123,16 +123,38 @@ pub struct GitRemote {
 }
 
 impl GitRemote {
-    pub(crate) fn from(remote: &Remote) -> Result<Self> {
-        let fetch_url = remote.url().ok_or(E::InvalidRemote)?.to_owned();
+    pub(crate) fn from(remote: &Remote, remote_name: String) -> Result<Self> {
+        let fetch_url = Vec::from(
+            remote
+                .url(Direction::Fetch)
+                .ok_or_else(|| E::InvalidRemote {
+                    name: remote_name.clone(),
+                })?
+                .to_bstring(),
+        )
+        .into_string()
+        .wrap_err_with(|| E::InvalidRemote {
+            name: remote_name.clone(),
+        })?;
 
-        let push_url = match remote.pushurl() {
-            Some(url) if url != fetch_url => Some(url.to_owned()),
+        let push_url = match remote.url(Direction::Push) {
+            Some(url) => {
+                let url = Vec::from(url.to_bstring())
+                    .into_string()
+                    .wrap_err_with(|| E::InvalidRemote {
+                        name: remote_name.clone(),
+                    })?;
+                if url == fetch_url {
+                    None
+                } else {
+                    Some(url)
+                }
+            }
             _ => None,
         };
 
         Ok(Self {
-            name: remote.name().ok_or(E::InvalidRemote)?.to_owned(),
+            name: remote_name,
             fetch_url,
             push_url,
         })
@@ -142,8 +164,8 @@ impl GitRemote {
 #[derive(Error, Debug, Display)]
 /// Errors thrown by this file.
 pub enum GitTaskError {
-    /// Remote un-named, or invalid UTF-8 name.
-    InvalidRemote,
+    /// Invalid UTF-8 remote name or URL for remote '{name}'
+    InvalidRemote { name: String },
     /// Unexpected None in option.
     UnexpectedNone,
 }

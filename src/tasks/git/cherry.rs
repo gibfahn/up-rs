@@ -1,7 +1,7 @@
 use std::{collections::HashSet, io::Read};
 
 use color_eyre::eyre::Result;
-use git2::{Branch, DiffFormat, DiffOptions, Oid, Repository, Revwalk};
+use gix::{Branch, DiffFormat, DiffOptions, Oid, Repository, Revwalk};
 use ring::digest::{Context, Digest, SHA256};
 use tracing::trace;
 

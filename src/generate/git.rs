@@ -5,7 +5,6 @@ use std::{
 
 use color_eyre::eyre::{Context, Result};
 use displaydoc::Display;
-use git2::Repository;
 use rayon::{iter::Either, prelude::*};
 use thiserror::Error;
 use tracing::{debug, error, info, trace};
@@ -165,13 +164,13 @@ fn parse_git_config(
     remote_order: &[String],
     home_dir: &str,
 ) -> Result<GitConfig> {
-    let repo = Repository::open(path)?;
+    let repo = gix::open(path)?;
 
     let mut sorted_remote_names = Vec::new();
     {
         let mut remote_names: Vec<String> = Vec::new();
-        for opt_name in &repo.remotes()? {
-            remote_names.push(opt_name.ok_or(E::InvalidUtf8)?.to_owned());
+        for remote_name in repo.remote_names() {
+            remote_names.push(remote_name.to_owned());
         }
         for order in remote_order {
             if let Some(pos) = remote_names.iter().position(|el| el == order) {
@@ -185,8 +184,9 @@ fn parse_git_config(
     for name in sorted_remote_names {
         remotes.push(GitRemote::from(
             &repo
-                .find_remote(&name)
-                .wrap_err_with(|| E::InvalidRemote { name })?,
+                .find_remote(name.as_str())
+                .wrap_err_with(|| E::InvalidRemote { name: name.clone() })?,
+            name,
         )?);
     }
 
@@ -211,8 +211,6 @@ fn parse_git_config(
 #[derive(Error, Debug, Display)]
 /// Errors thrown by this file.
 pub enum GenerateGitError {
-    /// Invalid UTF-8.
-    InvalidUtf8,
     /// Invalid remote '{name}'.
     InvalidRemote { name: String },
     /// Unable to calculate user's home directory.
