@@ -26,10 +26,8 @@ fi
 set -x
 docker run --rm -it \
   --pull=always \
-  -v "${XDG_CACHE_HOME:-$HOME/.cache}"/docker/cargo/registry:/opt/rust/cargo/registry \
-  -v "${XDG_CACHE_HOME:-$HOME/.cache}"/docker/cargo/git:/opt/rust/cargo/git \
-  -v "$project_root":/workspace \
-  -e CARGO_HOME=/opt/rust/cargo \
-  -u root -w /workspace \
-  ekidd/rust-musl-builder \
+  -v "${XDG_CACHE_HOME:-$HOME/.cache}"/docker/cargo/registry:/root/.cargo/registry \
+  -v "${XDG_CACHE_HOME:-$HOME/.cache}"/docker/cargo/git:/root/.cargo/git \
+  -v "$project_root":/volume \
+  clux/muslrust \
   "${build_args[@]}"
