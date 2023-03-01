@@ -1,3 +1,27 @@
+# Up-rs Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.13.4](https://github.com/gibfahn/up-rs/releases/tag/0.13.4) (2023-03-01)
+
+### Bug Fixes
+- defaults: create defaults parent dir if it doesn't exist ([3dea4f4](https://github.com/gibfahn/up-rs/commit/3dea4f4594657cfc4803975b1afb1a0a22def4db))
+- generate: update to new serde yaml format ([97625b0](https://github.com/gibfahn/up-rs/commit/97625b0d3a905386af2133bee6d371bcf6b94168))
+- git: fix double-quoting in git_path log messages ([c607fa4](https://github.com/gibfahn/up-rs/commit/c607fa44b4d394f46ea153a0ef9c92aa5dbe3f31))
+- link: handle multiple link tasks cleaning backup dir in parallel ([4216333](https://github.com/gibfahn/up-rs/commit/4216333c907448977fd344eb10ec4cc7f37582d5))
+- tasks: require commas to separate multiple --task values ([6f63932](https://github.com/gibfahn/up-rs/commit/6f639329d570234c4c364e1279418ac53e64d292))
+
+### Features
+- run: add a --keep-going option for ignoring bootstrapping errors ([dfb46a0](https://github.com/gibfahn/up-rs/commit/dfb46a00fc94b06ef0afe73f1fd6ded56722cc40))
+
+### Refactor
+- log: use tracing macros instead of log macros ([c204f5f](https://github.com/gibfahn/up-rs/commit/c204f5f30a9d362150c641b5b4507dcc2cf835a6))
+- opts: switch from slog to tracing for logging ([777d216](https://github.com/gibfahn/up-rs/commit/777d216bf39595a0e4f88dd9ddfa164699729d33))
+- rewrite .with_context() to .wrap_err_with() ([ab10034](https://github.com/gibfahn/up-rs/commit/ab100347fca07dfbc6dd9b83515ee2295c7b4308))
+
 <a name="0.13.3"></a>
 ## [0.13.3][] (2022-01-28)
 
