@@ -265,7 +265,7 @@ fn status_short(repo: &Repository, statuses: &git2::Statuses) -> String {
         .iter()
         .filter(|e| e.status() == git2::Status::WT_NEW)
     {
-        let _ = writeln!(
+        _ = writeln!(
             output,
             "?? {}",
             entry

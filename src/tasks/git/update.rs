@@ -181,10 +181,12 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<bool> {
             Ok(upstream_branch) => {
                 let upstream_commit = repo.reference_to_annotated_commit(upstream_branch.get())?;
                 let upstream_branch_name = get_branch_name(&upstream_branch)?;
-                if do_ff_merge(&repo, &branch_name, &upstream_commit).wrap_err_with(|| E::Merge {
-                    branch: branch_name,
-                    merge_rev: up_revision,
-                    merge_ref: upstream_branch_name,
+                if do_ff_merge(&repo, &branch_name, &upstream_commit).wrap_err_with(|| {
+                    E::Merge {
+                        branch: branch_name,
+                        merge_rev: up_revision,
+                        merge_ref: upstream_branch_name,
+                    }
                 })? {
                     did_work = true;
                 }

@@ -160,7 +160,13 @@ pub fn run(
 
     match tasks_action {
         TasksAction::List => println!("{}", tasks.keys().join("\n")),
-        TasksAction::Run => run_tasks(bootstrap_tasks, tasks, &env, &config.up_dir, config.keep_going)?,
+        TasksAction::Run => run_tasks(
+            bootstrap_tasks,
+            tasks,
+            &env,
+            &config.up_dir,
+            config.keep_going,
+        )?,
     }
     Ok(())
 }
