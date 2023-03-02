@@ -1,7 +1,6 @@
-/dotfiles/.config/nvim/autoload
 /.env
 
 target/
 **/*.rs.bk
 
-/out/
+/build/

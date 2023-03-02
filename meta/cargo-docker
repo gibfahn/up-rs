@@ -17,7 +17,7 @@ if [[ ${1:-} == -s || ${1:-} == --shell ]]; then
 elif [[ -n "$*" ]]; then
   build_args=(cargo "${@}")
 else
-  build_args=(/bin/bash -cx 'rustup component add clippy rustfmt && cargo test --release --features=CI')
+  build_args=(/bin/bash -cx 'rustup component add clippy rustfmt && cargo test --release')
 fi
 
 # Cross-compile this project into a static Linux binary.

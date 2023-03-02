@@ -4,189 +4,174 @@
 
 use std::{
     env,
-    path::Path,
     process::{Command, Output},
 };
 
+use camino::{Utf8Path, Utf8PathBuf};
+use color_eyre::Result;
+
+/// Check whether we're running in CI or not.
+fn in_ci() -> bool {
+    std::env::var("CI").is_ok()
+}
+
 /// Fail if rustfmt (cargo fmt) hasn't been run.
 #[test]
-fn test_rustfmt() {
-    let current_dir = env::current_dir().unwrap();
-    let check_output;
-
-    #[cfg(feature = "CI")]
-    {
-        check_output = cargo_cmd(&current_dir, CargoCmdType::RustfmtStableCheck);
-    }
-
-    #[cfg(not(feature = "CI"))]
-    {
-        check_output = cargo_cmd(&current_dir, CargoCmdType::RustfmtCheck);
+fn test_rustfmt() -> Result<()> {
+    let current_dir = Utf8PathBuf::try_from(env::current_dir()?)?;
+    let check_output = if in_ci() {
+        cargo_cmd(&current_dir, CargoCmdType::RustfmtStableCheck)?
+    } else {
+        let check_output = cargo_cmd(&current_dir, CargoCmdType::RustfmtCheck)?;
 
         if !check_output.status.success() {
             // Fix the formatting.
-            cargo_cmd(&current_dir, CargoCmdType::RustfmtFix);
+            cargo_cmd(&current_dir, CargoCmdType::RustfmtFix)?;
         }
-    }
+        check_output
+    };
 
     assert!(
         check_output.status.success(),
         "Rustfmt needs to be run, ran 'cargo fmt' to fix, please commit the changes."
     );
+    Ok(())
 }
 
 /// Fail if rustfmt (cargo fmt) hasn't been run on testutils.
 #[test]
-fn test_testutils_rustfmt() {
-    let current_dir = env::current_dir().unwrap().join("tests/testutils");
-    let check_output;
-
-    #[cfg(feature = "CI")]
-    {
-        check_output = cargo_cmd(&current_dir, CargoCmdType::RustfmtStableCheck);
-    }
-
-    #[cfg(not(feature = "CI"))]
-    {
-        check_output = cargo_cmd(&current_dir, CargoCmdType::RustfmtCheck);
+fn test_testutils_rustfmt() -> Result<()> {
+    let current_dir = Utf8PathBuf::try_from(env::current_dir()?)?.join("tests/testutils");
+    let check_output = if in_ci() {
+        cargo_cmd(&current_dir, CargoCmdType::RustfmtStableCheck)?
+    } else {
+        let check_output = cargo_cmd(&current_dir, CargoCmdType::RustfmtCheck)?;
 
         if !check_output.status.success() {
             // Fix the formatting.
-            cargo_cmd(&current_dir, CargoCmdType::RustfmtFix);
+            cargo_cmd(&current_dir, CargoCmdType::RustfmtFix)?;
         }
-    }
+        check_output
+    };
 
     assert!(
         check_output.status.success(),
         "Rustfmt needs to be run, ran 'cargo fmt' to fix, please commit the changes."
     );
+    Ok(())
 }
 
 /// Fail if cargo clippy hasn't been run.
 #[test]
-fn test_clippy() {
-    let current_dir = env::current_dir().unwrap();
-    let clippy_output;
-
-    #[cfg(feature = "CI")]
-    {
-        clippy_output = cargo_cmd(&current_dir, CargoCmdType::ClippyCheck);
-    }
-
-    #[cfg(not(feature = "CI"))]
-    {
-        clippy_output = cargo_cmd(&current_dir, CargoCmdType::ClippyCheck);
+fn test_clippy() -> Result<()> {
+    let current_dir = Utf8PathBuf::try_from(env::current_dir()?)?;
+    let clippy_output = if in_ci() {
+        cargo_cmd(&current_dir, CargoCmdType::ClippyCheck)?
+    } else {
+        let clippy_output = cargo_cmd(&current_dir, CargoCmdType::ClippyCheck)?;
 
         if !clippy_output.status.success() {
             // Fix the clippy errors if possible.
-            cargo_cmd(&current_dir, CargoCmdType::ClippyFix);
+            cargo_cmd(&current_dir, CargoCmdType::ClippyFix)?;
         }
-    }
+        clippy_output
+    };
 
     assert!(
         clippy_output.status.success(),
         "Clippy needs to be run, please run 'cargo clippy -- --deny=clippy::pedantic'."
     );
+    Ok(())
 }
 
 /// Fail if cargo clippy hasn't been run on testutils.
 #[test]
-fn test_testutils_clippy() {
-    let current_dir = env::current_dir().unwrap().join("tests/testutils");
-    let clippy_output;
-
-    #[cfg(feature = "CI")]
-    {
-        clippy_output = cargo_cmd(&current_dir, CargoCmdType::ClippyCheck);
-    }
-
-    #[cfg(not(feature = "CI"))]
-    {
-        clippy_output = cargo_cmd(&current_dir, CargoCmdType::ClippyCheck);
+fn test_testutils_clippy() -> Result<()> {
+    let current_dir = Utf8PathBuf::try_from(env::current_dir()?)?.join("tests/testutils");
+    let clippy_output = if in_ci() {
+        cargo_cmd(&current_dir, CargoCmdType::ClippyCheck)?
+    } else {
+        let clippy_output = cargo_cmd(&current_dir, CargoCmdType::ClippyCheck)?;
 
         if !clippy_output.status.success() {
             // Fix the clippy errors if possible.
-            cargo_cmd(&current_dir, CargoCmdType::ClippyFix);
+            cargo_cmd(&current_dir, CargoCmdType::ClippyFix)?;
         }
-    }
+        clippy_output
+    };
 
     assert!(
         clippy_output.status.success(),
         "Clippy needs to be run, please run 'cargo clippy'."
     );
+    Ok(())
 }
 
-// #[cfg(feature = "CI")]
+#[ignore = "unhelpful when running tests in a loop while developing"]
 #[test]
-fn test_no_todo() {
+fn test_no_todo() -> Result<()> {
     const DISALLOWED_STRINGS: [&str; 4] = ["XXX(", "XXX:", "todo!", "dbg!"];
-    let files_with_todos = ignore::WalkBuilder::new("./")
+    let mut files_with_todos = Vec::new();
+    for file in ignore::WalkBuilder::new("./")
         // Check hidden files too.
         .hidden(false)
         .build()
-        .map(Result::unwrap)
-        .filter(|file| {
-            file.file_type()
-                // Only scan files, not dirs or symlinks.
-                .map_or(false, |file_type| file_type.is_file())
-                // Don't match todos in this file.
-                && !file.path().ends_with(file!())
-        })
-        // Find anything containing a todo.
-        .filter(|file| {
-            let text = std::fs::read_to_string(file.path()).unwrap();
+    {
+        let file = file?;
 
-            for disallowed_string in DISALLOWED_STRINGS {
-                if text.contains(disallowed_string) {
-                    println!(
-                        "ERROR: {path:?} contains disallowed string '{disallowed_string}'",
-                        path = file.path(),
-                    );
-                    return true;
-                }
+        // Only scan files, not dirs or symlinks.
+        if file
+            .file_type()
+            // Don't match todos in this file.
+            .map_or(true, |file_type| !file_type.is_file())
+            || file.path().ends_with(file!())
+        {
+            continue;
+        }
+        // Find anything containing a todo.
+        let path = Utf8PathBuf::try_from(file.path().to_path_buf())?;
+        let text = std::fs::read_to_string(&path)?;
+
+        for disallowed_string in DISALLOWED_STRINGS {
+            if text.contains(disallowed_string) {
+                println!("ERROR: {path} contains disallowed string '{disallowed_string}'");
+                files_with_todos.push(path.clone());
             }
-            false
-        })
-        .map(|file| file.path().display().to_string())
-        .collect::<Vec<_>>();
+        }
+    }
 
     assert!(
         files_with_todos.is_empty(),
         "\nFiles with blocking todos should not be committed to the main branch, use TODO: \
          instead\n{files_with_todos:#?}\n",
     );
+    Ok(())
 }
 
 /// Whether to check for the formatter having been run, or to actually fix any
 /// formatting issues.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 enum CargoCmdType {
     /// Check the format in CI.
-    #[cfg(feature = "CI")]
     RustfmtStableCheck,
     /// Check the format.
-    #[cfg(not(feature = "CI"))]
     RustfmtCheck,
     /// Fix any formatting issues.
-    #[cfg(not(feature = "CI"))]
     RustfmtFix,
     /// Run clippy.
     ClippyCheck,
     /// Fix clippy errors if possible.
-    #[cfg(not(feature = "CI"))]
     ClippyFix,
 }
 
-fn cargo_cmd(current_dir: &Path, fmt: CargoCmdType) -> Output {
+fn cargo_cmd(current_dir: &Utf8Path, fmt: CargoCmdType) -> Result<Output> {
     let mut cmd = Command::new("cargo");
     cmd.args(match fmt {
-        #[cfg(feature = "CI")]
         CargoCmdType::RustfmtStableCheck => ["fmt", "--", "--check"].iter(),
-        #[cfg(not(feature = "CI"))]
         CargoCmdType::RustfmtCheck => ["+nightly", "fmt", "--", "--check"].iter(),
-        #[cfg(not(feature = "CI"))]
         CargoCmdType::RustfmtFix => ["+nightly", "fmt"].iter(),
         CargoCmdType::ClippyCheck => [
+            "+nightly",
             "clippy",
             #[cfg(not(debug_assertions))]
             "--release",
@@ -195,8 +180,8 @@ fn cargo_cmd(current_dir: &Path, fmt: CargoCmdType) -> Output {
             "--deny=warnings",
         ]
         .iter(),
-        #[cfg(not(feature = "CI"))]
         CargoCmdType::ClippyFix => [
+            "+nightly",
             "clippy",
             #[cfg(not(debug_assertions))]
             "--release",
@@ -207,8 +192,8 @@ fn cargo_cmd(current_dir: &Path, fmt: CargoCmdType) -> Output {
         .iter(),
     });
     cmd.current_dir(current_dir);
-    println!("Running '{cmd:?}' in '{current_dir:?}'");
-    let cmd_output = cmd.output().unwrap();
+    println!("Running '{cmd:?}' in '{current_dir}'");
+    let cmd_output = cmd.output()?;
     println!("  status: {}", cmd_output.status);
     if !cmd_output.stdout.is_empty() {
         println!("  stdout: {}", String::from_utf8_lossy(&cmd_output.stdout));
@@ -219,5 +204,5 @@ fn cargo_cmd(current_dir: &Path, fmt: CargoCmdType) -> Output {
             String::from_utf8_lossy(&cmd_output.stderr)
         );
     }
-    cmd_output
+    Ok(cmd_output)
 }

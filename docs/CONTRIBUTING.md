@@ -41,13 +41,13 @@ The compiled binary can be copied anywhere.
 #### macOS Test
 
 ```bash
-cargo test                        # Run tests in debug mode.
-cargo test --release              # Run tests in release mode.
-cargo test --release --features=CI # Run all tests in release mode (what CI runs).
-cargo test --no-fail-fast         # Don't stop at first error.
+cargo test                    # Run tests in debug mode.
+cargo test --release          # Run tests in release mode.
+cargo test --release          # Run all tests in release mode (what CI runs).
+cargo test --no-fail-fast     # Don't stop at first error.
 
-cargo test --test test_module     # Only run tests in <test_module> (e.g. file in tests/).
-cargo test -- test_name           # Only test functions containing <test_name>.
+cargo test --test test_module # Only run tests in <test_module> (e.g. file in tests/).
+cargo test -- test_name       # Only test functions containing <test_name>.
 ```
 
 ### Linux

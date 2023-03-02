@@ -8,51 +8,81 @@ set -euo pipefail
 
 autoload -U colors && colors
 
+if [[ -n ${DEBUG:-} ]]; then
+  set -x
+fi
+
 project_dir=${0:a:h:h}
 cd $project_dir
 
 # Deny all warnings in CI.
 export RUSTFLAGS="-D warnings"
 
+# Set trace logs for tests using test_log::test
+export RUST_LOG=up_rs=trace
+
+# Don't go to sleep while we're running the release script.
+caffeinate -ds -w $$ &
+
+binary_name=up
+macos_binary=build/$binary_name-Darwin
+linux_binary=build/$binary_name-Linux
+
 main() {
-  echo -e "${fg[magenta]}Publishing new version of the up-rs CLI...${reset_color}"
+  echo -e "${fg[magenta]}Publishing new version of the ${binary_name} CLI...${reset_color}"
 
   # Make sure docker is running as we'll need it later.
   pgrep -q Docker || open -a docker
 
-  # Bail on uncommitted diffs.
-  diff=$(git diff --color=always)
-  if [[ -n $diff ]]; then
-    error "${fg[cyan]}-> Repo has uncommitted diffs:${reset_color}
-    $diff"
+  # Install nextest runner if missing: https://nexte.st
+  (( $+commands[cargo-nextest] )) ||  cargo install cargo-nextest
+  (( $+commands[git-cliff] )) || brew install git-cliff
+
+  # Delete stale files.
+  rm -rf build/
+  rm -f target/universal-apple-darwin/release/$binary_name
+  mkdir -p build/
+
+  if [[ -n ${SKIP_GIT_DIFF_CHECK:-} ]]; then
+    log_section "Skipping it changed file check as SKIP_GIT_DIFF_CHECK env var was set."
+  else
+    # Bail on uncommitted diffs.
+    diff=$(git diff --color=always)
+    if [[ -n $diff ]]; then
+      error "${fg[cyan]}-> Repo has uncommitted diffs:${reset_color}
+      $diff"
+    fi
   fi
 
-  # Bail on untracked files.
-  untracked=$(git ls-files . --exclude-standard --others | head)
-  if [[ -n $untracked ]]; then
-    error "Repo has untracked files:\n$untracked"
+  if [[ -n ${SKIP_GIT_UNTRACKED_CHECK:-} ]]; then
+    log_section "Skipping git untracked file check as SKIP_GIT_UNTRACKED_CHECK env var was set."
+  else
+    # Bail on untracked files.
+    untracked=$(git ls-files . --exclude-standard --others | head)
+    if [[ -n $untracked ]]; then
+      error "Repo has untracked files:\n$untracked"
+    fi
   fi
-
-  # Test Darwin
-  log_and_run cargo test --release --features=CI
 
   # Takes a line like:
   # `## [0.13.4](https://github.com/gibfahn/up-rs/releases/tag/0.13.4) (2023-02-07)`
   # and extracts the `0.13.4`.
   changelog_version=$(awk <CHANGELOG.md '{ if ($1 == "##") { print $2; exit; }}' | sed -E 's/\[([^]]+)].*/\1/')
-  last_tag=$(git tag -l | gsort -V | tail -1)
-  tag_before_last=$(git tag -l | gsort -V | tail -2 | head -1)
   last_release=$(gh release list -L 1 | awk '{print $1}')
   cargo_toml_version=$(awk -F\" '/^version = /{print $2; exit}' Cargo.toml)
 
   # Bump version in Cargo.toml and changelog:
 
   if [[ $changelog_version != $last_release && $last_release != $cargo_toml_version ]]; then
-    prompt_to_skip "Last release was $last_release, but changelog updated to $changelog_version. Skipping changelog update..."
     new_version=$changelog_version
+    if [[ $(git log -1 --pretty=%s) == "chore: bump version to ${new_version?}" ]]; then
+      log_section "Last commit bumped us to ${new_version?}, skipping changelog update..."
+    else
+      error "If you generated a bump version commit and then pushed another change to the branch,
+      delete and recreate the bump version commit."
+    fi
   else
     log_section "Updating changelog..."
-    # TODO(gib): automatically calculate new version from conventional commit messages.
     default_new_release=$(awk -F '.' '{print $1 "." $2 "." $3+1}' <<<$last_release)
     read "new_version?New version (current version: ${last_release?}, default new version: ${default_new_release}): "
     [[ -z $new_version ]] && new_version=$default_new_release
@@ -60,27 +90,36 @@ main() {
 
     log_section "Updating Cargo.toml..."
     gsed -i -E "0,/^version = \"${last_release?}\"\$/s//version = \"${new_version?}\"/" Cargo.toml
-    log_and_run cargo check # Bumps version in lockfile too.
+    log_and_run cargo check --release # Bumps version in lockfile too.
+
     log_section "Committing version updates..."
     git add Cargo.toml Cargo.lock CHANGELOG.md
     git commit -m "chore: bump version to ${new_version?}"
-    git show # Check version is correct.
-    prompt_to_skip "Does this look correct (should change Cargo.toml, Cargo.lock, CHANGELOG.md)?"
+    git show --stat | cat # Check version is correct.
+    echo >&2 "Does this look correct (should change Cargo.toml, Cargo.lock, CHANGELOG.md)?"
   fi
 
-  # Build and test Linux (static) and Darwin binaries locally:
+  # Run normal and integration tests.
+  if [[ -n ${SKIP_CARGO_TEST_CHECK:-} ]]; then
+    log_section "Skipping tests as SKIP_CARGO_TEST_CHECK env var was set."
+  else
+    log_and_run cargo nextest run --release --run-ignored=all --no-fail-fast
+  fi
+
+  log_section "Running end-to-end tests..."
+  # Run End-to-End tests and build the universal macOS binary:
+  log_and_run meta/bootstrap-test
 
   # Check the documentation is buildable.
   log_and_run cargo doc
-  # Tests musl static Linux binaries.
-  log_and_run meta/cargo-docker
-  # Runs end-to-end bootstrap tests.
-  log_and_run meta/bootstrap-test
 
   # Build Darwin release binaries (without the CI feature).
   log_and_run meta/build_macos
-  # Builds musl static Linux release binaries.
-  log_and_run meta/cargo-docker build --release
+  # This was built as part of running e2e tests.
+  cp target/universal-apple-darwin/release/liv $macos_binary
+  # This allows them to be downloaded as `up-$(uname)`.
+  cp target/x86_64-unknown-linux-musl/release/up $linux_binary
+
 
   latest_crate_version=$(curl https://crates.io/api/v1/crates/up-rs | jq -r .crate.newest_version)
   if [[ $latest_crate_version == $new_version ]]; then
@@ -92,13 +131,10 @@ main() {
 
   log_and_run git push up main
 
-  # This allows them to be downloaded as `up-$(uname)`.
-  mkdir -p out
-  cp target/release/up out/up-Darwin
-  cp target/x86_64-unknown-linux-musl/release/up out/up-Linux
-  gh release create "${new_version?}" --target=main \
-    --notes="${new_version?}"$'\n\n'"$(git cliff --tag="${new_version?}" --strip=all "${last_release}"..)" \
-    out/up-Darwin out/up-Linux
+  log_and_run gh release create "${new_version?}" --target=main \
+    --notes="$(git cliff --tag="${new_version?}" --strip=all "${last_release}"..)" \
+    $macos_binary \
+    $linux_binary
   rm -r out
 
   new_release=$(gh release list -L 1 | awk '{print $1}')
@@ -114,12 +150,12 @@ main() {
 
 log_section() {
   echo "
-${fg[cyan]}=> $*${reset_color}"
+${fg[cyan]}=> $*${reset_color}" >&2
 }
 
 log_and_run() {
   log_section "Running $*"
-  "$@"
+  time "$@"
 }
 
 # $1: Error message
