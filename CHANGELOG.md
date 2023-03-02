@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.5](https://github.com/gibfahn/up-rs/releases/tag/0.13.5) (2023-03-02)
+
+### Bug Fixes
+- Link to libgit2 statically, instead of relying on a libgit2 library being present on the system.
+
 ## [0.13.4](https://github.com/gibfahn/up-rs/releases/tag/0.13.4) (2023-03-01)
 
 ### Bug Fixes
