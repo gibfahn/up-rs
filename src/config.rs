@@ -1,29 +1,26 @@
 //! Manages the config files (default location ~/.config/up/).
 
-use std::{
-    collections::HashMap,
-    env, fs,
-    path::{Path, PathBuf},
-};
+use std::{collections::HashMap, env, fs};
 
-use color_eyre::eyre::{bail, ensure, eyre, Context, Result};
+use camino::{Utf8Path, Utf8PathBuf};
+use color_eyre::eyre::{bail, ensure, Result};
 use serde_derive::{Deserialize, Serialize};
 use tracing::{debug, info, trace};
 
 use crate::{
-    get_up_dir,
     opts::{GitOptions, Opts, RunOptions, SubCommand},
     tasks::git,
+    utils::files,
 };
 
 #[derive(Default, Debug)]
 pub struct UpConfig {
-    pub up_yaml_path: Option<PathBuf>,
+    pub up_yaml_path: Option<Utf8PathBuf>,
     pub config_yaml: ConfigYaml,
     pub bootstrap: bool,
     pub keep_going: bool,
     pub tasks: Option<Vec<String>>,
-    pub up_dir: PathBuf,
+    pub temp_dir: Utf8PathBuf,
 }
 
 // TODO(gib): Provide a way for users to easily validate their yaml files.
@@ -66,7 +63,7 @@ impl UpConfig {
                 if result.is_ok() {
                     config_path_explicitly_specified = false;
                 }
-                get_fallback_config_path(fallback_url, run_options.fallback_path)?
+                get_fallback_config_path(&opts.temp_dir, fallback_url, run_options.fallback_path)?
             }
             // File doesn't exist, use file.
             (Ok(up_yaml_path), _) => up_yaml_path,
@@ -102,7 +99,7 @@ impl UpConfig {
             config_yaml,
             bootstrap,
             keep_going,
-            up_dir: get_up_dir(opts.up_dir.as_ref()),
+            temp_dir: opts.temp_dir.as_ref().to_owned(),
             tasks: run_options.tasks,
         })
     }
@@ -121,39 +118,38 @@ impl UpConfig {
     ///
     /// If the default is used, the file will be returned, even it the config
     /// path doesn't exist.
-    fn get_up_yaml_path(args_config_path: &str) -> Result<PathBuf> {
+    fn get_up_yaml_path(args_config_path: &str) -> Result<Utf8PathBuf> {
         debug!("args_config_file: {args_config_path}");
-        let mut config_path: PathBuf;
+        let mut config_path: Utf8PathBuf;
         if args_config_path == "$XDG_CONFIG_HOME/up/up.yaml" {
             let up_config_env = env::var("UP_CONFIG");
 
             if let Ok(config_path) = up_config_env {
-                let config_path = PathBuf::from(config_path);
+                let config_path = Utf8PathBuf::from(config_path);
                 ensure!(
                     config_path.exists(),
                     "Config path specified in UP_CONFIG env var doesn't exist.\n  config_path: \
-                     {:?}",
-                    &config_path,
+                     {config_path}",
                 );
                 return Ok(config_path);
             }
 
             trace!("Checking default config paths.");
 
-            let home_dir = dirs::home_dir().ok_or_else(|| eyre!("Couldn't calculate home_dir."))?;
+            let home_dir = files::home_dir()?;
 
             config_path = env::var("XDG_CONFIG_HOME")
-                .map_or_else(|_err| Path::new(&home_dir).join(".config"), PathBuf::from);
+                .map_or_else(|_e| home_dir.join(".config"), Utf8PathBuf::from);
 
             config_path.push("up");
 
             config_path.push("up.yaml");
         } else {
-            config_path = PathBuf::from(args_config_path);
+            config_path = Utf8PathBuf::from(args_config_path);
             ensure!(
                 config_path.exists(),
-                "Config path specified in -c/--config arg doesn't exist.\n  config_path: {:?}",
-                &config_path,
+                "Config path specified in -c/--config arg doesn't exist.\n  config_path: \
+                 {config_path}",
             );
         }
         Ok(config_path)
@@ -168,19 +164,22 @@ that directory by joining `<fallback_url>/<fallback_path>`.
 
 If the `fallback_url` is of the form org/repo , then assume it is a github.com repository.
 */
-fn get_fallback_config_path(mut fallback_url: String, fallback_path: String) -> Result<PathBuf> {
+fn get_fallback_config_path(
+    temp_dir: &Utf8Path,
+    mut fallback_url: String,
+    fallback_path: Utf8PathBuf,
+) -> Result<Utf8PathBuf> {
     if !fallback_url.contains("://") {
         fallback_url = format!("https://github.com/{fallback_url}");
     }
-    let fallback_repo_path = env::temp_dir().join("up-rs/fallback_repo");
-    fs::create_dir_all(&fallback_repo_path)
-        .wrap_err_with(|| format!("Failed to create {fallback_repo_path:?}"))?;
+    let fallback_repo_path = temp_dir.join("up-rs/fallback_repo");
+    files::create_dir_all(&fallback_repo_path)?;
 
     let fallback_config_path = fallback_repo_path.join(fallback_path);
     git::update::update(
         &GitOptions {
             git_url: fallback_url,
-            git_path: fallback_repo_path.to_string_lossy().to_string(),
+            git_path: fallback_repo_path,
             remote: git::DEFAULT_REMOTE_NAME.to_owned(),
             ..GitOptions::default()
         }
@@ -189,8 +188,7 @@ fn get_fallback_config_path(mut fallback_url: String, fallback_path: String) -> 
 
     ensure!(
         fallback_config_path.exists(),
-        "Fallback config path doesn't exist.\n  config_path: {:?}",
-        &fallback_config_path,
+        "Fallback config path doesn't exist.\n  config_path: {fallback_config_path}",
     );
     Ok(fallback_config_path)
 }
@@ -268,7 +266,7 @@ mod yaml_paths_tests {
         // env::remove_var("XDG_CONFIG_HOME");
         // // Default arg, i.e. not passed.
         // let config_path = UpConfig::get_up_yaml_path(default_path);
-        // assert!(config_path.is_err(), "UpConfig path: {:?}", config_path);
+        // assert!(config_path.is_err(), "UpConfig path: {config_path}");
 
         env::set_var("HOME", orig_home);
     }

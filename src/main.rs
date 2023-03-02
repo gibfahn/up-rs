@@ -18,11 +18,11 @@ use std::{
     fs::{FileType, OpenOptions},
     io,
     os::unix,
-    path::PathBuf,
     sync::Arc,
     time::{Duration, Instant},
 };
 
+use camino::{Utf8Path, Utf8PathBuf};
 use chrono::Utc;
 use color_eyre::eyre::{bail, Result};
 use displaydoc::Display;
@@ -43,7 +43,7 @@ fn main() -> Result<()> {
     let now = Instant::now();
 
     color_eyre::config::HookBuilder::default()
-        // Avoids printing these lines when liv fails:
+        // Avoids printing these lines when up fails:
         // ```
         // Backtrace omitted. Run with RUST_BACKTRACE=1 environment variable to display it.
         // Run with RUST_BACKTRACE=full to include source snippets.
@@ -57,7 +57,7 @@ fn main() -> Result<()> {
         log_path,
         log_path_link,
         log_file,
-    } = get_log_path_file(opts.up_dir.as_ref())
+    } = get_log_path_file(opts.temp_dir.as_ref())
         .map_err(|e| MainError::LogFileSetupFailed { source: e })?;
 
     let stderr_log = tracing_subscriber::fmt::layer()
@@ -95,7 +95,7 @@ fn main() -> Result<()> {
         .init();
 
     trace!("Starting up.");
-    debug!("Writing full logs to {log_path_link:?} (symlink to '{log_path:?}')",);
+    debug!("Writing full logs to {log_path_link} (symlink to '{log_path}')",);
 
     trace!("Received args: {opts:#?}");
     trace!(
@@ -122,18 +122,17 @@ fn main() -> Result<()> {
 #[derive(Debug)]
 struct LogPaths {
     /// Path to log file.
-    log_path: PathBuf,
+    log_path: Utf8PathBuf,
     /// File handle for log file.
     log_file: fs::File,
     /// Convenience symlink to log file that is updated each run.
-    log_path_link: PathBuf,
+    log_path_link: Utf8PathBuf,
 }
 
 /// Create log file, and a symlink to it that can be used to find the latest
 /// one.
-fn get_log_path_file(up_dir_opt: Option<&PathBuf>) -> Result<LogPaths> {
-    let mut log_dir = up_rs::get_up_dir(up_dir_opt);
-    log_dir.push("logs");
+fn get_log_path_file(temp_dir: &Utf8Path) -> Result<LogPaths> {
+    let log_dir = temp_dir.join("logs");
     fs::create_dir_all(&log_dir).map_err(|e| MainError::CreateDirError {
         path: log_dir.clone(),
         source: e,
@@ -192,17 +191,29 @@ pub enum MainError {
     /// Failed to create symlink '{link_path}' pointing to '{src_path}'.
     SymlinkError {
         /// Path to symlink.
-        link_path: PathBuf,
+        link_path: Utf8PathBuf,
         /// Path to link to.
-        src_path: PathBuf,
+        src_path: Utf8PathBuf,
         source: io::Error,
     },
     /// Failed to open and create log file {path}.
-    LogFileOpenFailed { path: PathBuf, source: io::Error },
+    LogFileOpenFailed {
+        path: Utf8PathBuf,
+        source: io::Error,
+    },
     /// Failed to create directory '{path}'
-    CreateDirError { path: PathBuf, source: io::Error },
+    CreateDirError {
+        path: Utf8PathBuf,
+        source: io::Error,
+    },
     /// Failed to delete '{path}'.
-    DeleteError { path: PathBuf, source: io::Error },
+    DeleteError {
+        path: Utf8PathBuf,
+        source: io::Error,
+    },
     /// Expected symlink at '{path}', found: {file_type:?}.
-    NotSymlinkError { path: PathBuf, file_type: FileType },
+    NotSymlinkError {
+        path: Utf8PathBuf,
+        file_type: FileType,
+    },
 }

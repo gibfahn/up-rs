@@ -1,6 +1,6 @@
 use std::fmt::Write as _; // import without risk of name clashing
-use std::path::Path;
 
+use camino::Utf8Path;
 use color_eyre::eyre::{ensure, Result};
 use git2::{BranchType, Config, ErrorCode, Repository, StatusOptions, Statuses, SubmoduleIgnore};
 use tracing::{trace, warn};
@@ -42,14 +42,14 @@ pub(super) fn ensure_repo_clean(repo: &Repository) -> Result<()> {
 pub(super) fn warn_for_unpushed_changes(
     repo: &mut Repository,
     user_git_config: &Config,
-    git_path: &Path,
+    git_path: &Utf8Path,
 ) -> Result<()> {
     // Warn for uncommitted changes.
     {
         let statuses = repo_statuses(repo)?;
         if !statuses.is_empty() {
             warn!(
-                "Repo {git_path:?} has uncommitted changes:\n{}",
+                "Repo {git_path} has uncommitted changes:\n{}",
                 status_short(repo, &statuses)
             );
         }
@@ -64,7 +64,7 @@ pub(super) fn warn_for_unpushed_changes(
         })?;
         if !stash_messages.is_empty() {
             warn!(
-                "Repo {git_path:?} has stashed changes:\n{:#?}",
+                "Repo {git_path} has stashed changes:\n{:#?}",
                 stash_messages
             );
         }
@@ -77,8 +77,7 @@ pub(super) fn warn_for_unpushed_changes(
             // Warn for any commits not in @{push}
             if unmerged_commits(repo, &push_branch, &branch)? {
                 warn!(
-                    "Repo {git_path:?} branch '{branch_name}' has changes that aren't in \
-                     @{{push}}.",
+                    "Repo {git_path} branch '{branch_name}' has changes that aren't in @{{push}}.",
                 );
             }
         } else {
@@ -87,7 +86,7 @@ pub(super) fn warn_for_unpushed_changes(
                     // If no push, warn for any commits not in @{upstream}
                     if unmerged_commits(repo, &upstream_branch, &branch)? {
                         warn!(
-                            "Repo {git_path:?} branch '{branch_name}' has changes that aren't in \
+                            "Repo {git_path} branch '{branch_name}' has changes that aren't in \
                              @{{upstream}}.",
                         );
                     }
@@ -95,8 +94,8 @@ pub(super) fn warn_for_unpushed_changes(
                 Err(e) if e.code() == ErrorCode::NotFound => {
                     // Warn for any branches with no @{upstream} or @{push}
                     warn!(
-                        "Repo {git_path:?} branch '{branch_name}' has no @{{upstream}} or \
-                         @{{push}} branch.",
+                        "Repo {git_path} branch '{branch_name}' has no @{{upstream}} or @{{push}} \
+                         branch.",
                     );
                 }
                 Err(e) => {
@@ -130,7 +129,7 @@ pub(super) fn warn_for_unpushed_changes(
     }
     if !unmerged_branches.is_empty() {
         warn!(
-            "Repo {git_path:?} has unmerged fork branches: {} .",
+            "Repo {git_path} has unmerged fork branches: {} .",
             unmerged_branches.join(" "),
         );
     }
@@ -226,35 +225,28 @@ fn status_short(repo: &Repository, statuses: &git2::Statuses) -> String {
             b = b.or_else(|| diff.old_file().path());
             c = diff.new_file().path();
         }
+        let a = a.map(|a| Utf8Path::from_path(a).unwrap());
+        let b = b.map(|b| Utf8Path::from_path(b).unwrap());
+        let c = c.map(|c| Utf8Path::from_path(c).unwrap());
 
         output += &match (index_status, worktree_status) {
-            ('R', 'R') => format!(
-                "RR {} {} {}{}\n",
-                a.unwrap().display(),
-                b.unwrap().display(),
-                c.unwrap().display(),
-                extra
-            ),
+            ('R', 'R') => format!("RR {} {} {}{}\n", a.unwrap(), b.unwrap(), c.unwrap(), extra),
             ('R', worktree_status) => format!(
                 "R{} {} {}{}\n",
                 worktree_status,
-                a.unwrap().display(),
-                b.unwrap().display(),
+                a.unwrap(),
+                b.unwrap(),
                 extra
             ),
-            (index_status, 'R') => format!(
-                "{}R {} {}{}\n",
-                index_status,
-                a.unwrap().display(),
-                c.unwrap().display(),
-                extra
-            ),
+            (index_status, 'R') => {
+                format!("{}R {} {}{}\n", index_status, a.unwrap(), c.unwrap(), extra)
+            }
             (index_status, worktree_status) => {
                 format!(
                     "{}{} {}{}\n",
                     index_status,
                     worktree_status,
-                    a.unwrap().display(),
+                    a.unwrap(),
                     extra
                 )
             }
@@ -268,13 +260,8 @@ fn status_short(repo: &Repository, statuses: &git2::Statuses) -> String {
         _ = writeln!(
             output,
             "?? {}",
-            entry
-                .index_to_workdir()
+            Utf8Path::from_path(entry.index_to_workdir().unwrap().old_file().path().unwrap())
                 .unwrap()
-                .old_file()
-                .path()
-                .unwrap()
-                .display()
         );
     }
     output

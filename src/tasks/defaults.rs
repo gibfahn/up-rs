@@ -9,12 +9,9 @@
 
 mod plist_utils;
 
-use std::{
-    collections::HashMap,
-    path::{Path, PathBuf},
-    process::ExitStatus,
-};
+use std::{collections::HashMap, process::ExitStatus};
 
+use camino::{Utf8Path, Utf8PathBuf};
 use color_eyre::eyre::{eyre, Context, Result};
 use displaydoc::Display;
 use serde_derive::{Deserialize, Serialize};
@@ -38,7 +35,7 @@ impl ResolveEnv for DefaultsConfig {}
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct DefaultsConfig(HashMap<String, HashMap<String, plist::Value>>);
 
-pub(crate) fn run(config: DefaultsConfig, up_dir: &Path) -> Result<TaskStatus> {
+pub(crate) fn run(config: DefaultsConfig, up_dir: &Utf8Path) -> Result<TaskStatus> {
     if !(cfg!(target_os = "macos") || cfg!(target_os = "ios")) {
         debug!("Defaults: skipping setting defaults as not on a Darwin platform.");
         return Ok(TaskStatus::Skipped);
@@ -103,32 +100,32 @@ pub enum DefaultsError {
         status: ExitStatus,
     },
 
-    /// Unable to create dir at: {path:?}.
+    /// Unable to create dir at: {path}.
     DirCreation {
-        path: PathBuf,
+        path: Utf8PathBuf,
         source: std::io::Error,
     },
 
     /**
     Unable to copy file.
 
-    From: {from_path:?}
-    To: {to_path:?}
+    From: {from_path}
+    To: {to_path}
     */
     FileCopy {
-        from_path: PathBuf,
-        to_path: PathBuf,
+        from_path: Utf8PathBuf,
+        to_path: Utf8PathBuf,
         source: std::io::Error,
     },
 
-    /// Failed to read bytes from path {path:?}.
+    /// Failed to read bytes from path {path}.
     FileRead {
-        path: PathBuf,
+        path: Utf8PathBuf,
         source: std::io::Error,
     },
 
     /// Unable to find user's home directory.
-    MissingHomeDir,
+    MissingHomeDir { source: color_eyre::Report },
 
     /**
     Key not present in plist for this domain.
@@ -149,10 +146,16 @@ pub enum DefaultsError {
     },
 
     /// Failed to read Plist file {path}.
-    PlistRead { path: PathBuf, source: plist::Error },
+    PlistRead {
+        path: Utf8PathBuf,
+        source: plist::Error,
+    },
 
     /// Failed to write value to plist file {path}
-    PlistWrite { path: PathBuf, source: plist::Error },
+    PlistWrite {
+        path: Utf8PathBuf,
+        source: plist::Error,
+    },
 
     /**
     Failed to serialize plist to yaml.
@@ -202,8 +205,8 @@ pub enum DefaultsError {
     /// Yaml value claimed to be a string but failed to convert to one: '{value}'.
     UnexpectedNumber { value: String },
 
-    /// Unablet to get plist filename. Path: {path:?}.
-    UnexpectedPlistPath { path: PathBuf },
+    /// Unablet to get plist filename. Path: {path}.
+    UnexpectedPlistPath { path: Utf8PathBuf },
 
     /// Yaml value claimed to be a string but failed to convert to one: '{value:?}'.
     UnexpectedString {
@@ -231,7 +234,7 @@ pub(crate) fn read(defaults_opts: DefaultsReadOptions) -> Result<(), E> {
     };
     debug!("Domain: {domain:?}, Key: {key:?}");
     let plist_path = plist_path(&domain)?;
-    debug!("Plist path: {plist_path:?}");
+    debug!("Plist path: {plist_path}");
 
     let plist: plist::Value = plist::from_file(&plist_path).map_err(|e| E::PlistRead {
         path: plist_path,
@@ -266,7 +269,7 @@ pub(crate) fn read(defaults_opts: DefaultsReadOptions) -> Result<(), E> {
     Ok(())
 }
 
-pub(crate) fn write(defaults_opts: DefaultsWriteOptions, up_dir: &Path) -> Result<(), E> {
+pub(crate) fn write(defaults_opts: DefaultsWriteOptions, up_dir: &Utf8Path) -> Result<(), E> {
     let (domain, key, value) = if defaults_opts.global_domain {
         if defaults_opts.value.is_some() {
             return Err(E::TooManyArgumentsWrite {

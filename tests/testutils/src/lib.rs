@@ -1,22 +1,18 @@
 //! Common functions that are used by other tests.
 
-use std::{
-    env, fs,
-    io::ErrorKind,
-    os::unix,
-    path::{Path, PathBuf},
-};
+use std::{env, fs, io::ErrorKind, os::unix};
 
 use assert_cmd::Command;
-use color_eyre::eyre::Result;
+use camino::{Utf8Path, Utf8PathBuf};
+use color_eyre::eyre::{eyre, Result};
 use walkdir::WalkDir;
 
 pub mod assert;
 
 /// Returns the path to the root of the project (the {crate}/ folder).
-fn test_project_dir() -> PathBuf {
+fn test_project_dir() -> Utf8PathBuf {
     // Directory of the testutils Cargo.toml i.e. {crate}/tests/testutils/
-    let mut project_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut project_dir = Utf8PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     // Pop up to tests/ dir.
     assert!(project_dir.pop());
     // Pop up to crate dir.
@@ -26,7 +22,7 @@ fn test_project_dir() -> PathBuf {
 
 /// Returns a new command starting with /path/to/{binary} (add args as needed).
 #[must_use]
-pub fn test_binary_cmd(binary_name: &str, temp_dir: &Path) -> Command {
+pub fn test_binary_cmd(binary_name: &str, temp_dir: &Utf8Path) -> Command {
     let mut cmd = Command::cargo_bin(binary_name).unwrap();
     // Set temp dir to be inside our test's temp dir.
     cmd.env("TMPDIR", temp_dir.join(format!("{binary_name}_temp_dir")));
@@ -39,7 +35,7 @@ pub fn test_binary_cmd(binary_name: &str, temp_dir: &Path) -> Command {
         [
             "--log-level=trace",
             "--up-dir",
-            temp_dir.join("up-rs").to_str().unwrap(),
+            temp_dir.join("up-rs").as_str(),
             "--color=always",
         ]
         .iter(),
@@ -50,7 +46,7 @@ pub fn test_binary_cmd(binary_name: &str, temp_dir: &Path) -> Command {
 /// Returns the path to the tests/fixtures directory (relative to the crate
 /// root).
 #[must_use]
-pub fn fixture_dir(function_path: &str) -> PathBuf {
+pub fn fixture_dir(function_path: &str) -> Utf8PathBuf {
     test_project_dir()
         .join("tests/fixtures")
         .join(function_path.replace("::", "/"))
@@ -66,8 +62,8 @@ pub fn fixture_dir(function_path: &str) -> PathBuf {
 /// # Errors
 ///
 /// Fails if any of the underlying file system operations fail.
-pub fn temp_dir(binary_name: &str, function_path: &str) -> Result<PathBuf> {
-    let os_temp_dir = env::temp_dir().canonicalize()?;
+pub fn temp_dir(binary_name: &str, function_path: &str) -> Result<Utf8PathBuf> {
+    let os_temp_dir = Utf8PathBuf::try_from(env::temp_dir())?.canonicalize_utf8()?;
     let mut temp_dir = os_temp_dir.clone();
     temp_dir.push(format!("{binary_name}_test_tempdirs"));
     temp_dir.push(function_path.replace("::", "/"));
@@ -101,11 +97,11 @@ macro_rules! function_path {
 /// # Errors
 ///
 /// Fails if any of the underlying file system operations fail.
-pub fn copy_all(from_dir: &Path, to_dir: &Path) -> Result<()> {
-    println!("Copying everything in {from_dir:?} to {to_dir:?}");
+pub fn copy_all(from_dir: &Utf8Path, to_dir: &Utf8Path) -> Result<()> {
+    println!("Copying everything in {from_dir} to {to_dir}");
     assert!(
         from_dir.exists(),
-        "Cannot copy from non-existent directory {from_dir:?}.",
+        "Cannot copy from non-existent directory {from_dir}.",
     );
     for from_path in WalkDir::new(from_dir)
         .min_depth(1)
@@ -114,9 +110,11 @@ pub fn copy_all(from_dir: &Path, to_dir: &Path) -> Result<()> {
     {
         let from_path_metadata = from_path.metadata()?;
         let from_path = from_path.path();
+        let from_path = Utf8Path::from_path(from_path)
+            .ok_or_else(|| eyre!("Path {from_path:?} is invalid UTF-8."))?;
 
         let rel_path = from_path.strip_prefix(from_dir)?;
-        println!("Copying: {rel_path:?}");
+        println!("Copying: {rel_path}");
         let to_path = to_dir.join(rel_path);
 
         let file_type = from_path_metadata.file_type();

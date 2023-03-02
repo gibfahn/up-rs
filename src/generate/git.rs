@@ -1,8 +1,6 @@
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
+use std::fs;
 
+use camino::{Utf8Path, Utf8PathBuf};
 use color_eyre::eyre::{Context, Result};
 use displaydoc::Display;
 use git2::Repository;
@@ -20,6 +18,7 @@ use crate::{
         task::{Task, TaskStatus},
         ResolveEnv, TaskError,
     },
+    utils::files,
 };
 
 pub fn run(configs: &[GenerateGitConfig]) -> Result<TaskStatus> {
@@ -50,25 +49,22 @@ pub fn run(configs: &[GenerateGitConfig]) -> Result<TaskStatus> {
 pub fn run_single(generate_git_config: &GenerateGitConfig) -> Result<TaskStatus> {
     debug!(
         "Generating git config for: {path}",
-        path = generate_git_config.path.display()
+        path = generate_git_config.path
     );
     let mut git_task = Task::from(&generate_git_config.path)?;
     debug!("Existing git config: {git_task:?}");
     let name = git_task.name.as_str();
     let mut git_configs = Vec::new();
-    let home_dir = dirs::home_dir().ok_or(E::MissingHomeDir)?;
-    let home_dir = home_dir.to_str().ok_or_else(|| E::InvalidUTF8Path {
-        path: home_dir.clone(),
-    })?;
+    let home_dir = files::home_dir()?;
     for path in find_repos(
         &generate_git_config.search_paths,
         generate_git_config.excludes.as_ref(),
-    ) {
+    )? {
         git_configs.push(parse_git_config(
             &path,
             generate_git_config.prune,
             &generate_git_config.remote_order,
-            home_dir,
+            &home_dir,
         )?);
     }
 
@@ -87,7 +83,7 @@ pub fn run_single(generate_git_config: &GenerateGitConfig) -> Result<TaskStatus>
 
     fs::write(&generate_git_config.path, serialized_task)?;
     info!(
-        "Git repo layout generated for task '{name}' and written to '{path:?}'",
+        "Git repo layout generated for task '{name}' and written to '{path}'",
         path = generate_git_config.path
     );
     Ok(TaskStatus::Passed)
@@ -99,11 +95,11 @@ impl ResolveEnv for Vec<GenerateGitConfig> {
         F: Fn(&str) -> Result<String, TaskError>,
     {
         for config in self.iter_mut() {
-            config.path = PathBuf::from(env_fn(&config.path.to_string_lossy())?);
+            config.path = Utf8PathBuf::from(env_fn(config.path.as_str())?);
 
             let mut new_search_paths = Vec::new();
             for search_path in &config.search_paths {
-                new_search_paths.push(PathBuf::from(env_fn(&search_path.to_string_lossy())?));
+                new_search_paths.push(Utf8PathBuf::from(env_fn(search_path.as_str())?));
             }
             config.search_paths = new_search_paths;
 
@@ -119,10 +115,13 @@ impl ResolveEnv for Vec<GenerateGitConfig> {
     }
 }
 
-fn find_repos(search_paths: &[PathBuf], excludes: Option<&Vec<String>>) -> Vec<PathBuf> {
+fn find_repos(
+    search_paths: &[Utf8PathBuf],
+    excludes: Option<&Vec<String>>,
+) -> Result<Vec<Utf8PathBuf>> {
     let mut repo_paths = Vec::new();
     for path in search_paths {
-        trace!("Searching in '{path:?}'");
+        trace!("Searching in '{path}'");
 
         let mut it = WalkDir::new(path).into_iter();
         'walkdir: loop {
@@ -148,7 +147,7 @@ fn find_repos(search_paths: &[PathBuf], excludes: Option<&Vec<String>>) -> Vec<P
             if entry.file_type().is_dir() && entry.path().join(".git").is_dir() {
                 // Found matching entry, add it.
                 trace!("Entry: {entry:?}");
-                repo_paths.push(entry.path().to_path_buf());
+                repo_paths.push(Utf8PathBuf::try_from(entry.path().to_path_buf())?);
 
                 // Stop iterating, we don't want git repos inside other git repos.
                 it.skip_current_dir();
@@ -156,14 +155,14 @@ fn find_repos(search_paths: &[PathBuf], excludes: Option<&Vec<String>>) -> Vec<P
         }
     }
     debug!("Found repo paths: {repo_paths:?}");
-    repo_paths
+    Ok(repo_paths)
 }
 
 fn parse_git_config(
-    path: &Path,
+    path: &Utf8Path,
     prune: bool,
     remote_order: &[String],
-    home_dir: &str,
+    home_dir: &Utf8Path,
 ) -> Result<GitConfig> {
     let repo = Repository::open(path)?;
 
@@ -191,15 +190,10 @@ fn parse_git_config(
     }
 
     // Replace home directory in the path with ~.
-    let replaced_path = path.to_str().ok_or_else(|| E::InvalidUTF8Path {
-        path: path.to_path_buf(),
-    })?;
-    let replaced_path = replaced_path
-        .strip_prefix(home_dir)
-        .map_or_else(|| replaced_path.to_owned(), |p| format!("~{p}"));
+    let replaced_path = path.strip_prefix(home_dir).map(|p| format!("~/{p}"))?;
 
     let config = GitConfig {
-        path: replaced_path,
+        path: Utf8PathBuf::from(replaced_path),
         branch: None,
         remotes,
         prune,
@@ -215,10 +209,6 @@ pub enum GenerateGitError {
     InvalidUtf8,
     /// Invalid remote '{name}'.
     InvalidRemote { name: String },
-    /// Unable to calculate user's home directory.
-    MissingHomeDir,
     /// Unexpected None in option.
     UnexpectedNone,
-    /// Path contained invalid UTF-8 characters: {path:?}
-    InvalidUTF8Path { path: PathBuf },
 }

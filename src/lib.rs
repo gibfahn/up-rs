@@ -27,12 +27,10 @@ use crate::{
 mod config;
 mod env;
 pub mod errors;
-pub mod files;
 mod generate;
 pub mod opts;
 pub mod tasks;
-
-pub use files::get_up_dir;
+pub mod utils;
 
 /// Run `up_rs` with provided [Opts][] struct.
 ///
@@ -46,10 +44,9 @@ pub use files::get_up_dir;
 ///
 /// [Opts]: crate::opts::Opts
 pub fn run(opts: Opts) -> Result<()> {
-    let up_dir = get_up_dir(opts.up_dir.as_ref());
     match opts.cmd {
         Some(SubCommand::Link(link_options)) => {
-            tasks::link::run(link_options, &up_dir)?;
+            tasks::link::run(link_options, &opts.temp_dir)?;
         }
         Some(SubCommand::Git(git_options)) => {
             tasks::git::update::update(&git_options.into())?;
@@ -57,7 +54,7 @@ pub fn run(opts: Opts) -> Result<()> {
         Some(SubCommand::Defaults(defaults_options)) => match defaults_options.subcommand {
             DefaultsSubcommand::Read(defaults_read_opts) => defaults::read(defaults_read_opts)?,
             DefaultsSubcommand::Write(defaults_write_opts) => {
-                defaults::write(defaults_write_opts, &up_dir)?;
+                defaults::write(defaults_write_opts, &opts.temp_dir)?;
             }
         },
         Some(SubCommand::Self_(cmd_opts)) => {

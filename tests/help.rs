@@ -1,5 +1,4 @@
-use std::path::Path;
-
+use camino::Utf8Path;
 use predicates::prelude::*;
 
 #[test]
@@ -18,7 +17,7 @@ fn test_version_test() {
     check_version("--version", &temp_dir);
 }
 
-fn check_help(arg: &str, temp_dir: &Path) {
+fn check_help(arg: &str, temp_dir: &Utf8Path) {
     let mut cmd = testutils::test_binary_cmd("up", temp_dir);
     cmd.arg(arg);
     cmd.assert().success().stdout(predicate::str::starts_with(
@@ -26,7 +25,7 @@ fn check_help(arg: &str, temp_dir: &Path) {
     ));
 }
 
-fn check_version(arg: &str, temp_dir: &Path) {
+fn check_version(arg: &str, temp_dir: &Utf8Path) {
     let mut cmd = testutils::test_binary_cmd("up", temp_dir);
     cmd.arg(arg);
     cmd.assert()

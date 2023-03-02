@@ -1,8 +1,11 @@
-use std::path::PathBuf;
+mod paths;
 
+use camino::Utf8PathBuf;
 use clap::{Parser, ValueEnum, ValueHint};
 use clap_complete::Shell;
 use serde_derive::{Deserialize, Serialize};
+
+use crate::opts::paths::TempDir;
 
 pub(crate) const FALLBACK_CONFIG_PATH: &str = "dotfiles/.config/up/up.yaml";
 pub(crate) const LATEST_RELEASE_URL: &str =
@@ -55,10 +58,13 @@ pub struct Opts {
         env = "RUST_LOG"
     )]
     pub log_level: String,
-    /// Directory to use for up-rs's own files (e.g. logs, backup files etc). Default:
-    /// $TMPDIR/up-rs.
-    #[clap(long, value_hint = ValueHint::DirPath)]
-    pub up_dir: Option<PathBuf>,
+
+    /**
+    Temporary directory to use for logs, fifos, and other intermediate artifacts.
+    */
+    #[clap(long, env = "UP_TEMP_DIR", default_value_t, value_hint = ValueHint::DirPath, alias = "up_dir")]
+    pub temp_dir: TempDir,
+
     /// Set the file logging level explicitly (options: Off, Error, Warn, Info,
     /// Debug, Trace).
     #[clap(long, default_value = "trace", env = "FILE_RUST_LOG")]
@@ -122,7 +128,7 @@ pub(crate) struct RunOptions {
     /// The default path assumes your fallback_url points to a dotfiles repo
     /// that is linked into ~.
     #[clap(short = 'p', long, default_value = FALLBACK_CONFIG_PATH, value_hint = ValueHint::FilePath)]
-    pub(crate) fallback_path: String,
+    pub(crate) fallback_path: Utf8PathBuf,
     /// Optionally pass one or more tasks to run. The default is to run all
     /// tasks. This option can be provided multiple times.
     #[clap(short, long, value_delimiter = ',')]
@@ -146,7 +152,7 @@ pub struct GitOptions {
     pub git_url: String,
     /// Path to download git repo to.
     #[clap(long, value_hint = ValueHint::DirPath)]
-    pub git_path: String,
+    pub git_path: Utf8PathBuf,
     /// Remote to set/update.
     #[clap(long, default_value = crate::tasks::git::DEFAULT_REMOTE_NAME)]
     pub remote: String,
@@ -209,10 +215,10 @@ pub(crate) enum GenerateLib {
 pub struct GenerateGitConfig {
     /// Path to yaml file to update.
     #[clap(long, value_hint = ValueHint::FilePath)]
-    pub(crate) path: PathBuf,
+    pub(crate) path: Utf8PathBuf,
     /// Paths to search within.
     #[clap(long, default_value = "~", value_hint = ValueHint::DirPath)]
-    pub(crate) search_paths: Vec<PathBuf>,
+    pub(crate) search_paths: Vec<Utf8PathBuf>,
     /// Exclude paths containing this value. e.g. '/tmp/' to exclude anything in
     /// a tmp dir.
     #[clap(long)]
@@ -230,7 +236,7 @@ pub struct GenerateGitConfig {
 pub struct GenerateDefaultsConfig {
     /// Path to yaml file to update.
     #[clap(long, value_hint = ValueHint::FilePath)]
-    pub(crate) path: PathBuf,
+    pub(crate) path: Utf8PathBuf,
 }
 
 #[derive(Debug, Parser, Serialize, Deserialize)]

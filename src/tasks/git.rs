@@ -1,5 +1,6 @@
 use std::convert::From;
 
+use camino::Utf8PathBuf;
 use clap::Parser;
 use color_eyre::eyre::Result;
 use displaydoc::Display;
@@ -30,7 +31,7 @@ pub const DEFAULT_REMOTE_NAME: &str = "origin";
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct GitConfig {
     /// Path to download git repo to.
-    pub path: String,
+    pub path: Utf8PathBuf,
     /// Remote to set/update.
     pub remotes: Vec<GitRemote>,
     /// Branch to checkout when cloning/updating. Defaults to the current branch
@@ -96,7 +97,7 @@ impl ResolveEnv for Vec<GitConfig> {
             if let Some(branch) = config.branch.as_ref() {
                 config.branch = Some(env_fn(branch)?);
             }
-            config.path = env_fn(&config.path)?;
+            config.path = Utf8PathBuf::from(env_fn(config.path.as_str())?);
             for remote in &mut config.remotes {
                 remote.name = env_fn(&remote.name)?;
                 remote.push_url = if let Some(push_url) = &remote.push_url {

@@ -47,7 +47,7 @@ fn test_generate_passing() {
     cmd.args(
         [
             "--config",
-            temp_dir.join("up_config_dir/up.yaml").to_str().unwrap(),
+            temp_dir.join("up_config_dir/up.yaml").as_str(),
             "generate",
         ]
         .iter(),
@@ -58,7 +58,7 @@ fn test_generate_passing() {
         &temp_dir.join("up_config_dir/tasks/git_1.yaml"),
         &format!(
             include_str!("fixtures/generate/test_generate_passing/expected_tasks/git_1.yaml"),
-            root_dir = temp_dir.display(),
+            root_dir = temp_dir,
         ),
     );
 
@@ -66,7 +66,7 @@ fn test_generate_passing() {
         &temp_dir.join("up_config_dir/tasks/git_2.yaml"),
         &format!(
             include_str!("fixtures/generate/test_generate_passing/expected_tasks/git_2.yaml"),
-            root_dir = temp_dir.display(),
+            root_dir = temp_dir,
         ),
     );
 }

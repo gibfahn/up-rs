@@ -1,11 +1,11 @@
 use std::{
     collections::{HashMap, HashSet},
     io,
-    path::{Path, PathBuf},
     process::Command,
     time::{Duration, Instant},
 };
 
+use camino::{Utf8Path, Utf8PathBuf};
 use color_eyre::eyre::{bail, eyre, Result};
 use displaydoc::Display;
 use itertools::Itertools;
@@ -17,12 +17,7 @@ use self::{
     task::{CommandType, Task},
     TaskError as E,
 };
-use crate::{
-    config,
-    env::get_env,
-    files::{home_dir_str, remove_broken_symlink},
-    tasks::task::TaskStatus,
-};
+use crate::{config, env::get_env, tasks::task::TaskStatus, utils::files};
 
 pub mod completions;
 pub mod defaults;
@@ -129,10 +124,10 @@ pub fn run(
         if entry.file_type()?.is_dir() {
             continue;
         }
-        let path = entry.path();
+        let path = Utf8PathBuf::try_from(entry.path())?;
         // If file is a broken symlink.
         if !path.exists() && path.symlink_metadata().is_ok() {
-            remove_broken_symlink(&path)?;
+            files::remove_broken_symlink(&path)?;
             continue;
         }
         let task = task::Task::from(&path)?;
@@ -164,7 +159,7 @@ pub fn run(
             bootstrap_tasks,
             tasks,
             &env,
-            &config.up_dir,
+            &config.temp_dir,
             config.keep_going,
         )?,
     }
@@ -175,7 +170,7 @@ fn run_tasks(
     bootstrap_tasks: Vec<String>,
     mut tasks: HashMap<String, task::Task>,
     env: &HashMap<String, String>,
-    up_dir: &Path,
+    up_dir: &Utf8Path,
     keep_going: bool,
 ) -> Result<()> {
     let mut completed_tasks = Vec::new();
@@ -261,12 +256,12 @@ fn run_tasks(
     Ok(())
 }
 
-fn run_task(mut task: Task, env: &HashMap<String, String>, up_dir: &Path) -> Task {
+fn run_task(mut task: Task, env: &HashMap<String, String>, up_dir: &Utf8Path) -> Task {
     let env_fn = &|s: &str| {
-        let home_dir_string = home_dir_str().map_err(|_| E::MissingHomeDir)?;
+        let home_dir = files::home_dir().map_err(|e| E::EyreError { source: e })?;
         let out = shellexpand::full_with_context(
             s,
-            || Some(home_dir_string),
+            || Some(home_dir),
             |k| env.get(k).ok_or_else(|| eyre!("Value not found")).map(Some),
         )
         .map(std::borrow::Cow::into_owned)
@@ -297,9 +292,15 @@ pub enum TaskError {
         name: String,
     },
     /// Error walking directory '{path}':
-    ReadDir { path: PathBuf, source: io::Error },
+    ReadDir {
+        path: Utf8PathBuf,
+        source: io::Error,
+    },
     /// Error reading file '{path}':
-    ReadFile { path: PathBuf, source: io::Error },
+    ReadFile {
+        path: Utf8PathBuf,
+        source: io::Error,
+    },
     /// Env lookup error, please define '{var}' in your up.yaml:"
     EnvLookup {
         var: String,
@@ -336,7 +337,7 @@ pub enum TaskError {
     UnexpectedNone,
     /// Invalid yaml at '{path}':
     InvalidYaml {
-        path: PathBuf,
+        path: Utf8PathBuf,
         source: serde_yaml::Error,
     },
     /// Unable to calculate the current user's home directory.
@@ -350,4 +351,6 @@ pub enum TaskError {
     TaskDataRequired { task: String },
     /// Failed to parse the config.
     DeserializeError { source: serde_yaml::Error },
+    /// Task error.
+    EyreError { source: color_eyre::Report },
 }

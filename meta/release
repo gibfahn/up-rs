@@ -116,7 +116,7 @@ main() {
   # Build Darwin release binaries (without the CI feature).
   log_and_run meta/build_macos
   # This was built as part of running e2e tests.
-  cp target/universal-apple-darwin/release/liv $macos_binary
+  cp target/universal-apple-darwin/release/up $macos_binary
   # This allows them to be downloaded as `up-$(uname)`.
   cp target/x86_64-unknown-linux-musl/release/up $linux_binary
 

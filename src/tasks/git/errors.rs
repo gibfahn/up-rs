@@ -1,5 +1,6 @@
-use std::{io, path::PathBuf};
+use std::io;
 
+use camino::Utf8PathBuf;
 use displaydoc::Display;
 use git2::{MergeAnalysis, MergePreference};
 use thiserror::Error;
@@ -8,9 +9,12 @@ use thiserror::Error;
 /// Errors thrown by the Git task.
 pub enum GitError {
     /// Failed to update git repo at '{path}'.
-    GitUpdate { path: PathBuf },
+    GitUpdate { path: Utf8PathBuf },
     /// Failed to create directory '{path}'
-    CreateDirError { path: PathBuf, source: io::Error },
+    CreateDirError {
+        path: Utf8PathBuf,
+        source: io::Error,
+    },
     /// Must specify at least one remote.
     NoRemotes,
     /// Current branch is not valid UTF-8

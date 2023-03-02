@@ -44,7 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Bug Fixes
 
-* **opts:**  show full help when running `liv help <subcommand>` ([a7cc667f](https://github.com/gibfahn/up-rs/commit/a7cc667fc9f4c89b20cc2c13ab03759dfa76af96))
+* **opts:**  show full help when running `up help <subcommand>` ([a7cc667f](https://github.com/gibfahn/up-rs/commit/a7cc667fc9f4c89b20cc2c13ab03759dfa76af96))
 * **run:**  allow passing -t for --tasks ([8277d207](https://github.com/gibfahn/up-rs/commit/8277d2072017f0d2075d3e8360bfeb48187c7907))
 
 

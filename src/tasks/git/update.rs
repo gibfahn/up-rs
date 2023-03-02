@@ -2,9 +2,7 @@
 #![allow(clippy::print_stdout, clippy::unwrap_used)]
 use std::{
     borrow::ToOwned,
-    fs,
-    path::PathBuf,
-    str,
+    fs, str,
     time::{Duration, Instant},
 };
 
@@ -39,7 +37,7 @@ pub(crate) fn update(git_config: &GitConfig) -> Result<TaskStatus> {
             }
         })
         .wrap_err_with(|| E::GitUpdate {
-            path: PathBuf::from(git_config.path.clone()),
+            path: git_config.path.clone(),
         });
     let elapsed_time = now.elapsed();
     // TODO(gib): configurable logging for long actions.
@@ -62,8 +60,8 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<bool> {
     let mut did_work = false;
 
     // Create dir if it doesn't exist.
-    let git_path = PathBuf::from(git_config.path.clone());
-    debug!("Updating git repo '{git_path:?}'");
+    let git_path = git_config.path.clone();
+    debug!("Updating git repo '{git_path}'");
     // Whether we just created this repo.
     let mut newly_created_repo = false;
     if !git_path.is_dir() {
@@ -103,7 +101,11 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<bool> {
     // Then add the local one if defined.
     let local_git_config_path = git_path.join(".git/config");
     if local_git_config_path.exists() {
-        user_git_config.add_file(&local_git_config_path, ConfigLevel::Local, false)?;
+        user_git_config.add_file(
+            local_git_config_path.as_std_path(),
+            ConfigLevel::Local,
+            false,
+        )?;
     }
 
     for remote_config in &git_config.remotes {

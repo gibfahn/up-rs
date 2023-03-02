@@ -2,12 +2,15 @@ use color_eyre::eyre::Result;
 use git2::{Branch, BranchType, Repository};
 use tracing::{debug, trace};
 
-use crate::tasks::git::{
-    branch::{delete_branch, get_branch_name, shorten_branch_ref},
-    checkout::checkout_branch,
-    cherry::unmerged_commits,
-    errors::GitError as E,
-    status::ensure_repo_clean,
+use crate::{
+    tasks::git::{
+        branch::{delete_branch, get_branch_name, shorten_branch_ref},
+        checkout::checkout_branch,
+        cherry::unmerged_commits,
+        errors::GitError as E,
+        status::ensure_repo_clean,
+    },
+    utils::files,
 };
 
 /// Prune merged PR branches. Deletes local branches where the push branch
@@ -26,7 +29,7 @@ pub(super) fn prune_merged_branches(repo: &Repository, remote_name: &str) -> Res
     ensure_repo_clean(repo)?;
     debug!(
         "Pruning branches in '{}': {:?}",
-        repo.workdir().ok_or(E::NoGitDirFound)?.display(),
+        files::to_utf8_path(repo.workdir().ok_or(E::NoGitDirFound)?)?,
         &branches_to_prune
             .iter()
             .map(get_branch_name)

@@ -3,10 +3,10 @@ use std::{
     fs::{self, File, Permissions},
     io,
     os::unix::fs::PermissionsExt,
-    path::PathBuf,
     process::Command,
 };
 
+use camino::Utf8PathBuf;
 use chrono::Utc;
 use color_eyre::eyre::{Context, Result};
 use displaydoc::Display;
@@ -34,12 +34,12 @@ impl ResolveEnv for UpdateSelfOptions {}
 /// Downloads the latest version of the binary from the specified URL and
 /// replaces the current executable path with it.
 pub(crate) fn run(opts: &UpdateSelfOptions) -> Result<TaskStatus> {
-    let up_path = env::current_exe()?.canonicalize().unwrap();
+    let up_path = Utf8PathBuf::try_from(env::current_exe()?)?.canonicalize_utf8()?;
 
     // If the current binary's location is where it was originally compiled, assume it is a dev
     // build, and thus skip the update.
     if !opts.always_update && up_path.starts_with(env!("CARGO_MANIFEST_DIR")) {
-        debug!("Skipping up-rs update, current version '{up_path:?}' is a dev build.",);
+        debug!("Skipping up-rs update, current version '{up_path}' is a dev build.",);
         return Ok(TaskStatus::Skipped);
     }
 
@@ -68,12 +68,12 @@ pub(crate) fn run(opts: &UpdateSelfOptions) -> Result<TaskStatus> {
         trace!("Updating up-rs from '{CURRENT_VERSION}' to '{latest_github_release}'",);
     }
 
-    let temp_dir = env::temp_dir();
+    let temp_dir = Utf8PathBuf::try_from(env::temp_dir())?;
     let temp_path = &temp_dir.join(format!("up_rs-{}", Utc::now().to_rfc3339()));
 
-    trace!("Downloading url {url} to path {up_path:?}", url = &opts.url,);
+    trace!("Downloading url {url} to path {up_path}", url = &opts.url,);
 
-    trace!("Using temporary path: {temp_path:?}");
+    trace!("Using temporary path: {temp_path}");
     let mut response = reqwest::blocking::get(&opts.url)?.error_for_status()?;
 
     fs::create_dir_all(&temp_dir).wrap_err_with(|| E::CreateDir { path: temp_dir })?;
@@ -112,13 +112,13 @@ pub(crate) fn run(opts: &UpdateSelfOptions) -> Result<TaskStatus> {
 /// Errors thrown by this file.
 pub enum UpdateSelfError {
     /// Failed to create directory '{path}'
-    CreateDir { path: PathBuf },
+    CreateDir { path: Utf8PathBuf },
     /// Failed to create file '{path}'
-    CreateFile { path: PathBuf },
+    CreateFile { path: Utf8PathBuf },
     /// Failed to copy to destination file.
     Copy,
     /// Failed to set permissions for {path}.
-    SetPermissions { path: PathBuf },
+    SetPermissions { path: Utf8PathBuf },
     /// Failed to rename {from} to {to}.
-    Rename { from: PathBuf, to: PathBuf },
+    Rename { from: Utf8PathBuf, to: Utf8PathBuf },
 }

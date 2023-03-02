@@ -6,7 +6,7 @@ use thiserror::Error;
 use tracing::{debug, trace};
 
 use self::EnvError as E;
-use crate::files::home_dir_str;
+use crate::utils::files;
 
 // TODO(gib): add tests for cyclical config values etc.
 pub fn get_env(
@@ -27,13 +27,13 @@ pub fn get_env(
     if let Some(config_env) = input_env {
         trace!("Provided env: {config_env:#?}");
         let mut calculated_env = HashMap::new();
-        let home_dir_string = home_dir_str()?;
+        let home_dir = files::home_dir()?;
         for (key, val) in config_env.iter() {
             calculated_env.insert(
                 key.clone(),
                 shellexpand::full_with_context(
                     val,
-                    || Some(&home_dir_string),
+                    || Some(&home_dir),
                     |k| {
                         env.get(k).map_or_else(
                             || {

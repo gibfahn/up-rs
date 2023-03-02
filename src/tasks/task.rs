@@ -2,12 +2,12 @@ use std::{
     collections::HashMap,
     fmt::{self, Display},
     fs,
-    path::{Path, PathBuf},
     process::{Command, Output, Stdio},
     string::String,
     time::{Duration, Instant},
 };
 
+use camino::{Utf8Path, Utf8PathBuf};
 use color_eyre::eyre::{eyre, Result};
 use log::{log, Level};
 use serde_derive::{Deserialize, Serialize};
@@ -35,7 +35,7 @@ pub enum TaskStatus {
 #[derive(Debug)]
 pub struct Task {
     pub name: String,
-    pub path: PathBuf,
+    pub path: Utf8PathBuf,
     pub config: TaskConfig,
     pub start_time: Instant,
     pub status: TaskStatus,
@@ -114,13 +114,13 @@ impl Display for CommandType {
 }
 
 impl Task {
-    pub fn from(path: &Path) -> Result<Self> {
+    pub fn from(path: &Utf8Path) -> Result<Self> {
         let start_time = Instant::now();
         let s = fs::read_to_string(path).map_err(|e| E::ReadFile {
             path: path.to_owned(),
             source: e,
         })?;
-        trace!("Task '{path:?}' contents: <<<{s}>>>");
+        trace!("Task '{path}' contents: <<<{s}>>>");
         let config = serde_yaml::from_str::<TaskConfig>(&s).map_err(|e| E::InvalidYaml {
             path: path.to_owned(),
             source: e,
@@ -130,8 +130,6 @@ impl Task {
             None => path
                 .file_stem()
                 .ok_or_else(|| eyre!("Task had no path."))?
-                .to_str()
-                .ok_or(E::UnexpectedNone)?
                 .to_owned(),
         };
         let task = Self {
@@ -145,7 +143,7 @@ impl Task {
         Ok(task)
     }
 
-    pub fn run<F>(&mut self, env_fn: F, env: &HashMap<String, String>, up_dir: &Path)
+    pub fn run<F>(&mut self, env_fn: F, env: &HashMap<String, String>, up_dir: &Utf8Path)
     where
         F: Fn(&str) -> Result<String, E>,
     {
@@ -159,7 +157,7 @@ impl Task {
         &mut self,
         env_fn: F,
         env: &HashMap<String, String>,
-        up_dir: &Path,
+        up_dir: &Utf8Path,
     ) -> Result<TaskStatus, E>
     where
         F: Fn(&str) -> Result<String, E>,

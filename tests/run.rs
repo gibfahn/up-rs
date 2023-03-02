@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use assert_cmd::cargo::cargo_bin;
+use camino::Utf8PathBuf;
 use testutils::assert;
 
 #[cfg(target_os = "macos")]
@@ -52,16 +53,13 @@ fn test_up_run_passing() {
     // Used in link task.
     envs.insert("link_from_dir", temp_dir.join("link_dir/dotfile_dir"));
     envs.insert("link_to_dir", temp_dir.join("link_dir/home_dir"));
-    envs.insert("up_binary_path", cargo_bin("up"));
+    envs.insert(
+        "up_binary_path",
+        Utf8PathBuf::try_from(cargo_bin("up")).unwrap(),
+    );
     cmd.envs(envs);
 
-    cmd.args(
-        [
-            "--config",
-            temp_dir.join("up_config_dir/up.yaml").to_str().unwrap(),
-        ]
-        .iter(),
-    );
+    cmd.args(["--config", temp_dir.join("up_config_dir/up.yaml").as_str()].iter());
     cmd.assert().success();
 
     // Link Task: Check symlinks were created correctly.

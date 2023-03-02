@@ -2,13 +2,13 @@ use std::{
     collections::HashMap,
     fs::{self, File},
     io::Read,
-    path::{Path, PathBuf},
 };
 
+use camino::{Utf8Path, Utf8PathBuf};
 use plist::Dictionary;
 use tracing::{debug, info, trace, warn};
 
-use crate::tasks::defaults::DefaultsError as E;
+use crate::{tasks::defaults::DefaultsError as E, utils::files};
 
 // TODO(gib): support `-currentHost`. Afaict this means looking at this file:
 //
@@ -54,23 +54,22 @@ Note that `defaults domains` actually prints out `~/Library/Containers/{*}/Data/
 - [macOS Containers and defaults](https://lapcatsoftware.com/articles/containers.html)
 - [Preference settings: where to find them in Mojave](https://eclecticlight.co/2019/08/28/preference-settings-where-to-find-them-in-mojave/)
 */
-pub(super) fn plist_path(domain: &str) -> Result<PathBuf, E> {
+pub(super) fn plist_path(domain: &str) -> Result<Utf8PathBuf, E> {
+    let home_dir = files::home_dir().map_err(|e| E::MissingHomeDir { source: e })?;
     // Global Domain -> hardcoded value.
     if domain == "NSGlobalDomain" {
-        let mut plist_path = dirs::home_dir().ok_or(E::MissingHomeDir)?;
+        let mut plist_path = home_dir;
         plist_path.extend(&["Library", "Preferences", ".GlobalPreferences.plist"]);
         return Ok(plist_path);
     }
     // User passed an absolute path -> use it directly.
     if domain.starts_with('/') {
-        return Ok(PathBuf::from(domain));
+        return Ok(Utf8PathBuf::from(domain));
     }
 
     // If user passed com.foo.bar.plist, trim it to com.foo.bar
     let domain = domain.trim_end_matches(".plist");
     let domain_filename = format!("{domain}.plist");
-
-    let home_dir = dirs::home_dir().ok_or(E::MissingHomeDir)?;
 
     let mut sandboxed_plist_path = home_dir.clone();
     sandboxed_plist_path.extend(&[
@@ -112,7 +111,7 @@ pub(super) fn get_plist_value_type(plist: &plist::Value) -> &'static str {
 }
 
 /// Check whether a plist file is in the binary plist format or the XML plist format.
-pub(super) fn is_binary(file: &Path) -> Result<bool, E> {
+pub(super) fn is_binary(file: &Utf8Path) -> Result<bool, E> {
     let mut f = File::open(file).map_err(|e| E::FileRead {
         path: file.to_path_buf(),
         source: e,
@@ -131,12 +130,12 @@ pub(super) fn is_binary(file: &Path) -> Result<bool, E> {
 pub(super) fn write_defaults_values(
     domain: &str,
     prefs: HashMap<String, plist::Value>,
-    up_dir: &Path,
+    up_dir: &Utf8Path,
 ) -> Result<bool, E> {
     let backup_dir = up_dir.join("backup/defaults");
 
     let plist_path = plist_path(domain)?;
-    debug!("Plist path: {plist_path:?}");
+    debug!("Plist path: {plist_path}");
 
     let plist_path_exists = plist_path.exists();
 
@@ -198,7 +197,7 @@ pub(super) fn write_defaults_values(
                     })?,
             );
 
-        trace!("Backing up plist file {plist_path:?} -> {backup_plist_path:?}",);
+        trace!("Backing up plist file {plist_path} -> {backup_plist_path}",);
         fs::create_dir_all(&backup_dir).map_err(|e| E::DirCreation {
             path: backup_dir.clone(),
             source: e,
@@ -209,7 +208,7 @@ pub(super) fn write_defaults_values(
             source: e,
         })?;
     } else {
-        warn!("Defaults plist doesn't exist, creating it: {plist_path:?}");
+        warn!("Defaults plist doesn't exist, creating it: {plist_path}");
         let plist_dirpath = plist_path.parent().ok_or(E::UnexpectedNone)?;
         fs::create_dir_all(plist_dirpath).map_err(|e| E::DirCreation {
             path: plist_dirpath.to_owned(),
@@ -230,7 +229,7 @@ pub(super) fn write_defaults_values(
             source: e,
         })?;
     }
-    trace!("Plist updated at {plist_path:?}");
+    trace!("Plist updated at {plist_path}");
 
     Ok(values_changed)
 }

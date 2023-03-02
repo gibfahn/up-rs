@@ -1,11 +1,7 @@
-use std::{
-    fs,
-    fs::File,
-    os::unix,
-    path::{Path, PathBuf},
-};
+use std::{fs, fs::File, os::unix};
 
 use assert_cmd::assert::Assert;
+use camino::{Utf8Path, Utf8PathBuf};
 use testutils::assert;
 
 /// Set up a basic home_dir, run the link function against it, and make sure we
@@ -237,14 +233,14 @@ fn test_uncreateable_backup_dir() {
 /// Helper function to copy the test fixtures for a given test into the OS
 /// tempdir (and return the created home_dir and dotfile_dir paths.
 #[cfg(test)]
-fn get_home_dotfile_dirs(test_fn: &str) -> (PathBuf, PathBuf, PathBuf, PathBuf) {
+fn get_home_dotfile_dirs(test_fn: &str) -> (Utf8PathBuf, Utf8PathBuf, Utf8PathBuf, Utf8PathBuf) {
     let temp_dir = testutils::temp_dir("up", test_fn).unwrap();
 
     testutils::copy_all(&testutils::fixture_dir(test_fn), &temp_dir).unwrap();
 
     (
-        temp_dir.join("home_dir").canonicalize().unwrap(),
-        temp_dir.join("dotfile_dir").canonicalize().unwrap(),
+        temp_dir.join("home_dir").canonicalize_utf8().unwrap(),
+        temp_dir.join("dotfile_dir").canonicalize_utf8().unwrap(),
         temp_dir.join("up-rs/backup/link"),
         temp_dir,
     )
@@ -272,9 +268,9 @@ impl LinkResult {
 /// Helper function to run ./up link <home_dir> <dotfile_dir> <home_dir>/backup.
 #[cfg(test)]
 fn run_link_cmd(
-    dotfile_dir: &Path,
-    home_dir: &Path,
-    temp_dir: &Path,
+    dotfile_dir: &Utf8Path,
+    home_dir: &Utf8Path,
+    temp_dir: &Utf8Path,
     result: LinkResult,
 ) -> Assert {
     let mut cmd = testutils::test_binary_cmd("up", temp_dir);
@@ -283,9 +279,9 @@ fn run_link_cmd(
         [
             "link",
             "--from",
-            dotfile_dir.to_str().unwrap(),
+            dotfile_dir.as_str(),
             "--to",
-            home_dir.to_str().unwrap(),
+            home_dir.as_str(),
         ]
         .iter(),
     );
