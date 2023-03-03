@@ -2,7 +2,7 @@ use std::{
     collections::HashMap,
     fmt::{self, Display},
     fs,
-    process::{Command, Output, Stdio},
+    process::Output,
     string::String,
     time::{Duration, Instant},
 };
@@ -14,6 +14,7 @@ use serde_derive::{Deserialize, Serialize};
 use tracing::{debug, info, trace};
 
 use crate::{
+    exec::cmd_log,
     generate,
     opts::{GenerateGitConfig, LinkOptions, UpdateSelfOptions},
     tasks,
@@ -251,10 +252,20 @@ impl Task {
         cmd: &[String],
         env: &HashMap<String, String>,
     ) -> Result<bool, E> {
-        let mut command = Self::get_command(cmd, env)?;
-
         let now = Instant::now();
-        let output = command.output().map_err(|e| {
+        // TODO(gib): set current dir.
+        let output = cmd_log(
+            Level::Debug,
+            cmd.get(0).ok_or(E::EmptyCmd)?,
+            cmd.get(1..).unwrap_or(&[]),
+        )
+        .full_env(env)
+        .stdout_capture()
+        .stderr_capture()
+        .unchecked()
+        .run();
+
+        let output = output.map_err(|e| {
             let suggestion = match e.kind() {
                 std::io::ErrorKind::PermissionDenied => format!(
                     "\n Suggestion: Try making the file executable with `chmod +x {path}`",
@@ -289,18 +300,6 @@ impl Task {
         };
         self.log_command_output(command_type, command_result.is_ok(), &output, elapsed_time);
         command_result
-    }
-
-    pub fn get_command(cmd: &[String], env: &HashMap<String, String>) -> Result<Command, E> {
-        // TODO(gib): set current dir.
-        let mut command = Command::new(cmd.get(0).ok_or(E::EmptyCmd)?);
-        command
-            .args(cmd.get(1..).unwrap_or(&[]))
-            .env_clear()
-            .envs(env.iter())
-            .stdin(Stdio::inherit());
-        trace!("Running command: {command:?}");
-        Ok(command)
     }
 
     /// Logs command output (as `debug` if it passed, or as `error` otherwise).

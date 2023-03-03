@@ -1,7 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
     io,
-    process::Command,
     time::{Duration, Instant},
 };
 
@@ -17,7 +16,7 @@ use self::{
     task::{CommandType, Task},
     TaskError as E,
 };
-use crate::{config, env::get_env, tasks::task::TaskStatus, utils::files};
+use crate::{cmd, config, env::get_env, tasks::task::TaskStatus, utils::files};
 
 pub mod completions;
 pub mod defaults;
@@ -97,9 +96,9 @@ pub fn run(
 
     // If in macOS, don't let the display sleep until the command exits.
     #[cfg(target_os = "macos")]
-    Command::new("caffeinate")
-        .args(["-ds", "-w", &std::process::id().to_string()])
-        .spawn()?;
+    {
+        _ = cmd!("caffeinate", "-ds", "-w", &std::process::id().to_string()).start()?;
+    }
 
     // TODO(gib): Handle and filter by constraints.
 
@@ -147,7 +146,7 @@ pub fn run(
     {
         // TODO(gib): this only lasts for 5 minutes.
         debug!("Prompting for superuser privileges with 'sudo -v'");
-        Command::new("sudo").arg("-v").output()?;
+        cmd!("sudo", "-v").run()?;
     }
 
     debug!("Task count: {:?}", tasks.len());

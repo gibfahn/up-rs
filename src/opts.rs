@@ -62,7 +62,7 @@ pub struct Opts {
     /**
     Temporary directory to use for logs, fifos, and other intermediate artifacts.
     */
-    #[clap(long, env = "UP_TEMP_DIR", default_value_t, value_hint = ValueHint::DirPath, alias = "up_dir")]
+    #[clap(long, env = "UP_TEMP_DIR", default_value_t, value_hint = ValueHint::DirPath, alias = "up-dir")]
     pub temp_dir: TempDir,
 
     /// Set the file logging level explicitly (options: Off, Error, Warn, Info,

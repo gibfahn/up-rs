@@ -3,7 +3,6 @@ use std::{
     fs::{self, File, Permissions},
     io,
     os::unix::fs::PermissionsExt,
-    process::Command,
 };
 
 use camino::Utf8PathBuf;
@@ -16,6 +15,7 @@ use tracing::{debug, info, trace};
 
 use self::UpdateSelfError as E;
 use crate::{
+    cmd,
     opts::UpdateSelfOptions,
     tasks::{task::TaskStatus, ResolveEnv},
 };
@@ -87,11 +87,8 @@ pub(crate) fn run(opts: &UpdateSelfOptions) -> Result<TaskStatus> {
         path: temp_path.clone(),
     })?;
 
-    let output = Command::new(temp_path).arg("--version").output()?;
-    let new_version = String::from_utf8_lossy(&output.stdout);
-    let new_version = new_version
-        .trim()
-        .trim_start_matches(concat!(env!("CARGO_PKG_NAME"), " "));
+    let new_version = cmd!(temp_path.as_str(), "--version").read()?;
+    let new_version = new_version.trim_start_matches(concat!(env!("CARGO_PKG_NAME"), " "));
     if semver::Version::parse(new_version)? > semver::Version::parse(CURRENT_VERSION)? {
         info!("Updating up-rs from '{CURRENT_VERSION}' to '{new_version}'",);
         fs::rename(temp_path, &up_path).wrap_err_with(|| E::Rename {

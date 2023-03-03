@@ -190,10 +190,13 @@ fn parse_git_config(
     }
 
     // Replace home directory in the path with ~.
-    let replaced_path = path.strip_prefix(home_dir).map(|p| format!("~/{p}"))?;
+    let replaced_path = path.strip_prefix(home_dir).map_or_else(
+        |_| path.to_owned(),
+        |suffix| Utf8PathBuf::from(format!("~/{suffix}")),
+    );
 
     let config = GitConfig {
-        path: Utf8PathBuf::from(replaced_path),
+        path: replaced_path,
         branch: None,
         remotes,
         prune,

@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use assert_cmd::cargo::cargo_bin;
 use camino::Utf8PathBuf;
 use testutils::assert;
+use up_rs::cmd;
 
 #[cfg(target_os = "macos")]
 const EXPECTED_DEFAULTS_VALUE: &str = r#"{
@@ -43,9 +44,7 @@ fn test_up_run_passing() {
 
     #[cfg(target_os = "macos")]
     {
-        let mut cmd = std::process::Command::new("defaults");
-        cmd.args(["delete", test_plist]);
-        cmd.output().unwrap();
+        cmd!("defaults", "delete", test_plist).run().unwrap();
     }
 
     let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
