@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches : [ main ]
+  pull_request:
+    branches : [ main ]
+
+env:
+  RUSTFLAGS: "-D warnings"
+  CARGO_TERM_COLOR: always
+
+jobs:
+
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+        - macos-latest
+        - ubuntu-latest
+        # TODO: fix Windows build and enable the action.
+        # - windows-latest
+      fail-fast: false
+    steps:
+    - uses: actions/checkout@v3
+    - uses: dtolnay/rust-toolchain@stable
+    - uses: dtolnay/rust-toolchain@nightly
+      with:
+        components: clippy, rustfmt
+    - run: cargo test --verbose --no-fail-fast
