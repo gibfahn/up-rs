@@ -8,7 +8,7 @@ use predicates::prelude::*;
 fn test_defaults_read_global() {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
 
-    let mut expected_value = cmd!("defaults", "read", "-g", "com.apple.sound.beep.sound")
+    let mut expected_value = cmd!("defaults", "read", "-g", "AppleLocale")
         .read()
         .unwrap();
     expected_value.push('\n');
@@ -17,7 +17,7 @@ fn test_defaults_read_global() {
     // defaults own format).
     {
         let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
-        cmd.args(["defaults", "read", "-g", "com.apple.sound.beep.sound"]);
+        cmd.args(["defaults", "read", "-g", "AppleLocale"]);
         cmd.assert().success().stdout(expected_value.clone());
     }
 
@@ -31,7 +31,7 @@ fn test_defaults_read_global() {
                 "{}/Library/Preferences/.GlobalPreferences.plist",
                 dirs::home_dir().unwrap().display()
             ),
-            "com.apple.sound.beep.sound",
+            "AppleLocale",
         ]);
         cmd.assert().success().stdout(expected_value);
     }
@@ -40,13 +40,7 @@ fn test_defaults_read_global() {
     // a value to `defaults read`.
     {
         let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
-        cmd.args([
-            "defaults",
-            "read",
-            "-g",
-            "NSGlobalDomain",
-            "com.apple.sound.beep.sound",
-        ]);
+        cmd.args(["defaults", "read", "-g", "NSGlobalDomain", "AppleLocale"]);
         cmd.assert()
             .failure()
             .stderr(predicate::str::contains("both a domain and a key"));
