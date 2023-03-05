@@ -43,7 +43,7 @@ fn test_up_run_passing() {
 
     #[cfg(target_os = "macos")]
     {
-        up_rs::cmd!("defaults", "delete", test_plist).run().unwrap();
+        _ = up_rs::cmd!("defaults", "delete", test_plist).run();
     }
 
     let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
