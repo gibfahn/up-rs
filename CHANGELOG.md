@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.6](https://github.com/gibfahn/up-rs/releases/tag/0.13.6) (2023-03-06)
+
+### Bug Fixes
+- help: enable help output wrapping based on terminal width ([d8626c6](https://github.com/gibfahn/up-rs/commit/d8626c67b342666da3eea4a94caaab71389cff60))
+
+### Refactor
+- [**BREAKING**] remove CI feature, improve release script ([f444293](https://github.com/gibfahn/up-rs/commit/f44429336ed8f416c7b110d24f31feec6b2a1578))
+- [**BREAKING**] drop support for non-UTF-8 paths ([5116250](https://github.com/gibfahn/up-rs/commit/51162500aa2e1a7fc532dfad1658a1e222227e13))
+- use duct for executing commands ([3e5987e](https://github.com/gibfahn/up-rs/commit/3e5987eb7a91cd418c5ea517bf107d0363eafec0))
+
 ## [0.13.5](https://github.com/gibfahn/up-rs/releases/tag/0.13.5) (2023-03-02)
 
 ### Bug Fixes
