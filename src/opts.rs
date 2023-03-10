@@ -277,6 +277,15 @@ pub struct DefaultsWriteOptions {
     pub(crate) domain: String,
     /// Defaults key to write to.
     pub(crate) key: String,
-    /// Value to write (as a yaml string).
+    /**
+    Value to write (as a yaml string).
+
+    If you want to append to an existing array or dictionary, use `...` as an array value, or `...:...` as a dictionary entry, to represent the existing items in the array.
+    If there are duplicates, the first entry will be preserved.
+
+    So if the array contained ["a", "foo", "b", "bar", "c"], and you write ["foo", "...", "bar", "baz"], you would end up with ["foo", "a", "b", "bar", "c", "baz"]
+
+    Similarly if the dict contained {"a": 1, "foo": 2, "b": 3, "bar": 4, "c": 5}, and you write {"foo": 6 "...":"...", "bar": 7, "baz": 8}, you would end up with {"a": 1, "foo": 6, "b": 3, "bar": 4, "c": 5, "baz": 8}
+    */
     pub(crate) value: Option<String>,
 }

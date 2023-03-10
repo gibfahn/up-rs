@@ -5,10 +5,14 @@ use std::{
 };
 
 use camino::{Utf8Path, Utf8PathBuf};
+use itertools::Itertools;
 use plist::Dictionary;
 use tracing::{debug, info, trace, warn};
 
 use crate::{tasks::defaults::DefaultsError as E, utils::files};
+
+/// A value or key-value pair that means "insert existing values here" for arrays and dictionaries.
+const ELLIPSIS: &str = "...";
 
 // TODO(gib): support `-currentHost`. Afaict this means looking at this file:
 //
@@ -27,8 +31,6 @@ use crate::{tasks::defaults::DefaultsError as E, utils::files};
 // - net.kovidgoyal.kitty
 // - com.apple.mail
 // ```
-
-// TODO(gib): support array-add and dict-add equivalents (append if not present).
 
 /**
 Get the path to the plist file given a domain.
@@ -152,7 +154,7 @@ pub(super) fn write_defaults_values(
 
     // Whether we changed anything.
     let mut values_changed = false;
-    for (key, new_value) in prefs {
+    for (key, mut new_value) in prefs {
         let old_value = plist_value
             .as_dictionary()
             .ok_or_else(|| E::NotADictionary {
@@ -161,13 +163,24 @@ pub(super) fn write_defaults_values(
                 plist_type: get_plist_value_type(&plist_value),
             })?
             .get(&key);
+        debug!(
+            "Working out whether we need to change the default {domain} {key}: {old_value:?} -> \
+             {new_value:?}"
+        );
+
+        // Handle `...` values in arrays or dicts provided in input.
+        replace_ellipsis_array(&mut new_value, old_value);
+        replace_ellipsis_dict(&mut new_value, old_value);
+
         if let Some(old_value) = old_value {
             if old_value == &new_value {
                 debug!("Nothing to do, values already match.");
                 continue;
             }
         }
+
         values_changed = true;
+
         info!("Changing default {domain} {key}: {old_value:?} -> {new_value:?}",);
 
         let plist_type = get_plist_value_type(&plist_value);
@@ -232,6 +245,81 @@ pub(super) fn write_defaults_values(
     trace!("Plist updated at {plist_path}");
 
     Ok(values_changed)
+}
+
+/// Replace `...` values in an input array.
+/// Does nothing if not an array.
+/// You end up with: [<new values before ...>, <old values>, <new values after ...>]
+/// But any duplicates between old and new values are removed, with the first value taking
+/// precedence.
+fn replace_ellipsis_array(new_value: &mut plist::Value, old_value: Option<&plist::Value>) {
+    let Some(array) = new_value.as_array_mut() else {
+        trace!("Value isn't an array, skipping ellipsis replacement...");
+        return;
+    };
+    let ellipsis = plist::Value::String("...".to_owned());
+    let Some(position) = array.iter().position(|x| x == &ellipsis) else {
+        trace!("New value doesn't contain ellipsis, skipping ellipsis replacement...");
+        return;
+    };
+
+    let Some(old_array) = old_value.and_then(plist::Value::as_array) else {
+        trace!("Old value wasn't an array, skipping ellipsis replacement...");
+        array.remove(position);
+        return;
+    };
+
+    let array_copy: Vec<_> = array.drain(..).collect();
+
+    trace!("Performing array ellipsis replacement...");
+    for element in array_copy {
+        if element == ellipsis {
+            for old_element in old_array {
+                if array.contains(old_element) {
+                    continue;
+                }
+                array.push(old_element.clone());
+            }
+        } else if !array.contains(&element) {
+            array.push(element);
+        }
+    }
+}
+
+/// Replace `...` keys in an input dict.
+/// Does nothing if not a dictionary.
+/// You end up with: [<new contents before ...>, <old contents>, <new contents after ...>]
+/// But any duplicates between old and new values are removed, with the first value taking
+/// precedence.
+fn replace_ellipsis_dict(new_value: &mut plist::Value, old_value: Option<&plist::Value>) {
+    let Some(dict) = new_value.as_dictionary_mut() else {
+        trace!("Value isn't a dict, skipping ellipsis replacement...");
+        return;
+    };
+
+    if !dict.contains_key(ELLIPSIS) {
+        trace!("New value doesn't contain ellipsis, skipping ellipsis replacement...");
+        return;
+    }
+
+    let before = dict
+        .keys()
+        .take_while(|x| x != &ELLIPSIS)
+        .cloned()
+        .collect_vec();
+    dict.remove(ELLIPSIS);
+
+    let Some(old_dict) = old_value.and_then(plist::Value::as_dictionary) else {
+        trace!("Old value wasn't a dict, skipping ellipsis replacement...");
+        return;
+    };
+
+    trace!("Performing dict ellipsis replacement...");
+    for (key, value) in old_dict {
+        if !before.contains(key) {
+            dict.insert(key.clone(), value.clone());
+        }
+    }
 }
 
 #[cfg(test)]

@@ -3,6 +3,9 @@
 
 use duct::cmd;
 use predicates::prelude::*;
+use pretty_assertions::assert_eq;
+use test_log::test;
+use tracing::{debug, info};
 
 #[test]
 fn test_defaults_read_global() {
@@ -103,94 +106,175 @@ fn test_defaults_read_local() {
     }
 }
 
+#[derive(Debug, Clone)]
+struct TestCase {
+    name: &'static str,
+    /// Type flags from `man defaults`, without the initial `-`.
+    defaults_type: &'static str,
+    /// Original value in defaults format (as used by `defaults write`). Space-separate dicts and
+    /// arrays.
+    orig_value: &'static str,
+    /// Original value in yaml format (as returned by `up defaults read`).
+    orig_check_value: &'static str,
+    /// New value in yaml format (as used by `up defaults write`).
+    new_value: &'static str,
+    /// New value in defaults format (as used by `defaults read`).
+    check_value: &'static str,
+}
+
 #[test]
 fn test_defaults_write_local() {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
 
     let domain = format!("co.fahn.up-rs.test-{}", testutils::function_path!());
 
-    // Format: (defaults_type, orig_value, orig_check_value, new_value, check_value)
     let test_values = [
-        ("bool", "true", "true", "false", "0"),
-        ("int", "5", "5", "10", "10"),
-        ("float", "5.123", "5.123000144958496", "7.8", "7.8"),
-        (
-            "string",
-            "initial value\nline 2",
-            "|-\n  initial value\n  line 2",
-            "\"new value\\nnew line 2\"",
-            "new value\nnew line 2",
-        ),
-        (
-            "array",
-            "a b c",
-            "- a\n- b\n- c",
-            // Check swapping an array to a dict works.
-            "x: four\ny: five\nz: six",
-            "{\n    x = four;\n    y = five;\n    z = six;\n}",
-        ),
-        (
-            "dict",
-            "u one v two w three",
-            "u: one\nv: two\nw: three",
-            // Check swapping a dict to an array works.
-            "[\"d\",\"e\",\"f\"]",
-            "(\n    d,\n    e,\n    f\n)",
-        ),
+        TestCase {
+            name: "basic_bool",
+            defaults_type: "bool",
+            orig_value: "true",
+            orig_check_value: "true",
+            new_value: "false",
+            check_value: "0",
+        },
+        TestCase {
+            name: "basic_int",
+            defaults_type: "int",
+            orig_value: "5",
+            orig_check_value: "5",
+            new_value: "10",
+            check_value: "10",
+        },
+        TestCase {
+            name: "basic_float",
+            defaults_type: "float",
+            orig_value: "5.123",
+            orig_check_value: "5.123000144958496",
+            new_value: "7.8",
+            check_value: "7.8",
+        },
+        TestCase {
+            name: "basic_string",
+            defaults_type: "string",
+            orig_value: "initial value\nline 2",
+            orig_check_value: "|-\n  initial value\n  line 2",
+            new_value: r#""new value\nnew line 2""#,
+            check_value: "new value\nnew line 2",
+        },
+        // Check swapping an array to a dict works.
+        TestCase {
+            name: "array_to_dict",
+            defaults_type: "array",
+            orig_value: "a b c",
+            orig_check_value: "- a\n- b\n- c",
+            new_value: "x: four\ny: five\nz: six",
+            check_value: "{\n    x = four;\n    y = five;\n    z = six;\n}",
+        },
+        // Check swapping an array to a dict works.
+        TestCase {
+            name: "array_to_dict_2",
+            defaults_type: "array",
+            orig_value: "a b c",
+            orig_check_value: "- a\n- b\n- c",
+            new_value: "x: four\ny: five\nz: six",
+            check_value: "{\n    x = four;\n    y = five;\n    z = six;\n}",
+        },
+        // Check swapping a dict to an array works.
+        TestCase {
+            name: "dict_to_array",
+            defaults_type: "dict",
+            orig_value: "u one v two w three",
+            orig_check_value: "u: one\nv: two\nw: three",
+            new_value: "['d','e','f']",
+            check_value: "(\n    d,\n    e,\n    f\n)",
+        },
+        // Check preserving original array values works.
+        TestCase {
+            name: "array_preserve_original",
+            defaults_type: "array",
+            orig_value: "a foo b bar c",
+            orig_check_value: "- a\n- foo\n- b\n- bar\n- c",
+            new_value: "['foo', '...', 'bar', 'baz']",
+            check_value: "(\n    foo,\n    a,\n    b,\n    bar,\n    c,\n    baz\n)",
+        },
+        // Check preserving original dict values works.
+        TestCase {
+            name: "dict_preserve_original",
+            defaults_type: "dict",
+            orig_value: "a 1 foo 2 b 3 bar 4 c 5",
+            orig_check_value: "foo: '2'\nb: '3'\nbar: '4'\nc: '5'\na: '1'",
+            new_value: "{'foo': 6, '...':'...', 'bar': 7, 'baz': 8}",
+            check_value: "{\n    a = 1;\n    b = 3;\n    bar = 4;\n    baz = 8;\n    c = 5;\n    \
+                          foo = 6;\n}",
+        },
     ];
 
-    for (n, (defaults_type, orig_value, _, _, _)) in test_values.iter().enumerate() {
-        let values = match *defaults_type {
-            "array" | "dict" => orig_value.split_whitespace().collect(),
-            _ => vec![*orig_value],
-        };
+    for test_case in test_values.into_iter() {
+        let TestCase {
+            name,
+            defaults_type,
+            orig_value,
+            orig_check_value,
+            new_value,
+            check_value,
+        } = test_case;
 
-        let defaults_key = format!("defaults_write_local_{n}");
-        let defaults_type = format!("-{defaults_type}");
-        let mut args = vec!["write", &domain, &defaults_key, &defaults_type];
-        args.extend(values);
+        info!("Testing default {name}: {test_case:#?}");
 
-        // Write the original value to a test plist file.
-        cmd("defaults", &args).run().unwrap();
-    }
+        {
+            debug!("Writing original value for {name}");
+            let values = match defaults_type {
+                "array" | "dict" => orig_value.split_whitespace().collect(),
+                _ => vec![orig_value],
+            };
 
-    // Check we agree with `defaults` about the original value.
-    for (n, (_, _, orig_check_value, _, _)) in test_values.iter().enumerate() {
-        let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
-        cmd.args([
-            "defaults",
-            "read",
-            &domain,
-            &format!("defaults_write_local_{n}"),
-        ]);
-        cmd.assert()
-            .success()
-            .stdout(format!("{orig_check_value}\n"));
-    }
+            let defaults_key = format!("defaults_write_local_{name}");
+            let defaults_type = format!("-{defaults_type}");
+            let mut args = vec!["write", &domain, &defaults_key, &defaults_type];
+            args.extend(values);
 
-    // Set the key to the new value ourselves.
-    for (n, (_, _, _, new_value, _)) in test_values.iter().enumerate() {
-        let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
+            // Write the original value to a test plist file.
+            cmd("defaults", &args).run().unwrap();
+        }
 
-        let defaults_key = format!("defaults_write_local_{n}");
-        cmd.args(["defaults", "write", &domain, &defaults_key, new_value]);
-        cmd.assert()
-            .success()
-            .stderr(predicate::str::contains(format!(
-                "Changing default {domain} {defaults_key}"
-            )));
-    }
+        {
+            debug!("Checking we agree with `defaults` about the original value.");
+            let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
+            cmd.args([
+                "defaults",
+                "read",
+                &domain,
+                &format!("defaults_write_local_{name}"),
+            ]);
+            cmd.assert()
+                .success()
+                .stdout(predicate::str::diff(format!("{orig_check_value}\n")));
+        }
 
-    // Check that defaults agrees with the new value.
-    for (n, (_, _, _, _, check_value)) in test_values.iter().enumerate() {
-        let new_default = cmd!(
-            "defaults",
-            "read",
-            &domain,
-            &format!("defaults_write_local_{n}")
-        )
-        .read()
-        .unwrap();
-        assert_eq!(*check_value, new_default);
+        {
+            debug!("Setting the key to the new value ourselves:");
+            let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
+
+            let defaults_key = format!("defaults_write_local_{name}");
+            cmd.args(["defaults", "write", &domain, &defaults_key, new_value]);
+            cmd.assert()
+                .success()
+                .stderr(predicate::str::contains(format!(
+                    "Changing default {domain} {defaults_key}"
+                )));
+        }
+
+        {
+            debug!("Checking that defaults agrees with the new value:");
+            let new_default = cmd!(
+                "defaults",
+                "read",
+                &domain,
+                &format!("defaults_write_local_{name}")
+            )
+            .read()
+            .unwrap();
+            assert_eq!(*check_value, new_default);
+        }
     }
 }
