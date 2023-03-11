@@ -1,0 +1,16 @@
+# Requires nightly Rust/Clippy.
+
+# https://rust-lang.github.io/rust-clippy/master/index.html#unwrap_used
+allow-unwrap-in-tests = true
+
+# https://rust-lang.github.io/rust-clippy/master/index.html#expect_used
+allow-expect-in-tests = true
+
+# https://rust-lang.github.io/rust-clippy/master/index.html#too_many_lines
+too-many-lines-threshold = 200
+
+# Words that look like code but aren't, so shouldn't be surrounded by backticks in docstrings.
+# Refs: https://rust-lang.github.io/rust-clippy/master/index.html#doc_markdown
+doc-valid-idents = [
+  "..",
+]

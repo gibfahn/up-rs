@@ -32,6 +32,8 @@ pub fn home_dir() -> Result<Utf8PathBuf> {
     Ok(home_dir)
 }
 
+/// Convert a std path to a `Utf8Path`. We should be able to use `Utf8Path::try_from()`, but get
+/// compiler errors.
 pub fn to_utf8_path(path: &std::path::Path) -> Result<&Utf8Path> {
     Utf8Path::from_path(path).ok_or_else(|| eyre!("Invalid UTF-8 in path {path:?}"))
 }

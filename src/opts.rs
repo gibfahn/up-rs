@@ -1,3 +1,4 @@
+//! CLI options passed to `up` commands.
 mod paths;
 
 use camino::Utf8PathBuf;
@@ -7,13 +8,17 @@ use serde_derive::{Deserialize, Serialize};
 
 use crate::opts::paths::TempDir;
 
+/// The default fallback path inside a fallback repo to look for the up.yaml file in.
 pub(crate) const FALLBACK_CONFIG_PATH: &str = "dotfiles/.config/up/up.yaml";
+/// URL to use to find the latest version of up.
 pub(crate) const LATEST_RELEASE_URL: &str =
     "https://api.github.com/repos/gibfahn/up-rs/releases/latest";
 #[cfg(target_os = "linux")]
+/// URL to use to download the latest release of up for Linux.
 pub(crate) const SELF_UPDATE_URL: &str =
     "https://github.com/gibfahn/up-rs/releases/latest/download/up-linux";
 #[cfg(target_os = "macos")]
+/// URL to use to download the latest release of up for macOS.
 pub(crate) const SELF_UPDATE_URL: &str =
     "https://github.com/gibfahn/up-rs/releases/latest/download/up-darwin";
 
@@ -75,22 +80,23 @@ pub struct Opts {
     /// Path to the up.yaml file for up.
     #[clap(long, short = 'c', default_value = "$XDG_CONFIG_HOME/up/up.yaml", value_hint = ValueHint::FilePath)]
     pub(crate) config: String,
+    /// Clap subcommand to run.
     #[clap(subcommand)]
     pub(crate) cmd: Option<SubCommand>,
 }
 
 /// Settings for colouring output.
-/// Auto: Colour on if stderr isatty, else off.
-/// Always: Always enable colours.
-/// Never: Never enable colours.
 #[derive(Debug, ValueEnum, Clone)]
 pub enum Color {
+    /// Auto: Colour on if stderr isatty, else off.
     Auto,
+    /// Always: Always enable colours.
     Always,
+    /// Never: Never enable colours.
     Never,
 }
 
-// Optional subcommand (e.g. the "link" in "up link").
+/// Optional subcommand (e.g. the "link" in "up link").
 #[derive(Debug, Parser)]
 pub(crate) enum SubCommand {
     /// Run the update scripts. If you don't provide a subcommand this is the default action.
@@ -112,6 +118,7 @@ pub(crate) enum SubCommand {
     List(RunOptions),
 }
 
+/// CLI options passed to `up run`.
 #[derive(Debug, Parser, Default)]
 pub(crate) struct RunOptions {
     /// Run the bootstrap list of tasks in series first, then run the rest in
@@ -127,7 +134,12 @@ pub(crate) struct RunOptions {
     /// Fallback path inside the git repo to get the config.
     /// The default path assumes your fallback_url points to a dotfiles repo
     /// that is linked into ~.
-    #[clap(short = 'p', long, default_value = FALLBACK_CONFIG_PATH, value_hint = ValueHint::FilePath)]
+    #[clap(
+        short = 'p',
+        long,
+        default_value = FALLBACK_CONFIG_PATH,
+        value_hint = ValueHint::FilePath
+    )]
     pub(crate) fallback_path: Utf8PathBuf,
     /// Optionally pass one or more tasks to run. The default is to run all
     /// tasks. This option can be provided multiple times.
@@ -135,6 +147,7 @@ pub(crate) struct RunOptions {
     pub(crate) tasks: Option<Vec<String>>,
 }
 
+/// CLI options passed to `up link`.
 #[derive(Debug, Parser, Default, Serialize, Deserialize)]
 pub(crate) struct LinkOptions {
     /// Path where your dotfiles are kept (hopefully in source control).
@@ -145,6 +158,7 @@ pub(crate) struct LinkOptions {
     pub(crate) to_dir: String,
 }
 
+/// CLI options passed to `up git`.
 #[derive(Debug, Default, Parser)]
 pub struct GitOptions {
     /// URL of git repo to download.
@@ -167,6 +181,7 @@ pub struct GitOptions {
     pub prune: bool,
 }
 
+/// Options passed to `up generate`.
 #[derive(Debug, Parser)]
 pub(crate) struct GenerateOptions {
     /// Lib to generate.
@@ -174,6 +189,7 @@ pub(crate) struct GenerateOptions {
     pub(crate) lib: Option<GenerateLib>,
 }
 
+/// CLI options passed to `up self`.
 #[derive(Debug, Parser, Serialize, Deserialize)]
 pub(crate) struct UpdateSelfOptions {
     /// URL to download update from.
@@ -186,6 +202,7 @@ pub(crate) struct UpdateSelfOptions {
     pub(crate) always_update: bool,
 }
 
+/// CLI options passed to `up completions`.
 #[derive(Debug, Parser)]
 pub(crate) struct CompletionsOptions {
     /// Shell for which to generate completions.
@@ -202,7 +219,7 @@ impl Default for UpdateSelfOptions {
     }
 }
 
-/// Library to generate.
+/// Subcommands supported by `up generate`.
 #[derive(Debug, Parser)]
 pub(crate) enum GenerateLib {
     /// Generate a git repo.
@@ -211,6 +228,7 @@ pub(crate) enum GenerateLib {
     Defaults(GenerateDefaultsConfig),
 }
 
+/// Options
 #[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct GenerateGitConfig {
     /// Path to yaml file to update.
@@ -232,6 +250,7 @@ pub struct GenerateGitConfig {
     pub(crate) remote_order: Vec<String>,
 }
 
+/// Options passed to `up generate defaults`.
 #[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct GenerateDefaultsConfig {
     /// Path to yaml file to update.
@@ -239,6 +258,7 @@ pub struct GenerateDefaultsConfig {
     pub(crate) path: Utf8PathBuf,
 }
 
+/// Options passed to `up defaults`.
 #[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct DefaultsOptions {
     /// Defaults action to take.
@@ -246,6 +266,7 @@ pub struct DefaultsOptions {
     pub(crate) subcommand: DefaultsSubcommand,
 }
 
+/// Subcommands supported by `up defaults`.
 #[derive(Debug, Parser, Serialize, Deserialize)]
 pub enum DefaultsSubcommand {
     /// Read a defaults option and print it to the stdout as yaml.
@@ -257,6 +278,7 @@ pub enum DefaultsSubcommand {
     Write(DefaultsWriteOptions),
 }
 
+/// CLI options passed to `up defaults read`.
 #[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct DefaultsReadOptions {
     /// Read from the global domain. If you set this, do not also pass a domain argument.
@@ -268,6 +290,7 @@ pub struct DefaultsReadOptions {
     pub(crate) key: Option<String>,
 }
 
+/// CLI options passed to `up defaults write`.
 #[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct DefaultsWriteOptions {
     /// Read from the global domain. If you set this, do not also pass a domain argument.

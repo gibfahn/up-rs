@@ -32,9 +32,11 @@ use crate::{
 
 impl ResolveEnv for DefaultsConfig {}
 
+/// Configuration for a defaults run library command.
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct DefaultsConfig(HashMap<String, HashMap<String, plist::Value>>);
 
+/// Run a defaults run library command.
 pub(crate) fn run(config: DefaultsConfig, up_dir: &Utf8Path) -> Result<TaskStatus> {
     if !(cfg!(target_os = "macos") || cfg!(target_os = "ios")) {
         debug!("Defaults: skipping setting defaults as not on a Darwin platform.");
@@ -83,9 +85,13 @@ pub enum DefaultsError {
     value: {value:?}
     */
     DeSerializationFailed {
+        /// Plist domain.
         domain: String,
+        /// Plist key.
         key: String,
+        /// Wanted plist value (in yaml).
         value: String,
+        /// Source error.
         source: serde_yaml::Error,
     },
     /** Defaults command failed with exit code {status}
@@ -94,15 +100,21 @@ pub enum DefaultsError {
      * Stderr: {stderr}
      */
     DefaultsCmd {
+        /// Command that failed.
         command: String,
+        /// Command stdout.
         stdout: String,
+        /// Command stderr.
         stderr: String,
+        /// Return code of command.
         status: ExitStatus,
     },
 
     /// Unable to create dir at: {path}.
     DirCreation {
+        /// Dir we failed to create.
         path: Utf8PathBuf,
+        /// Source error.
         source: std::io::Error,
     },
 
@@ -113,26 +125,39 @@ pub enum DefaultsError {
     To: {to_path}
     */
     FileCopy {
+        /// Path we tried to copy from.
         from_path: Utf8PathBuf,
+        /// Path we tried to copy to.
         to_path: Utf8PathBuf,
+        /// Source error.
         source: std::io::Error,
     },
 
     /// Failed to read bytes from path {path}.
     FileRead {
+        /// File we tried to read.
         path: Utf8PathBuf,
+        /// Source error.
         source: std::io::Error,
     },
 
     /// Unable to find user's home directory.
-    MissingHomeDir { source: color_eyre::Report },
+    MissingHomeDir {
+        /// Source error.
+        source: color_eyre::Report,
+    },
 
     /**
     Key not present in plist for this domain.
     Domain: {domain:?}
     Key: {key:?}
     */
-    MissingKey { domain: String, key: String },
+    MissingKey {
+        /// Plist domain.
+        domain: String,
+        /// Plist key.
+        key: String,
+    },
 
     /**
     Expected to find a plist dictionary, but found a {plist_type} instead.
@@ -140,20 +165,27 @@ pub enum DefaultsError {
     Key: {key:?}
     */
     NotADictionary {
+        /// Plist domain.
         domain: String,
+        /// Plist key.
         key: String,
+        /// Type found instead of a dictionary.
         plist_type: &'static str,
     },
 
     /// Failed to read Plist file {path}.
     PlistRead {
+        /// Path to plist file we failed to read.
         path: Utf8PathBuf,
+        /// Source error.
         source: plist::Error,
     },
 
     /// Failed to write value to plist file {path}
     PlistWrite {
+        /// Path to plist file we failed to write.
         path: Utf8PathBuf,
+        /// Source error.
         source: plist::Error,
     },
 
@@ -163,8 +195,11 @@ pub enum DefaultsError {
     Key: {key:?}
     */
     SerializationFailed {
+        /// Plist domain we failed to serialize.
         domain: String,
+        /// Plist key we failed to serialize.
         key: Option<String>,
+        /// Source error.
         source: serde_yaml::Error,
     },
 
@@ -173,7 +208,12 @@ pub enum DefaultsError {
     Domain: {domain}
     Key: {key}
     */
-    TooFewArgumentsWrite { domain: String, key: String },
+    TooFewArgumentsWrite {
+        /// Plist domain found.
+        domain: String,
+        /// Plist key found.
+        key: String,
+    },
 
     /**
     The global_domain flag was set, so not expecting both a domain and a key to be passed.
@@ -181,7 +221,9 @@ pub enum DefaultsError {
     Key: {key:?}
     */
     TooManyArgumentsRead {
+        /// Plist domain found.
         domain: Option<String>,
+        /// Plist key found.
         key: Option<String>,
     },
 
@@ -197,19 +239,29 @@ pub enum DefaultsError {
     Value: {value:?}
     */
     TooManyArgumentsWrite {
+        /// Plist domain found.
         domain: String,
+        /// Plist key found.
         key: String,
+        /// Plist value found.
         value: Option<String>,
     },
 
     /// Yaml value claimed to be a string but failed to convert to one: '{value}'.
-    UnexpectedNumber { value: String },
+    UnexpectedNumber {
+        /// Plist value.
+        value: String,
+    },
 
-    /// Unablet to get plist filename. Path: {path}.
-    UnexpectedPlistPath { path: Utf8PathBuf },
+    /// Unable to get plist filename. Path: {path}.
+    UnexpectedPlistPath {
+        /// Path to plist file.
+        path: Utf8PathBuf,
+    },
 
     /// Yaml value claimed to be a string but failed to convert to one: '{value:?}'.
     UnexpectedString {
+        /// Value and conversion error.
         value: Result<String, serde_yaml::Error>,
     },
 
@@ -217,6 +269,7 @@ pub enum DefaultsError {
     UnexpectedNone,
 }
 
+/// `up defaults read` command.
 pub(crate) fn read(defaults_opts: DefaultsReadOptions) -> Result<(), E> {
     let (domain, key) = if defaults_opts.global_domain {
         if defaults_opts.key.is_some() {
@@ -269,6 +322,7 @@ pub(crate) fn read(defaults_opts: DefaultsReadOptions) -> Result<(), E> {
     Ok(())
 }
 
+/// `up defaults write` command.
 pub(crate) fn write(defaults_opts: DefaultsWriteOptions, up_dir: &Utf8Path) -> Result<(), E> {
     let (domain, key, value) = if defaults_opts.global_domain {
         if defaults_opts.value.is_some() {

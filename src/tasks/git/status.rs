@@ -1,25 +1,29 @@
+//! Show repo status.
 use std::fmt::Write as _; // import without risk of name clashing
 
 use camino::Utf8Path;
-use color_eyre::eyre::{ensure, Result};
+use color_eyre::eyre::{ensure, eyre, Result};
 use git2::{BranchType, Config, ErrorCode, Repository, StatusOptions, Statuses, SubmoduleIgnore};
 use tracing::{trace, warn};
 
-use crate::tasks::git::{
-    branch::{get_branch_name, get_push_branch},
-    cherry::unmerged_commits,
-    errors::GitError as E,
+use crate::{
+    tasks::git::{
+        branch::{get_branch_name, get_push_branch},
+        cherry::unmerged_commits,
+        errors::GitError as E,
+    },
+    utils::files::to_utf8_path,
 };
 
 /// Check the repo is clean, equivalent to running `git status --porcelain` and
 /// checking everything looks good.
 pub(super) fn ensure_repo_clean(repo: &Repository) -> Result<()> {
     let statuses = repo_statuses(repo)?;
-    trace!("Repo statuses: '{}'", status_short(repo, &statuses));
+    trace!("Repo statuses: '{}'", status_short(repo, &statuses)?);
     ensure!(
         statuses.is_empty(),
         E::UncommittedChanges {
-            status: status_short(repo, &statuses)
+            status: status_short(repo, &statuses)?
         }
     );
     Ok(())
@@ -50,7 +54,7 @@ pub(super) fn warn_for_unpushed_changes(
         if !statuses.is_empty() {
             warn!(
                 "Repo {git_path} has uncommitted changes:\n{}",
-                status_short(repo, &statuses)
+                status_short(repo, &statuses)?
             );
         }
     }
@@ -155,7 +159,7 @@ fn repo_statuses(repo: &Repository) -> Result<Statuses> {
 /// This version of the output prefixes each path with two status columns and
 /// shows submodule status information.
 #[allow(clippy::too_many_lines, clippy::useless_let_if_seq)]
-fn status_short(repo: &Repository, statuses: &git2::Statuses) -> String {
+fn status_short(repo: &Repository, statuses: &git2::Statuses) -> Result<String> {
     let mut output = String::new();
     for entry in statuses
         .iter()
@@ -225,30 +229,18 @@ fn status_short(repo: &Repository, statuses: &git2::Statuses) -> String {
             b = b.or_else(|| diff.old_file().path());
             c = diff.new_file().path();
         }
-        let a = a.map(|a| Utf8Path::from_path(a).unwrap());
-        let b = b.map(|b| Utf8Path::from_path(b).unwrap());
-        let c = c.map(|c| Utf8Path::from_path(c).unwrap());
+        let a = to_utf8_path(a.ok_or_else(|| eyre!("Couldn't work out diff status a"))?)?;
+        let b = to_utf8_path(b.ok_or_else(|| eyre!("Couldn't work out diff status b"))?)?;
+        let c = to_utf8_path(c.ok_or_else(|| eyre!("Couldn't work out diff status c"))?)?;
 
         output += &match (index_status, worktree_status) {
-            ('R', 'R') => format!("RR {} {} {}{}\n", a.unwrap(), b.unwrap(), c.unwrap(), extra),
-            ('R', worktree_status) => format!(
-                "R{} {} {}{}\n",
-                worktree_status,
-                a.unwrap(),
-                b.unwrap(),
-                extra
-            ),
+            ('R', 'R') => format!("RR {a} {b} {c}{extra}\n"),
+            ('R', worktree_status) => format!("R{worktree_status} {a} {b}{extra}\n"),
             (index_status, 'R') => {
-                format!("{}R {} {}{}\n", index_status, a.unwrap(), c.unwrap(), extra)
+                format!("{index_status}R {a} {c}{extra}\n")
             }
             (index_status, worktree_status) => {
-                format!(
-                    "{}{} {}{}\n",
-                    index_status,
-                    worktree_status,
-                    a.unwrap(),
-                    extra
-                )
+                format!("{index_status}{worktree_status} {a}{extra}\n")
             }
         }
     }
@@ -260,9 +252,15 @@ fn status_short(repo: &Repository, statuses: &git2::Statuses) -> String {
         _ = writeln!(
             output,
             "?? {}",
-            Utf8Path::from_path(entry.index_to_workdir().unwrap().old_file().path().unwrap())
-                .unwrap()
+            to_utf8_path(
+                entry
+                    .index_to_workdir()
+                    .ok_or_else(|| eyre!("Couldn't find the workdir for current status entry."))?
+                    .old_file()
+                    .path()
+                    .ok_or_else(|| eyre!("Couldn't work out path to old file."))?
+            )?
         );
     }
-    output
+    Ok(output)
 }

@@ -26,5 +26,11 @@ use_field_init_shorthand = true
 # https://github.com/rust-lang/rustfmt/issues/3863
 format_strings = true
 
+# Error if the line was still too long after we formatted.
+error_on_line_overflow = true
+# Error if rustfmt failed to format something.
+# Can be run with `cargo +nightly fmt -- --config error_on_unformatted=true`
+# error_on_unformatted = true
+
 # Error on TODOs (use FIXME for long-running things).
 # report_todo = "Always"

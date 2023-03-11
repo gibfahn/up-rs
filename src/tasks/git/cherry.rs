@@ -1,6 +1,7 @@
+//! `git cherry` command equivalent, finds equivalent commits.
 use std::{collections::HashSet, io::Read};
 
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{eyre, Result};
 use git2::{Branch, DiffFormat, DiffOptions, Oid, Repository, Revwalk};
 use ring::digest::{Context, Digest, SHA256};
 use tracing::trace;
@@ -100,6 +101,7 @@ fn patch_id(repo: &Repository, id: Oid) -> Result<Digest> {
     sha256_digest(&trimmed_diff[..])
 }
 
+/// Convert a u32 to array of 4 u8s.
 #[allow(clippy::cast_possible_truncation)]
 const fn u32_to_u8_array(x: u32) -> [u8; 4] {
     let b1: u8 = ((x >> 24) & 0xff) as u8;
@@ -110,6 +112,7 @@ const fn u32_to_u8_array(x: u32) -> [u8; 4] {
     [b1, b2, b3, b4]
 }
 
+/// Get the sha256 checksum of some input data.
 fn sha256_digest<R: Read>(mut reader: R) -> Result<Digest> {
     let mut context = Context::new(&SHA256);
     let mut buffer = [0; 1024];
@@ -119,12 +122,17 @@ fn sha256_digest<R: Read>(mut reader: R) -> Result<Digest> {
         if count == 0 {
             break;
         }
-        context.update(&buffer[..count]);
+        context.update(buffer.get(..count).ok_or_else(|| {
+            eyre!(
+                "Logic error in up-rs, we should have just confirmed that the buffer wasn't empty."
+            )
+        })?);
     }
 
     Ok(context.finish())
 }
 
+/// Get a list of revisions between two references.
 fn rev_list(repo: &Repository, from: Oid, to: Oid) -> Result<Revwalk> {
     let mut revwalk = repo.revwalk()?;
     // TODO(gib): do I need to set a revwalk.set_sorting(Sort::REVERSE) here?

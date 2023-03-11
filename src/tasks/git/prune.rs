@@ -1,3 +1,4 @@
+//! Prune unneeded local branches (merged PR branches deleted upstream).
 use color_eyre::eyre::Result;
 use git2::{Branch, BranchType, Repository};
 use tracing::{debug, trace};

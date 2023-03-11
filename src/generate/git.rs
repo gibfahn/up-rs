@@ -1,3 +1,4 @@
+//! Generate up config files by parsing git repositories.
 use std::fs;
 
 use camino::{Utf8Path, Utf8PathBuf};
@@ -21,6 +22,7 @@ use crate::{
     utils::files,
 };
 
+/// Run the up git config generation on a set of directories.
 pub fn run(configs: &[GenerateGitConfig]) -> Result<TaskStatus> {
     let (statuses, errors): (Vec<_>, Vec<_>) =
         configs
@@ -46,6 +48,7 @@ pub fn run(configs: &[GenerateGitConfig]) -> Result<TaskStatus> {
     }
 }
 
+/// Run a single git config generation.
 pub fn run_single(generate_git_config: &GenerateGitConfig) -> Result<TaskStatus> {
     debug!(
         "Generating git config for: {path}",
@@ -115,6 +118,7 @@ impl ResolveEnv for Vec<GenerateGitConfig> {
     }
 }
 
+/// Find repositories in a set of search paths.
 fn find_repos(
     search_paths: &[Utf8PathBuf],
     excludes: Option<&Vec<String>>,
@@ -158,6 +162,7 @@ fn find_repos(
     Ok(repo_paths)
 }
 
+/// Generate an up git config from a git repo.
 fn parse_git_config(
     path: &Utf8Path,
     prune: bool,
@@ -211,7 +216,10 @@ pub enum GenerateGitError {
     /// Invalid UTF-8.
     InvalidUtf8,
     /// Invalid remote '{name}'.
-    InvalidRemote { name: String },
+    InvalidRemote {
+        /// Remote name.
+        name: String,
+    },
     /// Unexpected None in option.
     UnexpectedNone,
 }

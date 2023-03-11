@@ -1,3 +1,4 @@
+//! Overall errors thrown by the up crate.
 use std::io;
 
 use camino::Utf8PathBuf;
@@ -9,16 +10,18 @@ use thiserror::Error;
 pub enum UpError {
     /// Failed to delete '{path}'.
     DeleteError {
+        /// Path we tried to delete.
         path: Utf8PathBuf,
+        /// Source error.
         source: io::Error,
     },
     /// IO Failure for path '{path}'.
     IoError {
+        /// Path we tried to write to.
         path: Utf8PathBuf,
+        /// Source error.
         source: io::Error,
     },
     /// Couldn't calculate the current user's home directory.
     NoHomeDir,
-    /// Path contained invalid UTF-8 characters: {path}
-    InvalidUTF8Path { path: Utf8PathBuf },
 }

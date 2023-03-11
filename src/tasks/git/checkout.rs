@@ -1,3 +1,4 @@
+//! Checkout a git branch or ref.
 use std::{convert::Into, str};
 
 use color_eyre::eyre::{bail, eyre, Result};
@@ -135,6 +136,7 @@ fn force_checkout_head(repo: &Repository) -> Result<()> {
     Ok(())
 }
 
+/// Work out whether we need to checkout a branch (usually because the repo was newly-created).
 pub(super) fn needs_checkout(repo: &Repository, branch_name: &str) -> bool {
     match repo.head().map_err(Into::into).and_then(|h| {
         h.shorthand()

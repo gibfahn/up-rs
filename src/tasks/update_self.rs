@@ -1,3 +1,4 @@
+//! The `up self` library, for updating the CLI itself.
 use std::{
     env,
     fs::{self, File, Permissions},
@@ -20,13 +21,17 @@ use crate::{
     tasks::{task::TaskStatus, ResolveEnv},
 };
 
+/// GitHub latest release API endpoint JSON response.
+/// <https://docs.github.com/en/rest/releases/releases?apiVersion=2022-11-28#get-the-latest-release>
 #[derive(Debug, Deserialize)]
 struct GitHubReleaseJsonResponse {
+    /// Name of the git tag the release is for.
     tag_name: String,
 }
 
-// Name user agent after the app, e.g. up-rs/1.2.3.
+/// Name user agent after the app, e.g. up-rs/1.2.3.
 const APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"),);
+/// Current version of up-rs we're building.
 const CURRENT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 impl ResolveEnv for UpdateSelfOptions {}
@@ -109,13 +114,27 @@ pub(crate) fn run(opts: &UpdateSelfOptions) -> Result<TaskStatus> {
 /// Errors thrown by this file.
 pub enum UpdateSelfError {
     /// Failed to create directory '{path}'
-    CreateDir { path: Utf8PathBuf },
+    CreateDir {
+        /// Dir path we failed to create.
+        path: Utf8PathBuf,
+    },
     /// Failed to create file '{path}'
-    CreateFile { path: Utf8PathBuf },
+    CreateFile {
+        /// File path we failed to create.
+        path: Utf8PathBuf,
+    },
     /// Failed to copy to destination file.
     Copy,
     /// Failed to set permissions for {path}.
-    SetPermissions { path: Utf8PathBuf },
+    SetPermissions {
+        /// Path we failed to set permissions for.
+        path: Utf8PathBuf,
+    },
     /// Failed to rename {from} to {to}.
-    Rename { from: Utf8PathBuf, to: Utf8PathBuf },
+    Rename {
+        /// Old name (path).
+        from: Utf8PathBuf,
+        /// Attempted new name (path).
+        to: Utf8PathBuf,
+    },
 }

@@ -1,3 +1,4 @@
+//! Update a git repo.
 // TODO(gib): Use https://lib.rs/crates/indicatif for progress bars and remove this.
 #![allow(clippy::print_stdout, clippy::unwrap_used)]
 use std::{
@@ -26,6 +27,7 @@ use crate::tasks::{
     task::TaskStatus,
 };
 
+/// Update a git repo.
 pub(crate) fn update(git_config: &GitConfig) -> Result<TaskStatus> {
     let now = Instant::now();
     let result = real_update(git_config)
@@ -208,6 +210,7 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<bool> {
     Ok(did_work)
 }
 
+/// Set up the specified remote in a git repo.
 fn set_up_remote(repo: &Repository, remote_config: &GitRemote) -> Result<bool> {
     let mut did_work = false;
     let remote_name = &remote_config.name;

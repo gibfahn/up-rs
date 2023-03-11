@@ -1,3 +1,4 @@
+//! Fetch updates to a branch.
 use std::{thread, time::Duration};
 
 use color_eyre::eyre::Result;

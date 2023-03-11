@@ -1,3 +1,4 @@
+//! Up task execution.
 use std::{
     collections::HashMap,
     fmt::{self, Display},
@@ -21,6 +22,7 @@ use crate::{
     tasks::{defaults::DefaultsConfig, git::GitConfig, ResolveEnv, TaskError as E},
 };
 
+/// Possible statuses an asynchronously running task can have.
 #[derive(Debug)]
 pub enum TaskStatus {
     /// Skipped.
@@ -33,15 +35,23 @@ pub enum TaskStatus {
     Failed(E),
 }
 
+/// A task's state.
 #[derive(Debug)]
 pub struct Task {
+    /// Task name.
     pub name: String,
+    /// Path to the task config on disk.
     pub path: Utf8PathBuf,
+    /// The parsed task config file contents.
     pub config: TaskConfig,
+    /// When the task was started.
     pub start_time: Instant,
+    /// Current task status.
     pub status: TaskStatus,
 }
 
+/// Configuration a task can have, a `~/.config/up/tasks/<name>.yaml` will deserialize to this
+/// struct.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct TaskConfig {
@@ -115,6 +125,7 @@ impl Display for CommandType {
 }
 
 impl Task {
+    /// Parse a Task from a path to a task config file.
     pub fn from(path: &Utf8Path) -> Result<Self> {
         let start_time = Instant::now();
         let s = fs::read_to_string(path).map_err(|e| E::ReadFile {
@@ -144,6 +155,7 @@ impl Task {
         Ok(task)
     }
 
+    /// Run a task.
     pub fn run<F>(&mut self, env_fn: F, env: &HashMap<String, String>, up_dir: &Utf8Path)
     where
         F: Fn(&str) -> Result<String, E>,
@@ -154,6 +166,7 @@ impl Task {
         }
     }
 
+    /// Try to run the task.
     pub fn try_run<F>(
         &mut self,
         env_fn: F,
@@ -358,7 +371,7 @@ where
         None if has_default => return Ok(T::default()),
         None => {
             return Err(E::TaskDataRequired {
-                task: task_name.to_string(),
+                task: task_name.to_owned(),
             });
         }
     };

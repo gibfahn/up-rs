@@ -1,9 +1,11 @@
+//! Git branch shortcuts.
 use color_eyre::eyre::{Context, Result};
 use git2::{Branch, BranchType, Direction, ErrorCode, Remote, Repository};
 use tracing::{debug, trace, warn};
 
 use crate::tasks::git::{errors::GitError as E, fetch::remote_callbacks, update::get_config_value};
 
+/// Delete a git branch.
 pub(in crate::tasks::git) fn delete_branch(repo: &Repository, branch: &mut Branch) -> Result<()> {
     warn!(
         "Deleting '{}' branch '{}', was at '{}'",
@@ -84,7 +86,7 @@ fn get_push_remote(branch: &str, config: &git2::Config) -> Result<Option<String>
     Ok(None)
 }
 
-// Return the HEAD branch of the specified remote in the repository.
+/// Return the HEAD branch of the specified remote in the repository.
 pub(super) fn calculate_head(repo: &Repository, remote: &mut Remote) -> Result<String> {
     let head_if_set = repo.head();
     Ok(match head_if_set {

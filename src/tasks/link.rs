@@ -1,3 +1,4 @@
+//! The link library task.
 use std::{
     fs,
     io::{self, ErrorKind},
@@ -124,7 +125,7 @@ fn resolve_directory(dir_path: Utf8PathBuf, name: &str) -> Result<Utf8PathBuf> {
     ensure!(
         &dir_path.is_dir(),
         LinkError::MissingDir {
-            name: name.to_string(),
+            name: name.to_owned(),
             path: dir_path
         }
     );
@@ -192,6 +193,7 @@ fn create_parent_dir(to_dir: &Utf8Path, rel_path: &Utf8Path, backup_dir: &Utf8Pa
     })
 }
 
+/// Get the parent directory of a path.
 fn get_parent_path(path: &Utf8Path) -> Result<&Utf8Path> {
     Ok(path.parent().ok_or_else(|| LinkError::MissingParentDir {
         path: path.to_path_buf(),
@@ -282,39 +284,61 @@ fn link_path(
 /// Errors thrown by this file.
 pub enum LinkError {
     /// {name} directory '{path}' should exist and be a directory.
-    MissingDir { name: String, path: Utf8PathBuf },
+    MissingDir {
+        /// Directory name.
+        name: String,
+        /// Directory path.
+        path: Utf8PathBuf,
+    },
     /// Error canonicalizing {path}.
     CanonicalizeError {
+        /// Path we failed  to canonicalize.
         path: Utf8PathBuf,
+        /// Source error.
         source: io::Error,
     },
     /// Failed to create directory '{path}'
     CreateDirError {
+        /// Directory path we failed to create.
         path: Utf8PathBuf,
+        /// Source error.
         source: io::Error,
     },
     /// Failed to delete '{path}'.
     DeleteError {
+        /// Path we failed to delete.
         path: Utf8PathBuf,
+        /// Source error.
         source: io::Error,
     },
     /// Failure for path '{path}'.
     IoError {
+        /// Path we got an IO error for.
         path: Utf8PathBuf,
+        /// Source error.
         source: io::Error,
     },
     /// Failed to rename from '{from_path}' to '{to_path}'.
     RenameError {
+        /// Existing name.
         from_path: Utf8PathBuf,
+        /// New name.
         to_path: Utf8PathBuf,
+        /// Source error.
         source: io::Error,
     },
     /// Failed to symlink from '{from_path}' to '{to_path}'.
     SymlinkError {
+        /// Real file we were trying to symlink from.
         from_path: Utf8PathBuf,
+        /// Symbolic link we were trying to create.
         to_path: Utf8PathBuf,
+        /// Source error.
         source: io::Error,
     },
     /// Path '{path}' should have a parent directory.
-    MissingParentDir { path: Utf8PathBuf },
+    MissingParentDir {
+        /// Path that doesn't have a parent dir.
+        path: Utf8PathBuf,
+    },
 }

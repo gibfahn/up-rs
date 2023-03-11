@@ -13,19 +13,26 @@ use crate::{
     utils::files,
 };
 
+/// Internal state used by subcommands.
 #[derive(Default, Debug)]
 pub struct UpConfig {
+    /// Path to the up config file.
     pub up_yaml_path: Option<Utf8PathBuf>,
+    /// Contents of the up config file.
     pub config_yaml: ConfigYaml,
+    /// Whether we are in bootstrap mode.
     pub bootstrap: bool,
+    /// Whether we should keep going if a task fails in bootstrap mode.
     pub keep_going: bool,
+    /// The list of tasks to execute.
     pub tasks: Option<Vec<String>>,
+    /// Temporary directory to use for up command execution.
     pub temp_dir: Utf8PathBuf,
 }
 
 // TODO(gib): Provide a way for users to easily validate their yaml files.
 // TODO(gib): these should be overridable with command-line options (especially the env).
-/// Basic config, doesn't parse the full set of update scripts.
+/// The up config file, `up.yaml`.
 #[derive(Default, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ConfigYaml {

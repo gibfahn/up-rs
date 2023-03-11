@@ -1,3 +1,4 @@
+//! Builds environment variable sets for command execution.
 use std::collections::HashMap;
 
 use color_eyre::eyre::{bail, eyre, Result};
@@ -9,6 +10,8 @@ use self::EnvError as E;
 use crate::utils::files;
 
 // TODO(gib): add tests for cyclical config values etc.
+/// Build a set of environment variables from the up config settings and the current command's
+/// environment..
 pub fn get_env(
     inherit_env: Option<&Vec<String>>,
     input_env: Option<&HashMap<String, String>>,
@@ -114,7 +117,9 @@ pub fn get_env(
 pub enum EnvError {
     /// Env lookup error, please define '{var:?}' in your up.yaml:"
     EnvLookup {
+        /// Missing env var.
         var: String,
+        /// Source error.
         source: color_eyre::eyre::Error,
     },
 }

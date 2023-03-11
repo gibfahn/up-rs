@@ -1,3 +1,4 @@
+//! Logic for dealing with tasks executed by up.
 use std::{
     collections::{HashMap, HashSet},
     io,
@@ -32,6 +33,8 @@ pub mod update_self;
 
 // TODO(gib): use tui Terminal UI lib (https://crates.io/keywords/tui) for better UI.
 
+/// Trait that tasks implement to specify how to replace environment variables in their
+/// configuration.
 pub trait ResolveEnv {
     /// Expand env vars in `self` by running `enf_fn()` on its component
     /// strings.
@@ -65,6 +68,7 @@ pub enum TasksDir {
 }
 
 impl TasksDir {
+    /// The default directory names for task types.
     fn to_dir_name(self) -> String {
         match self {
             TasksDir::Tasks => "tasks".to_owned(),
@@ -165,6 +169,7 @@ pub fn run(
     Ok(())
 }
 
+/// Runs a set of tasks.
 fn run_tasks(
     bootstrap_tasks: Vec<String>,
     mut tasks: HashMap<String, task::Task>,
@@ -255,6 +260,7 @@ fn run_tasks(
     Ok(())
 }
 
+/// Runs a specific task.
 fn run_task(mut task: Task, env: &HashMap<String, String>, up_dir: &Utf8Path) -> Task {
     let env_fn = &|s: &str| {
         let home_dir = files::home_dir().map_err(|e| E::EyreError { source: e })?;
@@ -286,70 +292,107 @@ fn run_task(mut task: Task, env: &HashMap<String, String>, up_dir: &Utf8Path) ->
 pub enum TaskError {
     /// Task '{name}' {lib} failed.
     TaskError {
+        /// Source error.
         source: color_eyre::eyre::Error,
+        /// The task library we were running.
         lib: String,
+        /// The task name.
         name: String,
     },
     /// Error walking directory '{path}':
     ReadDir {
+        /// The path we failed to walk.
         path: Utf8PathBuf,
+        /// Source error.
         source: io::Error,
     },
     /// Error reading file '{path}':
     ReadFile {
+        /// The path we failed to read.
         path: Utf8PathBuf,
+        /// Source error.
         source: io::Error,
     },
     /// Env lookup error, please define '{var}' in your up.yaml:"
     EnvLookup {
+        /// THe env var we couldn't find.
         var: String,
+        /// Source error.
         source: color_eyre::eyre::Error,
     },
     /// Commmand was empty.
     EmptyCmd,
     /// Task '{name}' had no run command.
-    MissingCmd { name: String },
+    MissingCmd {
+        /// The task name.
+        name: String,
+    },
     /**
     Task '{name}' {command_type} failed.Command: {cmd:?}.{suggestion}
     */
     CmdFailed {
+        /// The type of command that failed (check or run).
         command_type: CommandType,
+        /// Task name.
         name: String,
+        /// Source error.
         source: io::Error,
+        /// The command itself.
         cmd: Vec<String>,
+        /// Suggestion for how to fix it.
         suggestion: String,
     },
     /// Task '{name}' {command_type} failed with exit code {code}. Command: {cmd:?}.
     CmdNonZero {
+        /// The type of command that failed (check or run).
         command_type: CommandType,
+        /// Task name.
         name: String,
+        /// The command itself.
         cmd: Vec<String>,
+        /// Error code.
         code: i32,
     },
     /// Task '{name}' {command_type} was terminated. Command: {cmd:?}.
     CmdTerminated {
+        /// The type of command that failed (check or run).
         command_type: CommandType,
+        /// Task name.
         name: String,
+        /// The command itself.
         cmd: Vec<String>,
     },
     /// Unexpectedly empty option found.
     UnexpectedNone,
     /// Invalid yaml at '{path}':
     InvalidYaml {
+        /// Path that contained invalid yaml.
         path: Utf8PathBuf,
+        /// Source error.
         source: serde_yaml::Error,
     },
     /// Unable to calculate the current user's home directory.
     MissingHomeDir,
     /// Env lookup error, please define '{var}' in your up.yaml
     ResolveEnv {
+        /// Env var we couldn't find.
         var: String,
+        /// Source error.
         source: color_eyre::eyre::Error,
     },
     /// Task {task} must have data.
-    TaskDataRequired { task: String },
+    TaskDataRequired {
+        /// Task name.
+        task: String,
+    },
     /// Failed to parse the config.
-    DeserializeError { source: serde_yaml::Error },
+    DeserializeError {
+        /// Source error.
+        source: serde_yaml::Error,
+    },
     /// Task error.
-    EyreError { source: color_eyre::Report },
+    EyreError {
+        /// Source error.
+        source: color_eyre::Report,
+    },
 }

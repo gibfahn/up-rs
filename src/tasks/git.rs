@@ -1,3 +1,4 @@
+//! The git library task.
 use std::convert::From;
 
 use camino::Utf8PathBuf;
@@ -26,8 +27,10 @@ pub mod prune;
 pub mod status;
 pub mod update;
 
+/// Default git remote name.
 pub const DEFAULT_REMOTE_NAME: &str = "origin";
 
+/// `up git` configuration options.
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct GitConfig {
     /// Path to download git repo to.
@@ -44,11 +47,12 @@ pub struct GitConfig {
     pub prune: bool,
 }
 
-// Serde needs a function to set a default.
+/// Serde needs a function to set a default, so this sets a default of false.
 const fn prune_default() -> bool {
     false
 }
 
+/// Run the `up git` task.
 pub(crate) fn run(configs: &[GitConfig]) -> Result<TaskStatus> {
     let (statuses, errors): (Vec<_>, Vec<_>) = configs
         .par_iter()
@@ -112,6 +116,7 @@ impl ResolveEnv for Vec<GitConfig> {
     }
 }
 
+/// Represents a git remote.
 #[derive(Debug, Default, Parser, Serialize, Deserialize)]
 pub struct GitRemote {
     /// Name of the remote to set in git.
@@ -124,6 +129,7 @@ pub struct GitRemote {
 }
 
 impl GitRemote {
+    /// Create a git remote from a git2-rs remote.
     pub(crate) fn from(remote: &Remote) -> Result<Self> {
         let fetch_url = remote.url().ok_or(E::InvalidRemote)?.to_owned();
 

@@ -1,3 +1,4 @@
+//! Utility functions for updating plist files.
 use std::{
     collections::HashMap,
     fs::{self, File},
@@ -97,6 +98,7 @@ pub(super) fn plist_path(domain: &str) -> Result<Utf8PathBuf, E> {
     Ok(plist_path)
 }
 
+/// String representation of a plist Value's type.
 pub(super) fn get_plist_value_type(plist: &plist::Value) -> &'static str {
     match plist {
         p if p.as_array().is_some() => "array",
@@ -129,6 +131,7 @@ pub(super) fn is_binary(file: &Utf8Path) -> Result<bool, E> {
     Ok(&magic == b"bplist00")
 }
 
+/// Write a `HashMap` of key-value pairs to a plist file.
 pub(super) fn write_defaults_values(
     domain: &str,
     prefs: HashMap<String, plist::Value>,
@@ -159,7 +162,7 @@ pub(super) fn write_defaults_values(
             .as_dictionary()
             .ok_or_else(|| E::NotADictionary {
                 domain: domain.to_owned(),
-                key: key.to_string(),
+                key: key.clone(),
                 plist_type: get_plist_value_type(&plist_value),
             })?
             .get(&key);
@@ -190,7 +193,7 @@ pub(super) fn write_defaults_values(
             .as_dictionary_mut()
             .ok_or_else(|| E::NotADictionary {
                 domain: domain.to_owned(),
-                key: key.to_string(),
+                key: key.clone(),
                 plist_type,
             })?
             .insert(key, new_value);
