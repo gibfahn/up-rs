@@ -23,7 +23,7 @@ use thiserror::Error;
 use tracing::{debug, trace};
 
 use self::EnvError as E;
-use crate::utils::{files, mac};
+use crate::utils::files;
 
 /// Environment variable name that is automatically provided for users to refer to, particularly in
 /// the defaults `run_lib` or subcommand.
@@ -140,7 +140,7 @@ fn add_builtin_env_vars(env: &mut HashMap<String, String>) -> Result<()> {
     env.insert(
         UP_HARDWARE_UUID.to_owned(),
         if cfg!(target_os = "macos") {
-            mac::get_hardware_uuid()?
+            crate::utils::mac::get_hardware_uuid()?
         } else {
             String::new()
         },

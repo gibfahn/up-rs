@@ -35,11 +35,11 @@ struct IoRegistryEntryChildren {
     io_platform_uuid: String,
 }
 
+#[cfg(target_os = "macos")]
 #[cfg(test)]
 mod tests {
     use color_eyre::Result;
 
-    #[cfg(target_os = "macos")]
     #[test]
     fn test_get_hardware_uuid() -> Result<()> {
         use crate::{cmd, utils::mac::get_hardware_uuid};
