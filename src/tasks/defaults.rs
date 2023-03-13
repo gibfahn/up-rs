@@ -57,6 +57,7 @@ data:
 */
 
 mod plist_utils;
+mod ser;
 
 use std::{collections::HashMap, process::ExitStatus};
 
@@ -73,6 +74,7 @@ use crate::{
     tasks::{
         defaults::{
             plist_utils::{get_plist_value_type, plist_path, write_defaults_values},
+            ser::replace_data_in_plist,
             DefaultsError as E,
         },
         task::TaskStatus,
@@ -398,14 +400,24 @@ pub(crate) fn read(current_host: bool, defaults_opts: DefaultsReadOptions) -> Re
         None => &plist,
     };
 
-    print!(
-        "{}",
-        serde_yaml::to_string(value).map_err(|e| E::SerializationFailed {
+    let serialization_result = serde_yaml::to_string(value);
+    let serialized_string = if let Ok(s) = serialization_result {
+        s
+    } else {
+        warn!(
+            "Serializing plist value to YAML failed, assuming this is because it contained binary \
+             data and replacing that with hex-encoded binary data. This is incorrect, but allows \
+             the output to be printed."
+        );
+        let mut value = value.clone();
+        replace_data_in_plist(&mut value).map_err(|e| E::EyreError { source: e })?;
+        serde_yaml::to_string(&value).map_err(|e| E::SerializationFailed {
             domain,
             key,
-            source: e
+            source: e,
         })?
-    );
+    };
+    print!("{serialized_string}");
     Ok(())
 }
 
