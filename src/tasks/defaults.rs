@@ -32,7 +32,7 @@ e.g. to set the preference returned by `defaults -currentHost read -globalDomain
 ```yaml
 run_lib: defaults
 data:
-  ~/Library/Preferences/ByHost/.GlobalPreferences.${UP_HARDWARE_UUID}:
+  ~/Library/Preferences/ByHost/.GlobalPreferences.${UP_HARDWARE_UUID}.plist:
       # Enable Tap to Click for the current user.
       com.apple.mouse.tapBehavior: 1
 ```
