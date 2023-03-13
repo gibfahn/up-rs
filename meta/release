@@ -39,8 +39,8 @@ main() {
   (( $+commands[git-cliff] )) || brew install git-cliff
 
   # Delete stale files.
-  rm -rf build/
-  rm -f target/universal-apple-darwin/release/$binary_name
+  rm -rfv build/
+  rm -fv target/universal-apple-darwin/release/$binary_name
   mkdir -p build/
 
   if [[ -n ${SKIP_GIT_DIFF_CHECK:-} ]]; then
@@ -135,7 +135,7 @@ main() {
     --notes="$(git cliff --tag="${new_version?}" --strip=all "${last_release}"..)" \
     $macos_binary \
     $linux_binary
-  rm -r out
+  rm -rv build/
 
   new_release=$(gh release list -L 1 | awk '{print $1}')
   gh release view $new_release
