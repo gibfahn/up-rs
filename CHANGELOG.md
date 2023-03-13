@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0](https://github.com/gibfahn/up-rs/releases/tag/0.14.0) (2023-03-13)
+
+### Bug Fixes
+- defaults: allow reading plist files with binary data in them ([4bacbef](https://github.com/gibfahn/up-rs/commit/4bacbef6b68871aa4dca4c4911745e642ad1d271))
+
+### Features
+- defaults: support adding to an existing array or dict with ... ([8438155](https://github.com/gibfahn/up-rs/commit/8438155ade9a8628f3994c92728db7c4b45a5033))
+- defaults: add support for writing per-host and root-owned defaults ([5d30359](https://github.com/gibfahn/up-rs/commit/5d30359b051574bb360bf6a1d15071c0beb8a1f7))
+
 ## [0.13.6](https://github.com/gibfahn/up-rs/releases/tag/0.13.6) (2023-03-06)
 
 ### Bug Fixes
