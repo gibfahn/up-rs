@@ -373,6 +373,7 @@ fn replace_ellipsis_dict(new_value: &mut plist::Value, old_value: Option<&plist:
     }
 }
 
+#[cfg(target_os = "macos")]
 #[cfg(test)]
 mod tests {
     use serial_test::serial;
