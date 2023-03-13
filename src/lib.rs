@@ -62,7 +62,7 @@ use crate::{
 };
 
 mod config;
-mod env;
+pub mod env;
 pub mod errors;
 pub mod exec;
 mod generate;
@@ -90,9 +90,15 @@ pub fn run(opts: Opts) -> Result<()> {
             tasks::git::update::update(&git_options.into())?;
         }
         Some(SubCommand::Defaults(defaults_options)) => match defaults_options.subcommand {
-            DefaultsSubcommand::Read(defaults_read_opts) => defaults::read(defaults_read_opts)?,
+            DefaultsSubcommand::Read(defaults_read_opts) => {
+                defaults::read(defaults_options.current_host, defaults_read_opts)?;
+            }
             DefaultsSubcommand::Write(defaults_write_opts) => {
-                defaults::write(defaults_write_opts, &opts.temp_dir)?;
+                defaults::write(
+                    defaults_options.current_host,
+                    defaults_write_opts,
+                    &opts.temp_dir,
+                )?;
             }
         },
         Some(SubCommand::Self_(cmd_opts)) => {

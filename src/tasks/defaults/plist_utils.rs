@@ -10,33 +10,19 @@ use itertools::Itertools;
 use plist::Dictionary;
 use tracing::{debug, info, trace, warn};
 
-use crate::{tasks::defaults::DefaultsError as E, utils::files};
+use crate::{
+    cmd,
+    tasks::defaults::DefaultsError as E,
+    utils::{files, mac},
+};
 
 /// A value or key-value pair that means "insert existing values here" for arrays and dictionaries.
 const ELLIPSIS: &str = "...";
 
-// TODO(gib): support `-currentHost`. Afaict this means looking at this file:
-//
-// ~/Library/Preferences/ByHost/{domain}.{hardware_uuid}.plist
-//
-// You can get the Hardware UUID from:
-// <https://apple.stackexchange.com/questions/342042/how-can-i-query-the-hardware-uuid-of-a-mac-programmatically-from-a-command-line>
-
-// TODO(gib): Support NSUserKeyEquivalents macOS defaults settings. Basically this means:
-// For any domain where we're writing a value to the NSUserKeyEquivalents key, we should go make
-// sure that this array contains the domain as a value.
-//
-// ```console
-// ❯ up defaults read com.apple.universalaccess com.apple.custommenu.apps
-// - NSGlobalDomain
-// - net.kovidgoyal.kitty
-// - com.apple.mail
-// ```
-
 /**
 Get the path to the plist file given a domain.
 
-This function does not handle `sudo` (root preferences, probably at /Library/Preferences/).
+This function does not handle root-owned preferences, e.g. those at `/Library/Preferences/`.
 
 ## Preferences Locations
 
@@ -57,33 +43,29 @@ Note that `defaults domains` actually prints out `~/Library/Containers/{*}/Data/
 - [macOS Containers and defaults](https://lapcatsoftware.com/articles/containers.html)
 - [Preference settings: where to find them in Mojave](https://eclecticlight.co/2019/08/28/preference-settings-where-to-find-them-in-mojave/)
 */
-pub(super) fn plist_path(domain: &str) -> Result<Utf8PathBuf, E> {
-    let home_dir = files::home_dir().map_err(|e| E::MissingHomeDir { source: e })?;
-    // Global Domain -> hardcoded value.
-    if domain == "NSGlobalDomain" {
-        let mut plist_path = home_dir;
-        plist_path.extend(&["Library", "Preferences", ".GlobalPreferences.plist"]);
-        return Ok(plist_path);
-    }
+pub(super) fn plist_path(domain: &str, current_host: bool) -> Result<Utf8PathBuf, E> {
     // User passed an absolute path -> use it directly.
     if domain.starts_with('/') {
         return Ok(Utf8PathBuf::from(domain));
     }
 
+    let home_dir = files::home_dir().map_err(|e| E::MissingHomeDir { source: e })?;
+
+    // Global Domain -> hardcoded value.
+    if domain == "NSGlobalDomain" {
+        let mut plist_path = home_dir;
+        let filename = plist_filename(".GlobalPreferences", current_host)?;
+        extend_with_prefs_folders(current_host, &mut plist_path, &filename);
+        return Ok(plist_path);
+    }
+
     // If user passed com.foo.bar.plist, trim it to com.foo.bar
     let domain = domain.trim_end_matches(".plist");
-    let domain_filename = format!("{domain}.plist");
+    let filename = plist_filename(domain, current_host)?;
 
     let mut sandboxed_plist_path = home_dir.clone();
-    sandboxed_plist_path.extend(&[
-        "Library",
-        "Containers",
-        domain,
-        "Data",
-        "Library",
-        "Preferences",
-        &domain_filename,
-    ]);
+    sandboxed_plist_path.extend(&["Library", "Containers", domain, "Data"]);
+    extend_with_prefs_folders(current_host, &mut sandboxed_plist_path, &filename);
 
     if sandboxed_plist_path.exists() {
         trace!("Sandboxed plist path exists.");
@@ -92,10 +74,35 @@ pub(super) fn plist_path(domain: &str) -> Result<Utf8PathBuf, E> {
 
     trace!("Sandboxed plist path does not exist.");
     let mut plist_path = home_dir;
-    plist_path.extend(&["Library", "Preferences", &domain_filename]);
+    extend_with_prefs_folders(current_host, &mut plist_path, &filename);
 
     // We return this even if it doesn't yet exist.
     Ok(plist_path)
+}
+
+/// Take a directory path, and add on the directories and files containing the application's
+/// preferences. Normally this is `./Library/Preferences/{domain}.plist`, but if `current_host` is
+/// `true`, then we need to look in the `ByHost` subfolder.
+fn extend_with_prefs_folders(current_host: bool, plist_path: &mut Utf8PathBuf, filename: &str) {
+    if current_host {
+        plist_path.extend(&["Library", "Preferences", "ByHost", filename]);
+    } else {
+        plist_path.extend(&["Library", "Preferences", filename]);
+    }
+}
+
+/// Get the expected filename for a plist file. Normally it's just the preference name + `.plist`,
+/// but if it's a currentHost setup, then we need to include the current host UUID as well.
+fn plist_filename(domain: &str, current_host: bool) -> Result<String, E> {
+    let filename = if current_host {
+        format!(
+            "{domain}.{hardware_uuid}.plist",
+            hardware_uuid = mac::get_hardware_uuid().map_err(|e| E::EyreError { source: e })?
+        )
+    } else {
+        format!("{domain}.plist")
+    };
+    Ok(filename)
 }
 
 /// String representation of a plist Value's type.
@@ -135,11 +142,12 @@ pub(super) fn is_binary(file: &Utf8Path) -> Result<bool, E> {
 pub(super) fn write_defaults_values(
     domain: &str,
     prefs: HashMap<String, plist::Value>,
+    current_host: bool,
     up_dir: &Utf8Path,
 ) -> Result<bool, E> {
     let backup_dir = up_dir.join("backup/defaults");
 
-    let plist_path = plist_path(domain)?;
+    let plist_path = plist_path(domain, current_host)?;
     debug!("Plist path: {plist_path}");
 
     let plist_path_exists = plist_path.exists();
@@ -177,7 +185,7 @@ pub(super) fn write_defaults_values(
 
         if let Some(old_value) = old_value {
             if old_value == &new_value {
-                debug!("Nothing to do, values already match.");
+                trace!("Nothing to do, values already match: {key:?} = {new_value:?}");
                 continue;
             }
         }
@@ -232,22 +240,62 @@ pub(super) fn write_defaults_values(
         })?;
     }
 
-    if !plist_path_exists || is_binary(&plist_path)? {
-        trace!("Writing binary plist");
-        plist::to_file_binary(&plist_path, &plist_value).map_err(|e| E::PlistWrite {
-            path: plist_path.clone(),
-            source: e,
-        })?;
-    } else {
-        trace!("Writing xml plist");
-        plist::to_file_xml(&plist_path, &plist_value).map_err(|e| E::PlistWrite {
-            path: plist_path.clone(),
-            source: e,
-        })?;
-    }
+    write_plist(plist_path_exists, &plist_path, plist_value)?;
     trace!("Plist updated at {plist_path}");
 
     Ok(values_changed)
+}
+
+/// Write a plist file to a path. Will fall back to trying to use sudo if a normal write fails.
+fn write_plist(
+    plist_path_exists: bool,
+    plist_path: &Utf8Path,
+    plist_value: plist::Value,
+) -> Result<(), E> {
+    let should_write_binary = !plist_path_exists || is_binary(plist_path)?;
+    let write_result = if should_write_binary {
+        trace!("Writing binary plist");
+        plist::to_file_binary(plist_path, &plist_value)
+    } else {
+        trace!("Writing xml plist");
+        plist::to_file_xml(plist_path, &plist_value)
+    };
+    let Err(plist_error) = write_result else {
+        return Ok(());
+    };
+
+    let io_error = match plist_error.into_io() {
+        Ok(io_error) => io_error,
+        Err(plist_error) => {
+            return Err(E::PlistWrite {
+                path: plist_path.to_path_buf(),
+                source: plist_error,
+            })
+        }
+    };
+    trace!("Tried to write plist file, got IO error {io_error:?}, trying again with sudo");
+
+    let mut plist_bytes = Vec::new();
+    if should_write_binary {
+        plist::to_writer_binary(&mut plist_bytes, &plist_value)
+    } else {
+        plist::to_writer_xml(&mut plist_bytes, &plist_value)
+    }
+    .map_err(|e| E::PlistWrite {
+        path: Utf8Path::new("/dev/stdout").to_path_buf(),
+        source: e,
+    })?;
+
+    cmd!("sudo", "tee", plist_path)
+        .stdin_bytes(plist_bytes)
+        .stdout_null()
+        .run()
+        .map_err(|e| E::PlistSudoWrite {
+            path: plist_path.to_path_buf(),
+            source: e,
+        })
+        .map(|_| ())?;
+    Ok(())
 }
 
 /// Replace `...` values in an input array.
@@ -329,11 +377,13 @@ fn replace_ellipsis_dict(new_value: &mut plist::Value, old_value: Option<&plist:
 mod tests {
     use serial_test::serial;
 
+    use crate::utils::mac;
+
     #[test]
     #[serial(home_dir)] // Test relies on or changes the $HOME env var.
     fn plist_path_tests() {
         {
-            let domain_path = super::plist_path("NSGlobalDomain").unwrap();
+            let domain_path = super::plist_path("NSGlobalDomain", false).unwrap();
             assert_eq!(
                 dirs::home_dir()
                     .unwrap()
@@ -352,8 +402,33 @@ mod tests {
                     .unwrap()
                     .join("Library/Preferences/com.apple.Safari.plist");
             }
-            let domain_path = super::plist_path("com.apple.Safari").unwrap();
+            let domain_path = super::plist_path("com.apple.Safari", false).unwrap();
             assert_eq!(expected_plist_path, domain_path);
+        }
+
+        // Per-host preference (`current_host` is true).
+        {
+            let domain_path = super::plist_path("NSGlobalDomain", true).unwrap();
+            let hardware_uuid = mac::get_hardware_uuid().unwrap();
+            assert_eq!(
+                dirs::home_dir().unwrap().join(format!(
+                    "Library/Preferences/ByHost/.GlobalPreferences.{hardware_uuid}.plist"
+                )),
+                domain_path
+            );
+        }
+
+        // Per-host sandboxed preference (`current_host` is true and the sandboxed plist exists).
+        {
+            let domain_path = super::plist_path("com.apple.Safari", true).unwrap();
+            let hardware_uuid = mac::get_hardware_uuid().unwrap();
+            assert_eq!(
+                dirs::home_dir().unwrap().join(format!(
+                    "Library/Containers/com.apple.Safari/Data/Library/Preferences/ByHost/com.\
+                     apple.Safari.{hardware_uuid}.plist"
+                )),
+                domain_path
+            );
         }
     }
 }

@@ -1,4 +1,20 @@
-//! Builds environment variable sets for command execution.
+/*!
+Builds environment variable sets for command execution.
+
+This takes in the environment of the running process, adds built-in environment variables, and uses the user's up configuration to generate the environment to pass to tasks.
+
+## Built-in Environment Variables
+
+These env vars are automatically resolved, and will override the same env var set by the user.
+
+### `UP_HARDWARE_UUID`
+
+(macOS only)
+
+The `UP_HARDWARE_UUID` maps to the UUID of the currently executing macOS device. This is particularly useful for setting per-host defaults.
+On non-macOS platforms this resolves to the empty string.
+
+*/
 use std::collections::HashMap;
 
 use color_eyre::eyre::{bail, eyre, Result};
@@ -7,11 +23,16 @@ use thiserror::Error;
 use tracing::{debug, trace};
 
 use self::EnvError as E;
-use crate::utils::files;
+use crate::utils::{files, mac};
+
+/// Environment variable name that is automatically provided for users to refer to, particularly in
+/// the defaults `run_lib` or subcommand.
+pub const UP_HARDWARE_UUID: &str = "UP_HARDWARE_UUID";
 
 // TODO(gib): add tests for cyclical config values etc.
 /// Build a set of environment variables from the up config settings and the current command's
 /// environment..
+#[allow(clippy::implicit_hasher)]
 pub fn get_env(
     inherit_env: Option<&Vec<String>>,
     input_env: Option<&HashMap<String, String>>,
@@ -24,6 +45,8 @@ pub fn get_env(
             }
         }
     }
+
+    add_builtin_env_vars(&mut env)?;
 
     let mut unresolved_env = Vec::new();
 
@@ -110,6 +133,19 @@ pub fn get_env(
 
     debug!("Expanded config env: {env:#?}");
     Ok(env)
+}
+
+/// Add environment variables that up generates automatically to the resolved environment.
+fn add_builtin_env_vars(env: &mut HashMap<String, String>) -> Result<()> {
+    env.insert(
+        UP_HARDWARE_UUID.to_owned(),
+        if cfg!(target_os = "macos") {
+            mac::get_hardware_uuid()?
+        } else {
+            String::new()
+        },
+    );
+    Ok(())
 }
 
 #[derive(Error, Debug, Display)]

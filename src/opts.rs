@@ -261,6 +261,9 @@ pub struct GenerateDefaultsConfig {
 /// Options passed to `up defaults`.
 #[derive(Debug, Parser, Serialize, Deserialize)]
 pub struct DefaultsOptions {
+    /// Read from the current host, same as `defaults -currentHost`.
+    #[clap(long = "currentHost")]
+    pub(crate) current_host: bool,
     /// Defaults action to take.
     #[clap(subcommand)]
     pub(crate) subcommand: DefaultsSubcommand,

@@ -1,11 +1,60 @@
-//! Update macOS defaults.
-//!
-//! Make it easy for users to provide a list of defaults to update, and run all
-//! the updates at once. Also takes care of restarting any tools to pick up the
-//! config, or notifying the user if they need to log out or reboot.
-//!
-//! Note that manually editing .plist files on macOS (rather than using e.g. the `defaults` binary)
-//! may cause changes not to be picked up until `cfprefsd` is restarted ([more information](https://eclecticlight.co/2017/07/06/sticky-preferences-why-trashing-or-editing-them-may-not-change-anything/)).
+/*!
+Update macOS defaults.
+
+Make it easy for users to provide a list of defaults to update, and run all
+the updates at once. Also takes care of restarting any tools to pick up the
+config, or notifying the user if they need to log out or reboot.
+
+Note that manually editing .plist files on macOS (rather than using e.g. the `defaults` binary)
+may cause changes not to be picked up until `cfprefsd` is restarted ([more information](https://eclecticlight.co/2017/07/06/sticky-preferences-why-trashing-or-editing-them-may-not-change-anything/)).
+
+Work around this by restarting your machine or running `sudo killall cfprefsd` after changing defaults.
+
+## Specifying preference domains
+
+For normal preference domains, you can directly specify the domain as a key, so to set `defaults read NSGlobalDomain com.apple.swipescrolldirection` you would use:
+
+```yaml
+run_lib: defaults
+data:
+  NSGlobalDomain:
+    com.apple.swipescrolldirection: false
+```
+
+You can also use a full path to a plist file (the `.plist` file extension is optional, as with the `defaults` command).
+
+## Current Host modifications
+
+To modify defaults for the current host, you will need to add a custom entry for the path, using the [`UP_HARDWARE_UUID`] environment variable to get the current host.
+
+e.g. to set the preference returned by `defaults -currentHost read -globalDomain com.apple.mouse.tapBehavior` you would have:
+
+```yaml
+run_lib: defaults
+data:
+  ~/Library/Preferences/ByHost/.GlobalPreferences.${UP_HARDWARE_UUID}:
+      # Enable Tap to Click for the current user.
+      com.apple.mouse.tapBehavior: 1
+```
+
+## Root-owned Defaults
+
+To write to files owned by root, set the `needs_sudo: true` environment variable, and use the full path to the preferences file.
+
+```yaml
+run_lib: defaults
+needs_sudo: true
+data:
+  # System Preferences -> Users & Groups -> Login Options -> Show Input menu in login window
+  /Library/Preferences/com.apple.loginwindow:
+    showInputMenu: true
+
+  # System Preferences -> Software Update -> Automatically keep my mac up to date
+  /Library/Preferences/com.apple.SoftwareUpdate:
+    AutomaticDownload: true
+```
+
+*/
 
 mod plist_utils;
 
@@ -14,6 +63,7 @@ use std::{collections::HashMap, process::ExitStatus};
 use camino::{Utf8Path, Utf8PathBuf};
 use color_eyre::eyre::{eyre, Context, Result};
 use displaydoc::Display;
+use itertools::Itertools;
 use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
 use tracing::{debug, error, trace, warn};
@@ -26,11 +76,34 @@ use crate::{
             DefaultsError as E,
         },
         task::TaskStatus,
-        ResolveEnv,
+        ResolveEnv, TaskError,
     },
 };
 
-impl ResolveEnv for DefaultsConfig {}
+impl ResolveEnv for DefaultsConfig {
+    fn resolve_env<F>(&mut self, env_fn: F) -> Result<(), TaskError>
+    where
+        F: Fn(&str) -> Result<String, TaskError>,
+    {
+        let keys = self.0.keys().cloned().collect_vec();
+        for domain in keys {
+            let replaced_domain = env_fn(&domain)?;
+            if replaced_domain == domain {
+                continue;
+            }
+
+            let pref = self
+                .0
+                .remove(&domain)
+                .ok_or_else(|| {
+                    eyre!("Expected to find the domain in the prefs mapping as we just checked it.")
+                })
+                .map_err(|e| TaskError::EyreError { source: e })?;
+            _ = self.0.insert(replaced_domain, pref);
+        }
+        Ok(())
+    }
+}
 
 /// Configuration for a defaults run library command.
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -47,7 +120,7 @@ pub(crate) fn run(config: DefaultsConfig, up_dir: &Utf8Path) -> Result<TaskStatu
     let (passed, errors): (Vec<_>, Vec<_>) = config
         .0
         .into_iter()
-        .map(|(domain, prefs)| write_defaults_values(&domain, prefs, up_dir))
+        .map(|(domain, prefs)| write_defaults_values(&domain, prefs, false, up_dir))
         .partition(Result::is_ok);
     let errors: Vec<_> = errors.into_iter().map(Result::unwrap_err).collect();
     let passed: Vec<_> = passed.into_iter().map(Result::unwrap).collect();
@@ -189,6 +262,14 @@ pub enum DefaultsError {
         source: plist::Error,
     },
 
+    /// Failed to write a value to plist file {path} as sudo.
+    PlistSudoWrite {
+        /// Path to plist file we failed to write.
+        path: Utf8PathBuf,
+        /// Source error.
+        source: std::io::Error,
+    },
+
     /**
     Failed to serialize plist to yaml.
     Domain: {domain:?}
@@ -267,10 +348,16 @@ pub enum DefaultsError {
 
     /// Unexpectedly empty option found.
     UnexpectedNone,
+
+    /// Eyre error.
+    EyreError {
+        /// Source error.
+        source: color_eyre::Report,
+    },
 }
 
 /// `up defaults read` command.
-pub(crate) fn read(defaults_opts: DefaultsReadOptions) -> Result<(), E> {
+pub(crate) fn read(current_host: bool, defaults_opts: DefaultsReadOptions) -> Result<(), E> {
     let (domain, key) = if defaults_opts.global_domain {
         if defaults_opts.key.is_some() {
             return Err(E::TooManyArgumentsRead {
@@ -286,7 +373,7 @@ pub(crate) fn read(defaults_opts: DefaultsReadOptions) -> Result<(), E> {
         )
     };
     debug!("Domain: {domain:?}, Key: {key:?}");
-    let plist_path = plist_path(&domain)?;
+    let plist_path = plist_path(&domain, current_host)?;
     debug!("Plist path: {plist_path}");
 
     let plist: plist::Value = plist::from_file(&plist_path).map_err(|e| E::PlistRead {
@@ -323,7 +410,11 @@ pub(crate) fn read(defaults_opts: DefaultsReadOptions) -> Result<(), E> {
 }
 
 /// `up defaults write` command.
-pub(crate) fn write(defaults_opts: DefaultsWriteOptions, up_dir: &Utf8Path) -> Result<(), E> {
+pub(crate) fn write(
+    current_host: bool,
+    defaults_opts: DefaultsWriteOptions,
+    up_dir: &Utf8Path,
+) -> Result<(), E> {
     let (domain, key, value) = if defaults_opts.global_domain {
         if defaults_opts.value.is_some() {
             return Err(E::TooManyArgumentsWrite {
@@ -359,6 +450,6 @@ pub(crate) fn write(defaults_opts: DefaultsWriteOptions, up_dir: &Utf8Path) -> R
 
     prefs.insert(key, new_value);
 
-    write_defaults_values(&domain, prefs, up_dir)?;
+    write_defaults_values(&domain, prefs, current_host, up_dir)?;
     Ok(())
 }
