@@ -36,7 +36,7 @@ pub mod update_self;
 /// Trait that tasks implement to specify how to replace environment variables in their
 /// configuration.
 pub trait ResolveEnv {
-    /// Expand env vars in `self` by running `enf_fn()` on its component
+    /// Expand env vars in `self` by running `env_fn()` on its component
     /// strings.
     ///
     /// # Errors
@@ -118,6 +118,12 @@ pub fn run(
         config.tasks.clone().map(|v| v.into_iter().collect());
     debug!("Filter tasks set: {filter_tasks_set:?}");
 
+    let excluded_tasks: HashSet<String> = config
+        .exclude_tasks
+        .clone()
+        .map_or_else(HashSet::new, |v| v.into_iter().collect());
+    debug!("Excluded tasks set: {excluded_tasks:?}");
+
     let mut tasks: HashMap<String, task::Task> = HashMap::new();
     for entry in tasks_dir.read_dir().map_err(|e| E::ReadDir {
         path: tasks_dir.clone(),
@@ -135,6 +141,14 @@ pub fn run(
         }
         let task = task::Task::from(&path)?;
         let name = &task.name;
+
+        if excluded_tasks.contains(name) {
+            debug!(
+                "Not running task '{name}' as it is in the excluded tasks set {excluded_tasks:?}"
+            );
+            continue;
+        }
+
         if let Some(filter) = filter_tasks_set.as_ref() {
             if !filter.contains(name) {
                 debug!("Not running task '{name}' as not in tasks filter {filter:?}",);

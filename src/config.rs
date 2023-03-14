@@ -26,6 +26,8 @@ pub struct UpConfig {
     pub keep_going: bool,
     /// The list of tasks to execute.
     pub tasks: Option<Vec<String>>,
+    /// The list of tasks to not execute.
+    pub exclude_tasks: Option<Vec<String>>,
     /// Temporary directory to use for up command execution.
     pub temp_dir: Utf8PathBuf,
 }
@@ -108,6 +110,7 @@ impl UpConfig {
             keep_going,
             temp_dir: opts.temp_dir.as_ref().to_owned(),
             tasks: run_options.tasks,
+            exclude_tasks: run_options.exclude_tasks,
         })
     }
 

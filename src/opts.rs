@@ -141,10 +141,27 @@ pub(crate) struct RunOptions {
         value_hint = ValueHint::FilePath
     )]
     pub(crate) fallback_path: Utf8PathBuf,
-    /// Optionally pass one or more tasks to run. The default is to run all
-    /// tasks. This option can be provided multiple times.
+    /**
+    Optionally pass one or more tasks to run. The default is to run all
+    tasks. This option can be provided multiple times, or use a comma-separated list of values.
+
+    EXAMPLES:
+
+    ❯ up run --tasks=rust,apt --tasks=otherslowtask
+    */
     #[clap(short, long, value_delimiter = ',')]
     pub(crate) tasks: Option<Vec<String>>,
+    /**
+    Optionally pass one or more tasks to exclude. The default is to exclude no
+    tasks. Excluded tasks are not run even if specified in `--tasks` (excluding takes
+    priority). This option can be provided multiple times. Tasks specified do not have to exist.
+
+    EXAMPLES:
+
+    ❯ up run --exclude-tasks=brew,slowtask --exclude-tasks=otherslowtask
+    */
+    #[clap(long, value_delimiter = ',')]
+    pub(crate) exclude_tasks: Option<Vec<String>>,
 }
 
 /// CLI options passed to `up link`.
