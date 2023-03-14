@@ -76,21 +76,19 @@ fn main() -> Result<()> {
         .pretty()
         .with_ansi(false);
 
+    let stderr_envfilter = EnvFilter::builder()
+        .with_default_directive(LevelFilter::INFO.into())
+        .parse_lossy(&opts.log_level);
+
+    let file_envfilter = EnvFilter::builder()
+        .with_default_directive(LevelFilter::TRACE.into())
+        .parse_lossy("up_rs=trace");
+
     tracing_subscriber::registry()
         .with(
             stderr_log
-                .with_filter(
-                    EnvFilter::builder()
-                        .with_default_directive(LevelFilter::INFO.into())
-                        .parse_lossy(&opts.log_level),
-                )
-                .and_then(
-                    file_log.with_filter(
-                        EnvFilter::builder()
-                            .with_default_directive(LevelFilter::INFO.into())
-                            .parse_lossy(&opts.log_level),
-                    ),
-                ),
+                .with_filter(stderr_envfilter)
+                .and_then(file_log.with_filter(file_envfilter)),
         )
         .init();
 
