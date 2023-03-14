@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.1](https://github.com/gibfahn/up-rs/releases/tag/0.14.1) (2023-03-14)
+
+### Bug Fixes
+- log: log to file at trace level by default ([a36fff4](https://github.com/gibfahn/up-rs/commit/a36fff4cc92630297913747b09cab61f53caea77))
+
+### Documentation
+- defaults: fix typo in currentHost preference setting example ([7b0adfb](https://github.com/gibfahn/up-rs/commit/7b0adfb1c1dfda2d1edc9aaa08f15a20aa0b2e82))
+
+### Features
+- tasks: allow providing a list of tasks to exclude ([cf4558d](https://github.com/gibfahn/up-rs/commit/cf4558d87b80e0fb4264d731be5dc32969160b9c))
+
 ## [0.14.0](https://github.com/gibfahn/up-rs/releases/tag/0.14.0) (2023-03-13)
 
 ### Bug Fixes
