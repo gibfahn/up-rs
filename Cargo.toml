@@ -22,12 +22,12 @@ path = "src/main.rs"
 [dependencies]
 camino = { version = "1.1.6", features = ["serde1"] }
 chrono = "0.4.31"
-clap = { version = "4.4.10", features = ["derive", "env", "string", "wrap_help"] }
+clap = { version = "4.4.11", features = ["derive", "env", "string", "wrap_help"] }
 clap_complete = "4.4.4"
 color-eyre = "0.6.2"
 dirs = "5.0.1"
 displaydoc = "0.2.4"
-duct = "0.13.6"
+duct = "0.13.7"
 envy = "0.4.2"
 git2 = { version = "0.18.1", features = ["vendored-openssl", "vendored-libgit2"] }
 hex = "0.4.3"
@@ -35,16 +35,16 @@ itertools = "0.12.0"
 log = "0.4.20"
 plist = "1.6.0"
 rayon = "1.8.0"
-reqwest = { version = "0.11.22", features = ["blocking", "json"] }
-ring = "0.17.6"
+reqwest = { version = "0.11.23", features = ["blocking", "json"] }
+ring = "0.17.7"
 semver = "1.0.20"
 serde = "1.0.193"
 serde_derive = "1.0.193"
 serde_json = "1.0.108"
-serde_yaml = "0.9.27"
+serde_yaml = "0.9.29"
 shell-escape = "0.1.5"
 shellexpand = "3.1.0"
-thiserror = "1.0.50"
+thiserror = "1.0.51"
 toml = "0.8.8"
 tracing = "0.1.40"
 tracing-error = "0.2.0"
@@ -59,7 +59,7 @@ ignore = "0.4.21"
 predicates = "3.0.4"
 serial_test = "2.0.0"
 testutils = { path = "./tests/testutils" }
-test-log = {version = "0.2.13", default-features = false, features = ["trace"]}
+test-log = {version = "0.2.14", default-features = false, features = ["trace"]}
 pretty_assertions = "1.4.0"
 pretty_assertions_sorted = "1.2.3"
 glob = "0.3.1"
