@@ -2,7 +2,6 @@
 use self::task::CommandType;
 use self::task::Task;
 use self::TaskError as E;
-use crate::cmd;
 use crate::config;
 use crate::env::get_env;
 use crate::tasks::task::TaskStatus;
@@ -110,6 +109,7 @@ pub fn run(
     // If in macOS, don't let the display sleep until the command exits.
     #[cfg(target_os = "macos")]
     {
+        use crate::cmd;
         _ = cmd!("caffeinate", "-ds", "-w", &std::process::id().to_string()).start()?;
     }
 
