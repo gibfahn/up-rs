@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.1](https://github.com/gibfahn/up-rs/releases/tag/0.15.1) (2023-06-26)
+
+### Bug Fixes
+- sudo: refresh sudo so it works after 5 minutes ([a93d1b5](https://github.com/gibfahn/up-rs/commit/a93d1b5bf695a17fc0fa82df8fca2b394932567d))
+
+### Features
+- [**BREAKING**] run: write task stdout/stderr logs to temp files ([a13d0f2](https://github.com/gibfahn/up-rs/commit/a13d0f25e85dc6c0b2e5b7887a44538e448bd72d))
+
+### Refactor
+- log: clean up logging code, remove up-rs.latest symlink ([3362832](https://github.com/gibfahn/up-rs/commit/3362832132c782c0ae79a808849c89b4286a3cab))
+
 ## [0.14.1](https://github.com/gibfahn/up-rs/releases/tag/0.14.1) (2023-03-14)
 
 ### Bug Fixes
