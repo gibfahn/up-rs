@@ -14,22 +14,18 @@
 #![allow(clippy::implicit_return, clippy::missing_docs_in_private_items)]
 
 use std::{
-    env, fs,
-    fs::{FileType, OpenOptions},
-    io,
-    os::unix,
+    env,
+    fs::File,
     sync::Arc,
     time::{Duration, Instant},
 };
 
-use camino::{Utf8Path, Utf8PathBuf};
-use chrono::Utc;
-use color_eyre::eyre::{bail, Result};
-use displaydoc::Display;
-use thiserror::Error;
-use tracing::{debug, info, metadata::LevelFilter, trace};
-use tracing_subscriber::{prelude::*, EnvFilter};
-use up_rs::opts::Color;
+use camino::Utf8PathBuf;
+use color_eyre::eyre::Result;
+use tracing::{debug, info, level_filters::LevelFilter, trace, warn};
+use tracing_error::ErrorLayer;
+use tracing_subscriber::{filter::EnvFilter, prelude::*};
+use up_rs::opts::Opts;
 
 /// Env vars to avoid printing when we log the current environment.
 const IGNORED_ENV_VARS: [&str; 1] = [
@@ -42,6 +38,10 @@ fn main() -> Result<()> {
     // Get starting time.
     let now = Instant::now();
 
+    let mut opts = up_rs::opts::parse();
+
+    let (log_path, level_filter) = set_up_logging(&opts);
+
     color_eyre::config::HookBuilder::default()
         // Avoids printing these lines when up fails:
         // ```
@@ -51,49 +51,15 @@ fn main() -> Result<()> {
         .display_env_section(false)
         .install()?;
 
-    let opts = up_rs::opts::parse();
-
-    let LogPaths {
-        log_path,
-        log_path_link,
-        log_file,
-    } = get_log_path_file(opts.temp_dir.as_ref())
-        .map_err(|e| MainError::LogFileSetupFailed { source: e })?;
-
-    let stderr_log = tracing_subscriber::fmt::layer()
-        .with_ansi(matches!(&opts.color, Color::Auto | Color::Always))
-        .compact()
-        .with_target(false)
-        .without_time()
-        .with_writer(std::io::stderr);
-
-    // A layer that logs events to a file.
-    let file_log = tracing_subscriber::fmt::layer()
-        .with_writer(Arc::new(log_file))
-        .with_target(true)
-        .with_file(true)
-        .with_line_number(true)
-        .pretty()
-        .with_ansi(false);
-
-    let stderr_envfilter = EnvFilter::builder()
-        .with_default_directive(LevelFilter::INFO.into())
-        .parse_lossy(&opts.log_level);
-
-    let file_envfilter = EnvFilter::builder()
-        .with_default_directive(LevelFilter::TRACE.into())
-        .parse_lossy("up_rs=trace");
-
-    tracing_subscriber::registry()
-        .with(
-            stderr_log
-                .with_filter(stderr_envfilter)
-                .and_then(file_log.with_filter(file_envfilter)),
-        )
-        .init();
+    // If we set a log filter, save that filter back to the log option.
+    // This allows us to run `up -l up=trace`, and get back a `trace` variable we can use in
+    // `Opts::debug_logging_enabled()`.
+    if let Some(filter) = level_filter {
+        opts.log_level = filter.to_string();
+    }
 
     trace!("Starting up.");
-    debug!("Writing full logs to {log_path_link} (symlink to '{log_path}')",);
+    debug!("Writing full logs to {log_path}",);
 
     trace!("Received args: {opts:#?}");
     trace!(
@@ -116,102 +82,77 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-/// Set of file and paths needed to set up logging.
-#[derive(Debug)]
-struct LogPaths {
-    /// Path to log file.
-    log_path: Utf8PathBuf,
-    /// File handle for log file.
-    log_file: fs::File,
-    /// Convenience symlink to log file that is updated each run.
-    log_path_link: Utf8PathBuf,
+/// Set up logging to stderr and to a temp file path.
+/// Returns the log level filter chosen by the user if available, and the path to the log file.
+fn set_up_logging(opts: &Opts) -> (Utf8PathBuf, Option<LevelFilter>) {
+    let stderr_log = tracing_subscriber::fmt::layer()
+        .compact()
+        .with_target(false)
+        .without_time()
+        .with_writer(std::io::stderr);
+
+    let (log_path, log_file) = get_log_file_and_path(opts);
+    let log_file_setup = log_file.is_some();
+
+    let stderr_envfilter = EnvFilter::builder()
+        .with_default_directive(LevelFilter::INFO.into())
+        .parse_lossy(&opts.log_level);
+    let log_filter = stderr_envfilter.max_level_hint();
+
+    let file_envfilter = EnvFilter::builder()
+        .with_default_directive(LevelFilter::TRACE.into())
+        .parse_lossy("up=trace");
+
+    let file_log = log_file.map(|log_file| {
+        tracing_subscriber::fmt::layer()
+            .with_writer(Arc::new(log_file))
+            .with_target(true)
+            .with_file(true)
+            .with_line_number(true)
+            .pretty()
+            .with_ansi(false)
+    });
+
+    // Always log to stderr, also log to a file if we can successfully set that up.
+    tracing_subscriber::registry()
+        .with(file_log.with_filter(file_envfilter))
+        .with(stderr_log.with_filter(stderr_envfilter))
+        // Adds a color_eyre spantrace layer. This isn't used unless we start adding `#[instrument]`
+        // to functions.
+        .with(ErrorLayer::default())
+        .init();
+
+    if log_file_setup {
+        debug!("Writing trace logs to {log_path:?}");
+    } else {
+        warn!("Failed to set up logging to a file");
+    };
+
+    (log_path, log_filter)
 }
 
-/// Create log file, and a symlink to it that can be used to find the latest
-/// one.
-fn get_log_path_file(temp_dir: &Utf8Path) -> Result<LogPaths> {
-    let log_dir = temp_dir.join("logs");
-    fs::create_dir_all(&log_dir).map_err(|e| MainError::CreateDirError {
-        path: log_dir.clone(),
-        source: e,
-    })?;
-    let log_path_link = log_dir.as_path().join("up-rs_latest.log");
-    let mut log_path = log_dir;
-    log_path.push(format!("up-rs_{}.log", Utc::now().to_rfc3339()));
+/// Get the path to the default log file, and create that file.
+fn get_log_file_and_path(opts: &Opts) -> (Utf8PathBuf, Option<File>) {
+    // TODO(gib): if this function tries to do any logging, or returns a Result, and file logging
+    // doesn't get set up properly, then it seems to break stderr logging as well. Test by running
+    // `cargo build && TMPDIR=/dev/null target/debug/up build`. We don't see the `warn!()`
+    // in `set_up_logging()`.
+    // Probably https://github.com/yaahc/color-eyre/issues/110
 
-    // Delete symlink if it exists, or is a broken symlink.
-    if log_path_link.exists() || log_path_link.symlink_metadata().is_ok() {
-        let log_path_link_file_type = log_path_link.symlink_metadata()?.file_type();
-        if log_path_link_file_type.is_symlink() {
-            fs::remove_file(&log_path_link).map_err(|e| MainError::DeleteError {
-                path: log_path_link.clone(),
-                source: e,
-            })?;
-        } else {
-            bail!(MainError::NotSymlinkError {
-                path: log_path_link,
-                file_type: log_path_link_file_type
-            });
-        }
+    let log_dir = opts.temp_dir.join("logs");
+    let log_path = log_dir.join(format!("up-rs_{}.log", opts.start_time.to_rfc3339()));
+
+    // Can't use files::create_dir_all() wrapper as it uses logging.
+    if let Err(e) = std::fs::create_dir_all(&log_dir) {
+        eprintln!(" WARN Failed to create log directory {log_dir}.\n  Error: {e:?}");
+        return (log_path, None);
     }
-
-    unix::fs::symlink(&log_path, &log_path_link).map_err(|e| MainError::SymlinkError {
-        link_path: log_path_link.clone(),
-        src_path: log_path.clone(),
-        source: e,
-    })?;
-
-    let log_file = OpenOptions::new()
-        .create(true)
-        .write(true)
-        .truncate(true)
-        .open(&log_path)
-        .map_err(|e| MainError::LogFileOpenFailed {
-            path: log_path.clone(),
-            source: e,
-        })?;
-
-    Ok(LogPaths {
-        log_path,
-        log_file,
-        log_path_link,
-    })
-}
-
-/// Errors thrown by this file.
-#[derive(Error, Debug, Display)]
-pub enum MainError {
-    /// Failed to set up log files.
-    LogFileSetupFailed {
-        /// Any log path error thrown.
-        source: color_eyre::eyre::Error,
-    },
-    /// Failed to create symlink '{link_path}' pointing to '{src_path}'.
-    SymlinkError {
-        /// Path to symlink.
-        link_path: Utf8PathBuf,
-        /// Path to link to.
-        src_path: Utf8PathBuf,
-        source: io::Error,
-    },
-    /// Failed to open and create log file {path}.
-    LogFileOpenFailed {
-        path: Utf8PathBuf,
-        source: io::Error,
-    },
-    /// Failed to create directory '{path}'
-    CreateDirError {
-        path: Utf8PathBuf,
-        source: io::Error,
-    },
-    /// Failed to delete '{path}'.
-    DeleteError {
-        path: Utf8PathBuf,
-        source: io::Error,
-    },
-    /// Expected symlink at '{path}', found: {file_type:?}.
-    NotSymlinkError {
-        path: Utf8PathBuf,
-        file_type: FileType,
-    },
+    let log_file = match File::create(&log_path) {
+        Ok(log_file) => log_file,
+        Err(e) => {
+            eprintln!(" WARN failed to create log file {log_path}:\n  Error: {e}");
+            return (log_path, None);
+        }
+    };
+    (log_path, Some(log_file))
 }

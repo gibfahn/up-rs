@@ -1,12 +1,13 @@
 //! CLI options passed to `up` commands.
 mod paths;
+pub(crate) mod start_time;
 
 use camino::Utf8PathBuf;
 use clap::{Parser, ValueEnum, ValueHint};
 use clap_complete::Shell;
 use serde_derive::{Deserialize, Serialize};
 
-use crate::opts::paths::TempDir;
+use crate::opts::{paths::TempDir, start_time::StartTime};
 
 /// The default fallback path inside a fallback repo to look for the up.yaml file in.
 pub(crate) const FALLBACK_CONFIG_PATH: &str = "dotfiles/.config/up/up.yaml";
@@ -74,12 +75,23 @@ pub struct Opts {
     /// Debug, Trace).
     #[clap(long, default_value = "trace", env = "FILE_RUST_LOG")]
     pub file_log_level: String,
+
     /// Whether to color terminal output.
     #[clap(long, default_value = "auto", ignore_case = true, value_enum)]
     pub color: Color,
+
     /// Path to the up.yaml file for up.
     #[clap(long, short = 'c', default_value = "$XDG_CONFIG_HOME/up/up.yaml", value_hint = ValueHint::FilePath)]
     pub(crate) config: String,
+
+    /**
+    The timestamp where we started this action.
+
+    Hidden as users shouldn't normally be setting this.
+    */
+    #[clap(long, hide(true), default_value_t)]
+    pub start_time: StartTime,
+
     /// Clap subcommand to run.
     #[clap(subcommand)]
     pub(crate) cmd: Option<SubCommand>,
