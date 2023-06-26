@@ -180,13 +180,20 @@ pub fn run(
 
     match tasks_action {
         TasksAction::List => println!("{}", tasks.keys().join("\n")),
-        TasksAction::Run => run_tasks(
-            bootstrap_tasks,
-            tasks,
-            &env,
-            &config.temp_dir,
-            config.keep_going,
-        )?,
+        TasksAction::Run => {
+            let run_tempdir = config.temp_dir.join(format!(
+                "runs/{start_time}",
+                start_time = config.start_time.to_rfc3339()
+            ));
+
+            run_tasks(
+                bootstrap_tasks,
+                tasks,
+                &env,
+                &run_tempdir,
+                config.keep_going,
+            )?;
+        }
     }
     Ok(())
 }
@@ -196,18 +203,20 @@ fn run_tasks(
     bootstrap_tasks: Vec<String>,
     mut tasks: HashMap<String, task::Task>,
     env: &HashMap<String, String>,
-    up_dir: &Utf8Path,
+    temp_dir: &Utf8Path,
     keep_going: bool,
 ) -> Result<()> {
     let mut completed_tasks = Vec::new();
     if !bootstrap_tasks.is_empty() {
-        for task in bootstrap_tasks {
+        for task_name in bootstrap_tasks {
+            let task_tempdir = create_task_tempdir(temp_dir, &task_name)?;
+
             let task = run_task(
                 tasks
-                    .remove(&task)
-                    .ok_or_else(|| eyre!("Task '{task}' was missing."))?,
+                    .remove(&task_name)
+                    .ok_or_else(|| eyre!("Task '{task_name}' was missing."))?,
                 env,
-                up_dir,
+                &task_tempdir,
             );
             if !keep_going {
                 if let TaskStatus::Failed(e) = task.status {
@@ -222,8 +231,11 @@ fn run_tasks(
         tasks
             .into_par_iter()
             .filter(|(_, task)| task.config.auto_run.unwrap_or(true))
-            .map(|(_, task)| run_task(task, env, up_dir))
-            .collect::<Vec<Task>>(),
+            .map(|(_, task)| {
+                let task_tempdir = create_task_tempdir(temp_dir, task.name.as_str())?;
+                Ok(run_task(task, env, &task_tempdir))
+            })
+            .collect::<Result<Vec<Task>>>()?,
     );
     let completed_tasks_len = completed_tasks.len();
 
@@ -283,7 +295,7 @@ fn run_tasks(
 }
 
 /// Runs a specific task.
-fn run_task(mut task: Task, env: &HashMap<String, String>, up_dir: &Utf8Path) -> Task {
+fn run_task(mut task: Task, env: &HashMap<String, String>, task_tempdir: &Utf8Path) -> Task {
     let env_fn = &|s: &str| {
         let home_dir = files::home_dir().map_err(|e| E::EyreError { source: e })?;
         let out = shellexpand::full_with_context(
@@ -301,12 +313,19 @@ fn run_task(mut task: Task, env: &HashMap<String, String>, up_dir: &Utf8Path) ->
     };
 
     let now = Instant::now();
-    task.run(env_fn, env, up_dir);
+    task.run(env_fn, env, task_tempdir);
     let elapsed_time = now.elapsed();
     if elapsed_time > Duration::from_secs(60) {
         warn!("Task {} took {:?}", task.name, elapsed_time);
     }
     task
+}
+
+/// Create a subdir of the current temporary directory for the task.
+fn create_task_tempdir(temp_dir: &Utf8Path, task_name: &str) -> Result<Utf8PathBuf> {
+    let task_tempdir = temp_dir.join(task_name);
+    files::create_dir_all(&task_tempdir)?;
+    Ok(task_tempdir)
 }
 
 #[derive(Error, Debug, Display)]
@@ -364,7 +383,10 @@ pub enum TaskError {
         /// Suggestion for how to fix it.
         suggestion: String,
     },
-    /// Task '{name}' {command_type} failed with exit code {code}. Command: {cmd:?}.
+    /**
+    Task '{name}' {command_type} failed with exit code {code}. Command: {cmd:?}.
+      Output: {output_file}
+    */
     CmdNonZero {
         /// The type of command that failed (check or run).
         command_type: CommandType,
@@ -374,8 +396,13 @@ pub enum TaskError {
         cmd: Vec<String>,
         /// Error code.
         code: i32,
+        /// File containing stdout and stderr of the file.
+        output_file: Utf8PathBuf,
     },
-    /// Task '{name}' {command_type} was terminated. Command: {cmd:?}.
+    /**
+    Task '{name}' {command_type} was terminated. Command: {cmd:?}, output: {output_file}.
+      Output: {output_file}
+    */
     CmdTerminated {
         /// The type of command that failed (check or run).
         command_type: CommandType,
@@ -383,6 +410,8 @@ pub enum TaskError {
         name: String,
         /// The command itself.
         cmd: Vec<String>,
+        /// File containing stdout and stderr of the file.
+        output_file: Utf8PathBuf,
     },
     /// Unexpectedly empty option found.
     UnexpectedNone,

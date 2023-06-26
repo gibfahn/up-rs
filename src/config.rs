@@ -1,5 +1,6 @@
 //! Manages the config files (default location ~/.config/up/).
 
+use crate::opts::start_time::StartTime;
 use crate::opts::GitOptions;
 use crate::opts::Opts;
 use crate::opts::RunOptions;
@@ -37,6 +38,8 @@ pub struct UpConfig {
     pub exclude_tasks: Option<Vec<String>>,
     /// Temporary directory to use for up command execution.
     pub temp_dir: Utf8PathBuf,
+    /// Time we started this command execution.
+    pub start_time: StartTime,
 }
 
 // TODO(gib): Provide a way for users to easily validate their yaml files.
@@ -118,6 +121,7 @@ impl UpConfig {
             temp_dir: opts.temp_dir.as_ref().to_owned(),
             tasks: run_options.tasks,
             exclude_tasks: run_options.exclude_tasks,
+            start_time: opts.start_time,
         })
     }
 

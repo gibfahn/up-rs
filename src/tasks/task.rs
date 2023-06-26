@@ -163,11 +163,11 @@ impl Task {
     }
 
     /// Run a task.
-    pub fn run<F>(&mut self, env_fn: F, env: &HashMap<String, String>, up_dir: &Utf8Path)
+    pub fn run<F>(&mut self, env_fn: F, env: &HashMap<String, String>, task_tempdir: &Utf8Path)
     where
         F: Fn(&str) -> Result<String, E>,
     {
-        match self.try_run(env_fn, env, up_dir) {
+        match self.try_run(env_fn, env, task_tempdir) {
             Ok(status) => self.status = status,
             Err(e) => self.status = TaskStatus::Failed(e),
         }
@@ -178,7 +178,7 @@ impl Task {
         &mut self,
         env_fn: F,
         env: &HashMap<String, String>,
-        up_dir: &Utf8Path,
+        task_tempdir: &Utf8Path,
     ) -> Result<TaskStatus, E>
     where
         F: Fn(&str) -> Result<String, E>,
@@ -193,7 +193,7 @@ impl Task {
             }
             // TODO(gib): Allow choosing how to validate run_if_cmd output (stdout, zero exit
             // code, non-zero exit code).
-            if !self.run_command(CommandType::RunIf, &cmd, env)? {
+            if !self.run_command(CommandType::RunIf, &cmd, env, task_tempdir)? {
                 debug!("Skipping task '{name}' as run_if command failed.");
                 return Ok(TaskStatus::Skipped);
             }
@@ -208,7 +208,7 @@ impl Task {
                 "link" => {
                     let data: LinkOptions =
                         parse_task_config(maybe_data, &self.name, false, env_fn)?;
-                    tasks::link::run(data, up_dir)
+                    tasks::link::run(data, task_tempdir)
                 }
 
                 "git" => {
@@ -226,7 +226,7 @@ impl Task {
                 "defaults" => {
                     let data: DefaultsConfig =
                         parse_task_config(maybe_data, &self.name, false, env_fn)?;
-                    tasks::defaults::run(data, up_dir)
+                    tasks::defaults::run(data, task_tempdir)
                 }
 
                 "self" => {
@@ -250,7 +250,7 @@ impl Task {
             for s in &mut cmd {
                 *s = env_fn(s)?;
             }
-            if self.run_command(CommandType::Run, &cmd, env)? {
+            if self.run_command(CommandType::Run, &cmd, env, task_tempdir)? {
                 return Ok(TaskStatus::Passed);
             }
             return Ok(TaskStatus::Skipped);
@@ -271,17 +271,20 @@ impl Task {
         command_type: CommandType,
         cmd: &[String],
         env: &HashMap<String, String>,
+        task_tempdir: &Utf8Path,
     ) -> Result<bool, E> {
         let now = Instant::now();
-        // TODO(gib): set current dir.
+        let task_output_file = task_tempdir.join("task_stdout_stderr.txt");
+
         let output = cmd_log(
             Level::Debug,
             cmd.get(0).ok_or(E::EmptyCmd)?,
             cmd.get(1..).unwrap_or(&[]),
         )
+        .dir(task_tempdir)
         .full_env(env)
-        .stdout_capture()
-        .stderr_capture()
+        .stdout_path(&task_output_file)
+        .stderr_path(&task_output_file)
         .unchecked()
         .run();
 
@@ -310,12 +313,14 @@ impl Task {
                 name: self.name.clone(),
                 command_type,
                 cmd: cmd.to_owned(),
+                output_file: task_output_file,
                 code,
             }),
             None => Err(E::CmdTerminated {
                 command_type,
                 name: self.name.clone(),
                 cmd: cmd.to_owned(),
+                output_file: task_output_file,
             }),
         };
         self.log_command_output(command_type, command_result.is_ok(), &output, elapsed_time);
