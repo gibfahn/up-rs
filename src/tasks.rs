@@ -7,6 +7,7 @@ use crate::config;
 use crate::env::get_env;
 use crate::tasks::task::TaskStatus;
 use crate::utils::files;
+use crate::utils::user::get_and_keep_sudo;
 use camino::Utf8Path;
 use camino::Utf8PathBuf;
 use color_eyre::eyre::bail;
@@ -170,9 +171,7 @@ pub fn run(
         && tasks.values().any(|t| t.config.needs_sudo)
         && users::get_current_uid() != 0
     {
-        // TODO(gib): this only lasts for 5 minutes.
-        debug!("Prompting for superuser privileges with 'sudo -v'");
-        cmd!("sudo", "-v").run()?;
+        get_and_keep_sudo(false)?;
     }
 
     debug!("Task count: {:?}", tasks.len());
