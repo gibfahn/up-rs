@@ -31,7 +31,7 @@ linux_binary=build/$binary_name-Linux
 main() {
   echo -e "${fg[magenta]}Publishing new version of the ${binary_name} CLI...${reset_color}"
 
-  # Make sure docker is running as we'll need it later.
+ # Make sure docker is running as we'll need it later.
   pgrep -q Docker || open -a docker
 
   # Install nextest runner if missing: https://nexte.st
@@ -83,9 +83,18 @@ main() {
     fi
   else
     log_section "Updating changelog..."
-    default_new_release=$(awk -F '.' '{print $1 "." $2 "." $3+1}' <<<$last_release)
-    read "new_version?New version (current version: ${last_release?}, default new version: ${default_new_release}): "
-    [[ -z $new_version ]] && new_version=$default_new_release
+
+    # First argument is major,minor, or patch, else we prompt for it.
+    case ${1:-} in
+      major | minor | patch) new_version=$(bump_version $1 $last_release) ;;
+      "")
+        default_new_release=$(bump_version patch $last_release)
+        read "new_version?New version (current version: ${last_release?}, default new version: ${default_new_release}): "
+        [[ -z $new_version ]] && new_version=$default_new_release
+        ;;
+      *) error "Unrecognized input ${1}" ;;
+    esac
+
     git cliff --tag="${new_version?}" --prepend CHANGELOG.md "${last_release}"..
 
     log_section "Updating Cargo.toml..."
@@ -96,7 +105,7 @@ main() {
     git add Cargo.toml Cargo.lock CHANGELOG.md
     git commit -m "chore: bump version to ${new_version?}"
     git show --stat | cat # Check version is correct.
-    echo >&2 "Does this look correct (should change Cargo.toml, Cargo.lock, CHANGELOG.md)?"
+    echo >&2 "Does this look correct?"
   fi
 
   # Run normal and integration tests.
@@ -146,6 +155,18 @@ main() {
   # Pull in the tag we just created remotely.
   log_section "Fetching just-created tag..."
   git fetch --all
+}
+
+# Bump the major, minor, or patch (set by $1) version of the given version.
+# $1: major|minor|patch , which number to bump.
+# $2: the input version string, e.g. `1.2.3`.
+bump_version() {
+  case $1 in
+    major) awk -F '.' '{print $1+1 "." $2 "." $3}' <<<$2 ;;
+    minor) awk -F '.' '{print $1 "." $2+1 "." $3}' <<<$2 ;;
+    patch) awk -F '.' '{print $1 "." $2 "." $3+1}' <<<$2 ;;
+    *) error "bump_version: unknown input ${2}" ;;
+  esac
 }
 
 log_section() {
