@@ -1,7 +1,7 @@
 //! Generates up CLI completions.
+use crate::opts::CompletionsOptions;
+use crate::opts::Opts;
 use clap::CommandFactory;
-
-use crate::opts::{CompletionsOptions, Opts};
 
 /// Run the `up completions` command.
 pub(crate) fn run(cmd_opts: &CompletionsOptions) {

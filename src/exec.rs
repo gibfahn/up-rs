@@ -1,8 +1,8 @@
 //! Wrappers around executing commands.
 
-use std::{ffi::OsString, fmt::Write};
-
 use log::Level;
+use std::ffi::OsString;
+use std::fmt::Write;
 
 /// Copy of the `duct::cmd` function that ensures we're info logging the command we're running.
 pub fn cmd<T, U>(program: T, args: U) -> duct::Expression

@@ -1,17 +1,24 @@
 //! Manages the config files (default location ~/.config/up/).
 
-use std::{collections::HashMap, env, fs};
-
-use camino::{Utf8Path, Utf8PathBuf};
-use color_eyre::eyre::{bail, ensure, Result};
-use serde_derive::{Deserialize, Serialize};
-use tracing::{debug, info, trace};
-
-use crate::{
-    opts::{GitOptions, Opts, RunOptions, SubCommand},
-    tasks::git,
-    utils::files,
-};
+use crate::opts::GitOptions;
+use crate::opts::Opts;
+use crate::opts::RunOptions;
+use crate::opts::SubCommand;
+use crate::tasks::git;
+use crate::utils::files;
+use camino::Utf8Path;
+use camino::Utf8PathBuf;
+use color_eyre::eyre::bail;
+use color_eyre::eyre::ensure;
+use color_eyre::eyre::Result;
+use serde_derive::Deserialize;
+use serde_derive::Serialize;
+use std::collections::HashMap;
+use std::env;
+use std::fs;
+use tracing::debug;
+use tracing::info;
+use tracing::trace;
 
 /// Internal state used by subcommands.
 #[derive(Default, Debug)]
@@ -206,11 +213,9 @@ fn get_fallback_config_path(
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod yaml_paths_tests {
-    use std::env;
-
-    use serial_test::serial;
-
     use super::UpConfig;
+    use serial_test::serial;
+    use std::env;
 
     /// Test possible options for the up.yaml. All run in one file as they
     /// modify the shared test environment.

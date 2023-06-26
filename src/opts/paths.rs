@@ -1,11 +1,12 @@
 //! Handle paths that are passed as CLI options.
 
-use std::{fmt::Display, ops::Deref, str::FromStr};
-
-use camino::{Utf8Path, Utf8PathBuf};
-use color_eyre::eyre::Result;
-
 use crate::utils::files;
+use camino::Utf8Path;
+use camino::Utf8PathBuf;
+use color_eyre::eyre::Result;
+use std::fmt::Display;
+use std::ops::Deref;
+use std::str::FromStr;
 
 /// The path to a temporary directory for up to use for temporary file output.
 #[derive(Debug, Clone)]

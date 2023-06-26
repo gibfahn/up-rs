@@ -1,21 +1,21 @@
 //! The git library task.
-use std::convert::From;
-
+use self::GitTaskError as E;
+use crate::opts::GitOptions;
+use crate::tasks::task::TaskStatus;
+use crate::tasks::ResolveEnv;
+use crate::tasks::TaskError;
 use camino::Utf8PathBuf;
 use clap::Parser;
 use color_eyre::eyre::Result;
 use displaydoc::Display;
 use git2::Remote;
-use rayon::{iter::Either, prelude::*};
-use serde_derive::{Deserialize, Serialize};
+use rayon::iter::Either;
+use rayon::prelude::*;
+use serde_derive::Deserialize;
+use serde_derive::Serialize;
+use std::convert::From;
 use thiserror::Error;
 use tracing::error;
-
-use self::GitTaskError as E;
-use crate::{
-    opts::GitOptions,
-    tasks::{task::TaskStatus, ResolveEnv, TaskError},
-};
 
 pub mod branch;
 pub mod checkout;

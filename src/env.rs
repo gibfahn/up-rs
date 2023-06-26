@@ -15,15 +15,16 @@ The `UP_HARDWARE_UUID` maps to the UUID of the currently executing macOS device.
 On non-macOS platforms this resolves to the empty string.
 
 */
-use std::collections::HashMap;
-
-use color_eyre::eyre::{bail, eyre, Result};
-use displaydoc::Display;
-use thiserror::Error;
-use tracing::{debug, trace};
-
 use self::EnvError as E;
 use crate::utils::files;
+use color_eyre::eyre::bail;
+use color_eyre::eyre::eyre;
+use color_eyre::eyre::Result;
+use displaydoc::Display;
+use std::collections::HashMap;
+use thiserror::Error;
+use tracing::debug;
+use tracing::trace;
 
 /// Environment variable name that is automatically provided for users to refer to, particularly in
 /// the defaults `run_lib` or subcommand.

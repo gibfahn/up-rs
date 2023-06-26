@@ -1,6 +1,5 @@
-use std::fs;
-
 use camino::Utf8Path;
+use std::fs;
 
 /// Panic if there is a file, directory, or link at the path.
 pub fn nothing_at(path: &Utf8Path) {

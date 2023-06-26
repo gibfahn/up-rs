@@ -1,9 +1,9 @@
 //! Git errors.
-use std::io;
-
 use camino::Utf8PathBuf;
 use displaydoc::Display;
-use git2::{MergeAnalysis, MergePreference};
+use git2::MergeAnalysis;
+use git2::MergePreference;
+use std::io;
 use thiserror::Error;
 
 #[derive(Error, Debug, Display)]

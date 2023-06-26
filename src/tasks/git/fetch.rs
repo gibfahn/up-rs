@@ -1,11 +1,18 @@
 //! Fetch updates to a branch.
-use std::{thread, time::Duration};
-
+use crate::tasks::git::branch::shorten_branch_ref;
+use crate::tasks::git::errors::GitError as E;
 use color_eyre::eyre::Result;
-use git2::{Cred, CredentialType, ErrorClass, ErrorCode, Remote, RemoteCallbacks, Repository};
-use tracing::{debug, warn};
-
-use crate::tasks::git::{branch::shorten_branch_ref, errors::GitError as E};
+use git2::Cred;
+use git2::CredentialType;
+use git2::ErrorClass;
+use git2::ErrorCode;
+use git2::Remote;
+use git2::RemoteCallbacks;
+use git2::Repository;
+use std::thread;
+use std::time::Duration;
+use tracing::debug;
+use tracing::warn;
 
 /// Number of times to try authenticating when fetching.
 const AUTH_RETRY_COUNT: usize = 10;

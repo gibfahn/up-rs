@@ -1,12 +1,20 @@
 //! `git cherry` command equivalent, finds equivalent commits.
-use std::{collections::HashSet, io::Read};
-
-use color_eyre::eyre::{eyre, Result};
-use git2::{Branch, DiffFormat, DiffOptions, Oid, Repository, Revwalk};
-use ring::digest::{Context, Digest, SHA256};
+use crate::tasks::git::branch::get_branch_name;
+use crate::tasks::git::errors::GitError as E;
+use color_eyre::eyre::eyre;
+use color_eyre::eyre::Result;
+use git2::Branch;
+use git2::DiffFormat;
+use git2::DiffOptions;
+use git2::Oid;
+use git2::Repository;
+use git2::Revwalk;
+use ring::digest::Context;
+use ring::digest::Digest;
+use ring::digest::SHA256;
+use std::collections::HashSet;
+use std::io::Read;
 use tracing::trace;
-
-use crate::tasks::git::{branch::get_branch_name, errors::GitError as E};
 
 /// Return true if there are commits that aren't in upstream but are in head.
 ///

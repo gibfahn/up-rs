@@ -1,26 +1,29 @@
 //! Generate up config files by parsing git repositories.
-use std::fs;
-
-use camino::{Utf8Path, Utf8PathBuf};
-use color_eyre::eyre::{Context, Result};
-use displaydoc::Display;
-use git2::Repository;
-use rayon::{iter::Either, prelude::*};
-use thiserror::Error;
-use tracing::{debug, error, info, trace};
-use walkdir::WalkDir;
-
 use self::GenerateGitError as E;
 use super::GENERATED_PRELUDE_COMMENT;
-use crate::{
-    opts::GenerateGitConfig,
-    tasks::{
-        git::{GitConfig, GitRemote},
-        task::{Task, TaskStatus},
-        ResolveEnv, TaskError,
-    },
-    utils::files,
-};
+use crate::opts::GenerateGitConfig;
+use crate::tasks::git::GitConfig;
+use crate::tasks::git::GitRemote;
+use crate::tasks::task::Task;
+use crate::tasks::task::TaskStatus;
+use crate::tasks::ResolveEnv;
+use crate::tasks::TaskError;
+use crate::utils::files;
+use camino::Utf8Path;
+use camino::Utf8PathBuf;
+use color_eyre::eyre::Context;
+use color_eyre::eyre::Result;
+use displaydoc::Display;
+use git2::Repository;
+use rayon::iter::Either;
+use rayon::prelude::*;
+use std::fs;
+use thiserror::Error;
+use tracing::debug;
+use tracing::error;
+use tracing::info;
+use tracing::trace;
+use walkdir::WalkDir;
 
 /// Run the up git config generation on a set of directories.
 pub fn run(configs: &[GenerateGitConfig]) -> Result<TaskStatus> {

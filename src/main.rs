@@ -13,18 +13,21 @@
 #![warn(clippy::all, clippy::pedantic, clippy::nursery, clippy::cargo)]
 #![allow(clippy::implicit_return, clippy::missing_docs_in_private_items)]
 
-use std::{
-    env,
-    fs::File,
-    sync::Arc,
-    time::{Duration, Instant},
-};
-
 use camino::Utf8PathBuf;
 use color_eyre::eyre::Result;
-use tracing::{debug, info, level_filters::LevelFilter, trace, warn};
+use std::env;
+use std::fs::File;
+use std::sync::Arc;
+use std::time::Duration;
+use std::time::Instant;
+use tracing::debug;
+use tracing::info;
+use tracing::level_filters::LevelFilter;
+use tracing::trace;
+use tracing::warn;
 use tracing_error::ErrorLayer;
-use tracing_subscriber::{filter::EnvFilter, prelude::*};
+use tracing_subscriber::filter::EnvFilter;
+use tracing_subscriber::prelude::*;
 use up_rs::opts::Opts;
 
 /// Env vars to avoid printing when we log the current environment.

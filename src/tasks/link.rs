@@ -1,23 +1,30 @@
 //! The link library task.
-use std::{
-    fs,
-    io::{self, ErrorKind},
-    os::unix,
-};
-
-use camino::{Utf8Path, Utf8PathBuf};
-use chrono::{DateTime, Utc};
-use color_eyre::eyre::{bail, ensure, eyre, Context, Result};
+use crate::opts::LinkOptions;
+use crate::tasks::task::TaskStatus;
+use crate::tasks::ResolveEnv;
+use crate::tasks::TaskError;
+use crate::utils::files;
+use camino::Utf8Path;
+use camino::Utf8PathBuf;
+use chrono::DateTime;
+use chrono::Utc;
+use color_eyre::eyre::bail;
+use color_eyre::eyre::ensure;
+use color_eyre::eyre::eyre;
+use color_eyre::eyre::Context;
+use color_eyre::eyre::Result;
 use displaydoc::Display;
+use std::fs;
+use std::io;
+use std::io::ErrorKind;
+use std::os::unix;
 use thiserror::Error;
-use tracing::{debug, info, trace, warn};
-use walkdir::{DirEntry, WalkDir};
-
-use crate::{
-    opts::LinkOptions,
-    tasks::{task::TaskStatus, ResolveEnv, TaskError},
-    utils::files,
-};
+use tracing::debug;
+use tracing::info;
+use tracing::trace;
+use tracing::warn;
+use walkdir::DirEntry;
+use walkdir::WalkDir;
 
 impl ResolveEnv for LinkOptions {
     fn resolve_env<F>(&mut self, env_fn: F) -> Result<(), TaskError>

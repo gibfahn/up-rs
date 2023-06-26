@@ -1,19 +1,23 @@
 //! Show repo status.
-use std::fmt::Write as _; // import without risk of name clashing
-
+use crate::tasks::git::branch::get_branch_name;
+use crate::tasks::git::branch::get_push_branch;
+use crate::tasks::git::cherry::unmerged_commits;
+use crate::tasks::git::errors::GitError as E;
+use crate::utils::files::to_utf8_path;
 use camino::Utf8Path;
-use color_eyre::eyre::{ensure, eyre, Result};
-use git2::{BranchType, Config, ErrorCode, Repository, StatusOptions, Statuses, SubmoduleIgnore};
-use tracing::{trace, warn};
-
-use crate::{
-    tasks::git::{
-        branch::{get_branch_name, get_push_branch},
-        cherry::unmerged_commits,
-        errors::GitError as E,
-    },
-    utils::files::to_utf8_path,
-};
+use color_eyre::eyre::ensure;
+use color_eyre::eyre::eyre;
+use color_eyre::eyre::Result;
+use git2::BranchType;
+use git2::Config;
+use git2::ErrorCode;
+use git2::Repository;
+use git2::StatusOptions;
+use git2::Statuses;
+use git2::SubmoduleIgnore;
+use std::fmt::Write as _; // import without risk of name clashing
+use tracing::trace;
+use tracing::warn;
 
 /// Check the repo is clean, equivalent to running `git status --porcelain` and
 /// checking everything looks good.

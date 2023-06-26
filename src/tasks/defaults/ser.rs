@@ -1,9 +1,8 @@
 //! Helper to allow serializing plists containing binary data to yaml.
 
-use std::mem;
-
 use color_eyre::Result;
 use plist::Value;
+use std::mem;
 
 /// Replace binary data attributes to work around <https://github.com/dtolnay/serde-yaml/issues/91>.
 pub(super) fn replace_data_in_plist(value: &mut Value) -> Result<()> {
@@ -33,11 +32,10 @@ pub(super) fn replace_data_in_plist(value: &mut Value) -> Result<()> {
 #[cfg(test)]
 mod tests {
 
+    use crate::tasks::defaults::ser::replace_data_in_plist;
     use color_eyre::Result;
     use test_log::test;
     use tracing::info;
-
-    use crate::tasks::defaults::ser::replace_data_in_plist;
 
     #[test]
     fn test_serialize_binary() -> Result<()> {

@@ -1,10 +1,14 @@
 //! Common functions that are used by other tests.
 
-use std::{env, fs, io::ErrorKind, os::unix};
-
 use assert_cmd::Command;
-use camino::{Utf8Path, Utf8PathBuf};
-use color_eyre::eyre::{eyre, Result};
+use camino::Utf8Path;
+use camino::Utf8PathBuf;
+use color_eyre::eyre::eyre;
+use color_eyre::eyre::Result;
+use std::env;
+use std::fs;
+use std::io::ErrorKind;
+use std::os::unix;
 use walkdir::WalkDir;
 
 pub mod assert;

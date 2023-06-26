@@ -1,7 +1,9 @@
-use std::{fs, fs::File, os::unix};
-
 use assert_cmd::assert::Assert;
-use camino::{Utf8Path, Utf8PathBuf};
+use camino::Utf8Path;
+use camino::Utf8PathBuf;
+use std::fs;
+use std::fs::File;
+use std::os::unix;
 use testutils::assert;
 
 /// Set up a basic home_dir, run the link function against it, and make sure we

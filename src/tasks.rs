@@ -1,23 +1,31 @@
 //! Logic for dealing with tasks executed by up.
-use std::{
-    collections::{HashMap, HashSet},
-    io,
-    time::{Duration, Instant},
-};
-
-use camino::{Utf8Path, Utf8PathBuf};
-use color_eyre::eyre::{bail, eyre, Result};
+use self::task::CommandType;
+use self::task::Task;
+use self::TaskError as E;
+use crate::cmd;
+use crate::config;
+use crate::env::get_env;
+use crate::tasks::task::TaskStatus;
+use crate::utils::files;
+use camino::Utf8Path;
+use camino::Utf8PathBuf;
+use color_eyre::eyre::bail;
+use color_eyre::eyre::eyre;
+use color_eyre::eyre::Result;
 use displaydoc::Display;
 use itertools::Itertools;
 use rayon::prelude::*;
+use std::collections::HashMap;
+use std::collections::HashSet;
+use std::io;
+use std::time::Duration;
+use std::time::Instant;
 use thiserror::Error;
-use tracing::{debug, error, info, trace, warn};
-
-use self::{
-    task::{CommandType, Task},
-    TaskError as E,
-};
-use crate::{cmd, config, env::get_env, tasks::task::TaskStatus, utils::files};
+use tracing::debug;
+use tracing::error;
+use tracing::info;
+use tracing::trace;
+use tracing::warn;
 
 pub mod completions;
 pub mod defaults;

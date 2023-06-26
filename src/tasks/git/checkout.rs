@@ -1,13 +1,19 @@
 //! Checkout a git branch or ref.
-use std::{convert::Into, str};
-
-use color_eyre::eyre::{bail, eyre, Result};
-use git2::{
-    build::CheckoutBuilder, BranchType, ErrorCode, FetchOptions, Repository, SubmoduleUpdateOptions,
-};
-use tracing::{debug, trace};
-
-use crate::tasks::git::{fetch::remote_callbacks, status::ensure_repo_clean};
+use crate::tasks::git::fetch::remote_callbacks;
+use crate::tasks::git::status::ensure_repo_clean;
+use color_eyre::eyre::bail;
+use color_eyre::eyre::eyre;
+use color_eyre::eyre::Result;
+use git2::build::CheckoutBuilder;
+use git2::BranchType;
+use git2::ErrorCode;
+use git2::FetchOptions;
+use git2::Repository;
+use git2::SubmoduleUpdateOptions;
+use std::convert::Into;
+use std::str;
+use tracing::debug;
+use tracing::trace;
 
 /// Checkout the branch if necessary (branch isn't the current branch).
 ///

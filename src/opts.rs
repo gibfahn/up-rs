@@ -2,12 +2,15 @@
 mod paths;
 pub(crate) mod start_time;
 
+use crate::opts::paths::TempDir;
+use crate::opts::start_time::StartTime;
 use camino::Utf8PathBuf;
-use clap::{Parser, ValueEnum, ValueHint};
+use clap::Parser;
+use clap::ValueEnum;
+use clap::ValueHint;
 use clap_complete::Shell;
-use serde_derive::{Deserialize, Serialize};
-
-use crate::opts::{paths::TempDir, start_time::StartTime};
+use serde_derive::Deserialize;
+use serde_derive::Serialize;
 
 /// The default fallback path inside a fallback repo to look for the up.yaml file in.
 pub(crate) const FALLBACK_CONFIG_PATH: &str = "dotfiles/.config/up/up.yaml";

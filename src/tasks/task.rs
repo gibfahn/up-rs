@@ -1,26 +1,33 @@
 //! Up task execution.
-use std::{
-    collections::HashMap,
-    fmt::{self, Display},
-    fs,
-    process::Output,
-    string::String,
-    time::{Duration, Instant},
-};
-
-use camino::{Utf8Path, Utf8PathBuf};
-use color_eyre::eyre::{eyre, Result};
-use log::{log, Level};
-use serde_derive::{Deserialize, Serialize};
-use tracing::{debug, info, trace};
-
-use crate::{
-    exec::cmd_log,
-    generate,
-    opts::{GenerateGitConfig, LinkOptions, UpdateSelfOptions},
-    tasks,
-    tasks::{defaults::DefaultsConfig, git::GitConfig, ResolveEnv, TaskError as E},
-};
+use crate::exec::cmd_log;
+use crate::generate;
+use crate::opts::GenerateGitConfig;
+use crate::opts::LinkOptions;
+use crate::opts::UpdateSelfOptions;
+use crate::tasks;
+use crate::tasks::defaults::DefaultsConfig;
+use crate::tasks::git::GitConfig;
+use crate::tasks::ResolveEnv;
+use crate::tasks::TaskError as E;
+use camino::Utf8Path;
+use camino::Utf8PathBuf;
+use color_eyre::eyre::eyre;
+use color_eyre::eyre::Result;
+use log::log;
+use log::Level;
+use serde_derive::Deserialize;
+use serde_derive::Serialize;
+use std::collections::HashMap;
+use std::fmt;
+use std::fmt::Display;
+use std::fs;
+use std::process::Output;
+use std::string::String;
+use std::time::Duration;
+use std::time::Instant;
+use tracing::debug;
+use tracing::info;
+use tracing::trace;
 
 /// Possible statuses an asynchronously running task can have.
 #[derive(Debug)]

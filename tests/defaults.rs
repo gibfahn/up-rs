@@ -5,7 +5,8 @@ use duct::cmd;
 use predicates::prelude::*;
 use pretty_assertions::assert_eq;
 use test_log::test;
-use tracing::{debug, info};
+use tracing::debug;
+use tracing::info;
 
 #[test]
 fn test_defaults_read_global() {

@@ -1,7 +1,6 @@
-use std::collections::HashMap;
-
 use assert_cmd::cargo::cargo_bin;
 use camino::Utf8PathBuf;
+use std::collections::HashMap;
 use testutils::assert;
 
 #[cfg(target_os = "macos")]

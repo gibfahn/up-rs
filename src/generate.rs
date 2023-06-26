@@ -1,10 +1,9 @@
 //! Wraps generate tasks.
+use crate::config;
+use crate::tasks;
+use crate::tasks::TasksAction;
+use crate::tasks::TasksDir;
 use color_eyre::eyre::Result;
-
-use crate::{
-    config,
-    tasks::{self, TasksAction, TasksDir},
-};
 
 pub mod git;
 

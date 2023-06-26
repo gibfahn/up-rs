@@ -59,28 +59,32 @@ data:
 mod plist_utils;
 mod ser;
 
-use std::{collections::HashMap, process::ExitStatus};
-
-use camino::{Utf8Path, Utf8PathBuf};
-use color_eyre::eyre::{eyre, Context, Result};
+use crate::opts::DefaultsReadOptions;
+use crate::opts::DefaultsWriteOptions;
+use crate::tasks::defaults::plist_utils::get_plist_value_type;
+use crate::tasks::defaults::plist_utils::plist_path;
+use crate::tasks::defaults::plist_utils::write_defaults_values;
+use crate::tasks::defaults::ser::replace_data_in_plist;
+use crate::tasks::defaults::DefaultsError as E;
+use crate::tasks::task::TaskStatus;
+use crate::tasks::ResolveEnv;
+use crate::tasks::TaskError;
+use camino::Utf8Path;
+use camino::Utf8PathBuf;
+use color_eyre::eyre::eyre;
+use color_eyre::eyre::Context;
+use color_eyre::eyre::Result;
 use displaydoc::Display;
 use itertools::Itertools;
-use serde_derive::{Deserialize, Serialize};
+use serde_derive::Deserialize;
+use serde_derive::Serialize;
+use std::collections::HashMap;
+use std::process::ExitStatus;
 use thiserror::Error;
-use tracing::{debug, error, trace, warn};
-
-use crate::{
-    opts::{DefaultsReadOptions, DefaultsWriteOptions},
-    tasks::{
-        defaults::{
-            plist_utils::{get_plist_value_type, plist_path, write_defaults_values},
-            ser::replace_data_in_plist,
-            DefaultsError as E,
-        },
-        task::TaskStatus,
-        ResolveEnv, TaskError,
-    },
-};
+use tracing::debug;
+use tracing::error;
+use tracing::trace;
+use tracing::warn;
 
 impl ResolveEnv for DefaultsConfig {
     fn resolve_env<F>(&mut self, env_fn: F) -> Result<(), TaskError>

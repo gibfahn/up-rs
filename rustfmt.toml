@@ -3,8 +3,12 @@ unstable_features = true
 
 # Fix up imports.
 reorder_imports = true
-group_imports = "StdExternalCrate"
-imports_granularity = "Crate"
+# Keep all imports in one big list.
+# Chosen because I keep them folded, and this makes them less visible.
+group_imports = "One"
+# One import line per thing being imported.
+# Chosen because it keeps refactoring easy.
+imports_granularity = "Item"
 
 # Wrap comments too.
 wrap_comments = true

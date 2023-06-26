@@ -2,13 +2,12 @@
 //! (for people who aren't aware of the `--no-fail-fast` flag for `cargo test`
 //! or would rather not type it).
 
-use std::{
-    env,
-    process::{Command, Output},
-};
-
-use camino::{Utf8Path, Utf8PathBuf};
+use camino::Utf8Path;
+use camino::Utf8PathBuf;
 use color_eyre::Result;
+use std::env;
+use std::process::Command;
+use std::process::Output;
 
 /// Check whether we're running in CI or not.
 fn in_ci() -> bool {

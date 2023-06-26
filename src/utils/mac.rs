@@ -1,9 +1,10 @@
 //! macOS specific functions.
 
-use color_eyre::{eyre::eyre, Result};
-use serde::{Deserialize, Serialize};
-
 use crate::cmd_debug;
+use color_eyre::eyre::eyre;
+use color_eyre::Result;
+use serde::Deserialize;
+use serde::Serialize;
 
 /// Get the hardware UUID of the current Mac.
 /// You can get the Hardware UUID from:
@@ -42,7 +43,8 @@ mod tests {
 
     #[test]
     fn test_get_hardware_uuid() -> Result<()> {
-        use crate::{cmd, utils::mac::get_hardware_uuid};
+        use crate::cmd;
+        use crate::utils::mac::get_hardware_uuid;
 
         let system_profiler_output = cmd!("system_profiler", "SPHardwareDataType").read()?;
         let expected_value = system_profiler_output

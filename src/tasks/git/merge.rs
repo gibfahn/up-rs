@@ -1,12 +1,13 @@
 //! Merge updates into a branch.
-use std::str;
-
-use color_eyre::eyre::{bail, Result};
-use git2::{Reference, Repository};
-use tracing::debug;
-
 use super::status::ensure_repo_clean;
-use crate::tasks::git::{checkout::set_and_checkout_head, errors::GitError as E};
+use crate::tasks::git::checkout::set_and_checkout_head;
+use crate::tasks::git::errors::GitError as E;
+use color_eyre::eyre::bail;
+use color_eyre::eyre::Result;
+use git2::Reference;
+use git2::Repository;
+use std::str;
+use tracing::debug;
 
 /// Fast-forward merge, returns "Skipped" if nothing was updated.
 /// Returns whether we did any work (`false` means skipped).

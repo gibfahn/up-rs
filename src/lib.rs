@@ -51,15 +51,16 @@
     clippy::needless_pass_by_value,
 )]
 
+use crate::config::UpConfig;
+use crate::opts::Opts;
+use crate::opts::SubCommand;
 use color_eyre::eyre::Result;
-use opts::{DefaultsSubcommand, GenerateLib};
-use tasks::{defaults, TasksAction, TasksDir};
+use opts::DefaultsSubcommand;
+use opts::GenerateLib;
+use tasks::defaults;
+use tasks::TasksAction;
+use tasks::TasksDir;
 use tracing::trace;
-
-use crate::{
-    config::UpConfig,
-    opts::{Opts, SubCommand},
-};
 
 mod config;
 pub mod env;

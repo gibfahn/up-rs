@@ -1,5 +1,5 @@
-use std::{collections::HashMap, fs};
-
+use std::collections::HashMap;
+use std::fs;
 use testutils::assert;
 use walkdir::WalkDir;
 

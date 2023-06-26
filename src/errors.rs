@@ -1,8 +1,7 @@
 //! Overall errors thrown by the up crate.
-use std::io;
-
 use camino::Utf8PathBuf;
 use displaydoc::Display;
+use std::io;
 use thiserror::Error;
 
 #[derive(Error, Debug, Display)]

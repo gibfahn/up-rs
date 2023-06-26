@@ -1,18 +1,18 @@
 //! Prune unneeded local branches (merged PR branches deleted upstream).
+use crate::tasks::git::branch::delete_branch;
+use crate::tasks::git::branch::get_branch_name;
+use crate::tasks::git::branch::shorten_branch_ref;
+use crate::tasks::git::checkout::checkout_branch;
+use crate::tasks::git::cherry::unmerged_commits;
+use crate::tasks::git::errors::GitError as E;
+use crate::tasks::git::status::ensure_repo_clean;
+use crate::utils::files;
 use color_eyre::eyre::Result;
-use git2::{Branch, BranchType, Repository};
-use tracing::{debug, trace};
-
-use crate::{
-    tasks::git::{
-        branch::{delete_branch, get_branch_name, shorten_branch_ref},
-        checkout::checkout_branch,
-        cherry::unmerged_commits,
-        errors::GitError as E,
-        status::ensure_repo_clean,
-    },
-    utils::files,
-};
+use git2::Branch;
+use git2::BranchType;
+use git2::Repository;
+use tracing::debug;
+use tracing::trace;
 
 /// Prune merged PR branches. Deletes local branches where the push branch
 /// has been merged into the upstream branch, and the push branch has now

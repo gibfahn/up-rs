@@ -1,25 +1,25 @@
 //! The `up self` library, for updating the CLI itself.
-use std::{
-    env,
-    fs::{self, File, Permissions},
-    io,
-    os::unix::fs::PermissionsExt,
-};
-
+use self::UpdateSelfError as E;
+use crate::cmd;
+use crate::opts::UpdateSelfOptions;
+use crate::tasks::task::TaskStatus;
+use crate::tasks::ResolveEnv;
 use camino::Utf8PathBuf;
 use chrono::Utc;
-use color_eyre::eyre::{Context, Result};
+use color_eyre::eyre::Context;
+use color_eyre::eyre::Result;
 use displaydoc::Display;
 use serde_derive::Deserialize;
+use std::env;
+use std::fs;
+use std::fs::File;
+use std::fs::Permissions;
+use std::io;
+use std::os::unix::fs::PermissionsExt;
 use thiserror::Error;
-use tracing::{debug, info, trace};
-
-use self::UpdateSelfError as E;
-use crate::{
-    cmd,
-    opts::UpdateSelfOptions,
-    tasks::{task::TaskStatus, ResolveEnv},
-};
+use tracing::debug;
+use tracing::info;
+use tracing::trace;
 
 /// GitHub latest release API endpoint JSON response.
 /// <https://docs.github.com/en/rest/releases/releases?apiVersion=2022-11-28#get-the-latest-release>

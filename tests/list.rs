@@ -1,8 +1,8 @@
-use std::collections::HashMap;
-
 use assert_cmd::cargo::cargo_bin;
-use camino::{Utf8Path, Utf8PathBuf};
+use camino::Utf8Path;
+use camino::Utf8PathBuf;
 use itertools::Itertools;
+use std::collections::HashMap;
 use testutils::assert;
 
 /// Run a full up with a bunch of configuration and check things work.

@@ -1,20 +1,20 @@
 //! Utility functions for updating plist files.
-use std::{
-    collections::HashMap,
-    fs::{self, File},
-    io::Read,
-};
-
-use camino::{Utf8Path, Utf8PathBuf};
+use crate::cmd;
+use crate::tasks::defaults::DefaultsError as E;
+use crate::utils::files;
+use crate::utils::mac;
+use camino::Utf8Path;
+use camino::Utf8PathBuf;
 use itertools::Itertools;
 use plist::Dictionary;
-use tracing::{debug, info, trace, warn};
-
-use crate::{
-    cmd,
-    tasks::defaults::DefaultsError as E,
-    utils::{files, mac},
-};
+use std::collections::HashMap;
+use std::fs;
+use std::fs::File;
+use std::io::Read;
+use tracing::debug;
+use tracing::info;
+use tracing::trace;
+use tracing::warn;
 
 /// A value or key-value pair that means "insert existing values here" for arrays and dictionaries.
 const ELLIPSIS: &str = "...";
@@ -376,9 +376,8 @@ fn replace_ellipsis_dict(new_value: &mut plist::Value, old_value: Option<&plist:
 #[cfg(target_os = "macos")]
 #[cfg(test)]
 mod tests {
-    use serial_test::serial;
-
     use crate::utils::mac;
+    use serial_test::serial;
 
     #[test]
     #[serial(home_dir)] // Test relies on or changes the $HOME env var.

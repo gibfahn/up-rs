@@ -1,8 +1,12 @@
 //! Wrapper around [`chrono::DateTime<Utc>`] for use in CLI parsing.
 
-use std::{fmt::Display, ops::Deref, str::FromStr};
-
-use chrono::{DateTime, ParseError, ParseResult, Utc};
+use chrono::DateTime;
+use chrono::ParseError;
+use chrono::ParseResult;
+use chrono::Utc;
+use std::fmt::Display;
+use std::ops::Deref;
+use std::str::FromStr;
 
 /// Wrapper around [`chrono::DateTime<Utc>`] for use in CLI parsing.
 #[derive(Debug, Clone)]

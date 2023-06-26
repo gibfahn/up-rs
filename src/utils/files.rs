@@ -1,15 +1,14 @@
 //! Utilities for dealing with files, including wrappers around `std::fs` APIs.
 
-use std::fs;
-
-use camino::{Utf8Path, Utf8PathBuf};
-use color_eyre::{
-    eyre::{eyre, Context},
-    Result,
-};
-use tracing::{trace, warn};
-
 use crate::errors::UpError;
+use camino::Utf8Path;
+use camino::Utf8PathBuf;
+use color_eyre::eyre::eyre;
+use color_eyre::eyre::Context;
+use color_eyre::Result;
+use std::fs;
+use tracing::trace;
+use tracing::warn;
 
 /**
 Empty home directory. This is likely to cause issues as we expect to be able to create

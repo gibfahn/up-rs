@@ -1,31 +1,39 @@
 //! Update a git repo.
 // TODO(gib): Use https://lib.rs/crates/indicatif for progress bars and remove this.
 #![allow(clippy::print_stdout, clippy::unwrap_used)]
-use std::{
-    borrow::ToOwned,
-    fs, str,
-    time::{Duration, Instant},
-};
-
-use color_eyre::eyre::{bail, Context, Result};
-use git2::{BranchType, ConfigLevel, ErrorCode, FetchOptions, Repository};
+use crate::tasks::git::branch::calculate_head;
+use crate::tasks::git::branch::get_branch_name;
+use crate::tasks::git::branch::get_push_branch;
+use crate::tasks::git::branch::shorten_branch_ref;
+use crate::tasks::git::checkout::checkout_branch;
+use crate::tasks::git::checkout::needs_checkout;
+use crate::tasks::git::errors::GitError as E;
+use crate::tasks::git::fetch::remote_callbacks;
+use crate::tasks::git::fetch::set_remote_head;
+use crate::tasks::git::merge::do_ff_merge;
+use crate::tasks::git::prune::prune_merged_branches;
+use crate::tasks::git::status::warn_for_unpushed_changes;
+use crate::tasks::git::GitConfig;
+use crate::tasks::git::GitRemote;
+use crate::tasks::task::TaskStatus;
+use color_eyre::eyre::bail;
+use color_eyre::eyre::Context;
+use color_eyre::eyre::Result;
+use git2::BranchType;
+use git2::ConfigLevel;
+use git2::ErrorCode;
+use git2::FetchOptions;
+use git2::Repository;
 use itertools::Itertools;
-use tracing::{debug, trace, warn};
+use std::borrow::ToOwned;
+use std::fs;
+use std::str;
+use std::time::Duration;
+use std::time::Instant;
+use tracing::debug;
+use tracing::trace;
+use tracing::warn;
 use url::Url;
-
-use crate::tasks::{
-    git::{
-        branch::{calculate_head, get_branch_name, get_push_branch, shorten_branch_ref},
-        checkout::{checkout_branch, needs_checkout},
-        errors::GitError as E,
-        fetch::{remote_callbacks, set_remote_head},
-        merge::do_ff_merge,
-        prune::prune_merged_branches,
-        status::warn_for_unpushed_changes,
-        GitConfig, GitRemote,
-    },
-    task::TaskStatus,
-};
 
 /// Update a git repo.
 pub(crate) fn update(git_config: &GitConfig) -> Result<TaskStatus> {
