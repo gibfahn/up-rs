@@ -49,6 +49,11 @@ pub(super) fn plist_path(domain: &str, current_host: bool) -> Result<Utf8PathBuf
         return Ok(Utf8PathBuf::from(domain));
     }
 
+    // User wants to read from stdin, use that directly.
+    if domain == "-" {
+        return Ok(Utf8PathBuf::from(domain));
+    }
+
     let home_dir = files::home_dir().map_err(|e| E::MissingHomeDir { source: e })?;
 
     // Global Domain -> hardcoded value.

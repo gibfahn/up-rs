@@ -319,7 +319,9 @@ pub struct DefaultsReadOptions {
     /// Read from the global domain. If you set this, do not also pass a domain argument.
     #[clap(short = 'g', long = "globalDomain")]
     pub(crate) global_domain: bool,
-    /// Defaults domain to print.
+    /**
+    Defaults domain to print. Use `-` to read from stdin.
+    */
     pub(crate) domain: Option<String>,
     /// Defaults key to print.
     pub(crate) key: Option<String>,

@@ -79,6 +79,7 @@ use itertools::Itertools;
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
 use std::collections::HashMap;
+use std::io::Read;
 use std::process::ExitStatus;
 use thiserror::Error;
 use tracing::debug;
@@ -382,7 +383,20 @@ pub(crate) fn read(current_host: bool, defaults_opts: DefaultsReadOptions) -> Re
     let plist_path = plist_path(&domain, current_host)?;
     debug!("Plist path: {plist_path}");
 
-    let plist: plist::Value = plist::from_file(&plist_path).map_err(|e| E::PlistRead {
+    let plist: plist::Value = if &plist_path == "-" {
+        // Read from stdin directly if specified.
+        let mut bytes = Vec::new();
+        _ = std::io::stdin()
+            .read_to_end(&mut bytes)
+            .map_err(|e| E::FileRead {
+                path: plist_path.clone(),
+                source: e,
+            })?;
+        plist::from_bytes(&bytes)
+    } else {
+        plist::from_file(&plist_path)
+    }
+    .map_err(|e| E::PlistRead {
         path: plist_path,
         source: e,
     })?;

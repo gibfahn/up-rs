@@ -55,7 +55,7 @@ pub fn get_env(
         trace!("Provided env: {config_env:#?}");
         let mut calculated_env = HashMap::new();
         let home_dir = files::home_dir()?;
-        for (key, val) in config_env.iter() {
+        for (key, val) in config_env {
             calculated_env.insert(
                 key.clone(),
                 shellexpand::full_with_context(
