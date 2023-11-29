@@ -278,7 +278,7 @@ impl Task {
 
         let output = cmd_log(
             Level::Debug,
-            cmd.get(0).ok_or(E::EmptyCmd)?,
+            cmd.first().ok_or(E::EmptyCmd)?,
             cmd.get(1..).unwrap_or(&[]),
         )
         .dir(task_tempdir)
@@ -292,7 +292,7 @@ impl Task {
             let suggestion = match e.kind() {
                 std::io::ErrorKind::PermissionDenied => format!(
                     "\n Suggestion: Try making the file executable with `chmod +x {path}`",
-                    path = cmd.get(0).map_or("", String::as_str)
+                    path = cmd.first().map_or("", String::as_str)
                 ),
                 _ => String::new(),
             };

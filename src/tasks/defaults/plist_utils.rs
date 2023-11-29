@@ -325,7 +325,7 @@ fn replace_ellipsis_array(new_value: &mut plist::Value, old_value: Option<&plist
         return;
     };
 
-    let array_copy: Vec<_> = array.drain(..).collect();
+    let array_copy: Vec<_> = std::mem::take(array);
 
     trace!("Performing array ellipsis replacement...");
     for element in array_copy {

@@ -185,7 +185,7 @@ fn parse_git_config(
                 sorted_remote_names.push(remote_names.remove(pos));
             }
         }
-        sorted_remote_names.extend(remote_names.into_iter());
+        sorted_remote_names.extend(remote_names);
     }
 
     let mut remotes = Vec::new();

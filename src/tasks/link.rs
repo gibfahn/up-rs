@@ -101,7 +101,7 @@ pub(crate) fn run(config: LinkOptions, up_dir: &Utf8Path) -> Result<TaskStatus> 
         }
 
         Err(e) => warn!("Backup dir {backup_dir} non-empty, check contents: {e:?}"),
-        Ok(_) => (),
+        Ok(()) => (),
     }
 
     debug!(

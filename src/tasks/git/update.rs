@@ -133,7 +133,7 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<bool> {
     );
 
     // The first remote specified is the default remote.
-    let default_remote_name = git_config.remotes.get(0).ok_or(E::NoRemotes)?.name.clone();
+    let default_remote_name = git_config.remotes.first().ok_or(E::NoRemotes)?.name.clone();
     let mut default_remote =
         repo.find_remote(&default_remote_name)
             .map_err(|e| E::RemoteNotFound {
