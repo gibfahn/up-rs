@@ -55,39 +55,24 @@ fn test_defaults_read_global() {
 fn test_defaults_read_local() {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
 
-    // Four-letter codes for view modes: `icnv`, `clmv`, `glyv`, `Nlsv`
-    let mut expected_value = cmd!(
-        "defaults",
-        "read",
-        "com.apple.finder",
-        "FXPreferredViewStyle"
-    )
-    .read()
-    .unwrap();
+    // Dock region, e.g. 'GB'
+    let mut expected_value = cmd!("defaults", "read", "com.apple.dock", "region")
+        .read()
+        .unwrap();
     expected_value.push('\n');
 
     // Reading a normal value should have the same output as the defaults command (but yaml not
     // defaults own format).
     {
         let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
-        cmd.args([
-            "defaults",
-            "read",
-            "com.apple.finder",
-            "FXPreferredViewStyle",
-        ]);
+        cmd.args(["defaults", "read", "com.apple.dock", "region"]);
         cmd.assert().success().stdout(expected_value.clone());
     }
 
     // A .plist extension should be allowed too.
     {
         let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
-        cmd.args([
-            "defaults",
-            "read",
-            "com.apple.finder.plist",
-            "FXPreferredViewStyle",
-        ]);
+        cmd.args(["defaults", "read", "com.apple.dock.plist", "region"]);
         cmd.assert().success().stdout(expected_value.clone());
     }
 
@@ -98,10 +83,10 @@ fn test_defaults_read_local() {
             "defaults",
             "read",
             &format!(
-                "{}/Library/Preferences/com.apple.finder.plist",
+                "{}/Library/Preferences/com.apple.dock.plist",
                 dirs::home_dir().unwrap().display()
             ),
-            "FXPreferredViewStyle",
+            "region",
         ]);
         cmd.assert().success().stdout(expected_value);
     }
