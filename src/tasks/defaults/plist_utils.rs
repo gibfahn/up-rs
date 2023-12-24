@@ -382,30 +382,29 @@ fn replace_ellipsis_dict(new_value: &mut plist::Value, old_value: Option<&plist:
 #[cfg(test)]
 mod tests {
     use crate::utils::mac;
+    use camino::Utf8PathBuf;
     use serial_test::serial;
 
     #[test]
     #[serial(home_dir)] // Test relies on or changes the $HOME env var.
     fn plist_path_tests() {
+        let home_dir = Utf8PathBuf::try_from(dirs::home_dir().unwrap()).unwrap();
+
         {
             let domain_path = super::plist_path("NSGlobalDomain", false).unwrap();
             assert_eq!(
-                dirs::home_dir()
-                    .unwrap()
-                    .join("Library/Preferences/.GlobalPreferences.plist"),
+                home_dir.join("Library/Preferences/.GlobalPreferences.plist"),
                 domain_path
             );
         }
 
         {
-            let mut expected_plist_path = dirs::home_dir().unwrap().join(
+            let mut expected_plist_path = home_dir.join(
                 "Library/Containers/com.apple.Safari/Data/Library/Preferences/com.apple.Safari.\
                  plist",
             );
             if !expected_plist_path.exists() {
-                expected_plist_path = dirs::home_dir()
-                    .unwrap()
-                    .join("Library/Preferences/com.apple.Safari.plist");
+                expected_plist_path = home_dir.join("Library/Preferences/com.apple.Safari.plist");
             }
             let domain_path = super::plist_path("com.apple.Safari", false).unwrap();
             assert_eq!(expected_plist_path, domain_path);
@@ -416,7 +415,7 @@ mod tests {
             let domain_path = super::plist_path("NSGlobalDomain", true).unwrap();
             let hardware_uuid = mac::get_hardware_uuid().unwrap();
             assert_eq!(
-                dirs::home_dir().unwrap().join(format!(
+                home_dir.join(format!(
                     "Library/Preferences/ByHost/.GlobalPreferences.{hardware_uuid}.plist"
                 )),
                 domain_path
@@ -428,11 +427,23 @@ mod tests {
             let domain_path = super::plist_path("com.apple.Safari", true).unwrap();
             let hardware_uuid = mac::get_hardware_uuid().unwrap();
             assert_eq!(
-                dirs::home_dir().unwrap().join(format!(
+                home_dir.join(format!(
                     "Library/Containers/com.apple.Safari/Data/Library/Preferences/ByHost/com.\
                      apple.Safari.{hardware_uuid}.plist"
                 )),
-                domain_path
+                domain_path,
+                "Failed to find expected sandboxed plist file for Safari. Other possible matches: \
+                 {glob_matches:#?}",
+                glob_matches = glob::glob(
+                    home_dir
+                        .join(format!(
+                            "Library/Containers/*/Data/Library/Preferences/ByHost/*.\
+                             {hardware_uuid}.plist"
+                        ))
+                        .as_str()
+                )
+                .unwrap()
+                .collect::<Vec<_>>(),
             );
         }
     }

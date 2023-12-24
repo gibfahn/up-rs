@@ -62,3 +62,4 @@ testutils = { path = "./tests/testutils" }
 test-log = {version = "0.2.13", default-features = false, features = ["trace"]}
 pretty_assertions = "1.4.0"
 pretty_assertions_sorted = "1.2.3"
+glob = "0.3.1"
