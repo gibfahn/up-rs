@@ -30,13 +30,21 @@ Working out the rules for preferences was fairly complex, but if you run `defaul
 
 As far as I can tell, the rules are:
 
-- `NSGlobalDomain` -> `~/Library/Preferences/.GlobalPreferences.plist`
-- `~/Library/Containers/{domain}/Data/Library/Preferences/{domain}.plist` if it exists.
-- `~/Library/Preferences/{domain}.plist`
+### Normal Preferences
+
+- if `NSGlobalDomain` -> `~/Library/Preferences/.GlobalPreferences.plist`
+- if file exists -> `~/Library/Containers/{domain}/Data/Library/Preferences/{domain}.plist`
+- else -> `~/Library/Preferences/{domain}.plist`
 
 If none of these exist then create `~/Library/Preferences/{domain}.plist`.
 
-Note that `defaults domains` actually prints out `~/Library/Containers/{*}/Data/Library/Preferences/{*}.plist` (i.e. any plist file name inside a container folder), but `defaults read` only actually checks `~/Library/Containers/{domain}/Data/Library/Preferences/{domain}.plist` (a plist file whose name matches the container folder.
+Note that `defaults domains` actually prints out `~/Library/Containers/{*}/Data/Library/Preferences/{*}.plist` (i.e. any plist file name inside a container folder), but `defaults read` only actually checks `~/Library/Containers/{domain}/Data/Library/Preferences/{domain}.plist` (a plist file whose name matches the container folder).
+
+### `CurrentHost` / `ByHost` Preferences
+
+- if `NSGlobalDomain` -> `~/Library/Preferences/ByHost/.GlobalPreferences.{hardware_uuid}.plist`
+- if file exists -> `~/Library/Containers/{domain}/Data/Library/Preferences/ByHost/{domain}.{hardware_uuid}.plist` if it exists.
+- else -> `~/Library/Preferences/ByHost/{domain}.{hardware_uuid}.plist`
 
 ### Useful Resources
 
