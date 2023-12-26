@@ -38,45 +38,55 @@ path = "src/main.rs"
 
 [dependencies]
 camino = { version = "1.1.6", features = ["serde1"] }
-chrono = "0.4.31"
-clap = { version = "4.4.11", features = ["derive", "env", "string", "wrap_help"] }
-clap_complete = "4.4.4"
+chrono = "0.4.33"
+clap = { version = "4.4.18", features = [
+  "derive",
+  "env",
+  "string",
+  "wrap_help",
+] }
+clap_complete = "4.4.9"
 color-eyre = "0.6.2"
 dirs = "5.0.1"
 displaydoc = "0.2.4"
 duct = "0.13.7"
 envy = "0.4.2"
-git2 = { version = "0.18.1", features = ["vendored-openssl", "vendored-libgit2"] }
+git2 = { version = "0.18.1", features = [
+  "vendored-openssl",
+  "vendored-libgit2",
+] }
 hex = "0.4.3"
 itertools = "0.12.0"
 log = "0.4.20"
 plist = "1.6.0"
-rayon = "1.8.0"
+rayon = "1.8.1"
 reqwest = { version = "0.11.23", features = ["blocking", "json"] }
 ring = "0.17.7"
-semver = "1.0.20"
-serde = "1.0.193"
-serde_derive = "1.0.193"
-serde_json = "1.0.108"
-serde_yaml = "0.9.29"
+semver = "1.0.21"
+serde = "1.0.195"
+serde_derive = "1.0.195"
+serde_json = "1.0.111"
+serde_yaml = "0.9.30"
 shell-escape = "0.1.5"
 shellexpand = "3.1.0"
-thiserror = "1.0.52"
+thiserror = "1.0.56"
 toml = "0.8.8"
 tracing = "0.1.40"
 tracing-error = "0.2.0"
-tracing-subscriber = {version = "0.3.18", features = ["env-filter"]}
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 url = "2.5.0"
 users = "0.11.0"
 walkdir = "2.4.0"
 
 [dev-dependencies]
-assert_cmd = "2.0.12"
-ignore = "0.4.21"
-predicates = "3.0.4"
-serial_test = "2.0.0"
+assert_cmd = "2.0.13"
+ignore = "0.4.22"
+predicates = "3.1.0"
+serial_test = "3.0.0"
 testutils = { path = "./tests/testutils" }
-test-log = {version = "0.2.14", default-features = false, features = ["trace"]}
+test-log = { version = "0.2.14", default-features = false, features = [
+  "trace",
+] }
 pretty_assertions = "1.4.0"
 pretty_assertions_sorted = "1.2.3"
 glob = "0.3.1"
