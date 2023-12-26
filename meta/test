@@ -1,0 +1,12 @@
+#!/bin/zsh
+
+set -euo pipefail
+
+# Run unit tests.
+# To see more verbose test logging set: LOG_LEVEL=trace
+
+which cargo-nextest &>/dev/null || brew install cargo-nextest
+
+set -x
+
+cargo nextest run --run-ignored=all
