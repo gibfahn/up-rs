@@ -7,20 +7,19 @@ set -euo pipefail
 set -x
 
 cargo upgrade
-cargo update
 
 {
   pushd tests/testutils
 
   cargo upgrade
-  cargo update
   cargo upgrade --incompatible
   popd
 }
 
 cargo upgrade --incompatible
+cargo update
 
 meta/test
 
-git add Cargo.lock Cargo.toml tests/testutils/Cargo.toml tests/testutils/Cargo.lock
+git add Cargo.lock Cargo.toml tests/testutils/Cargo.toml
 git commit -m 'chore(crates): update cargo dependencies'
