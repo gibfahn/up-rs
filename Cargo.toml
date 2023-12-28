@@ -1,23 +1,33 @@
+# Make this a workspace so that path dependencies below share the same lockfile.
+[workspace]
+
+[workspace.package]
+license = "MIT OR Apache-2.0"
+edition = "2021"
+repository = "https://github.com/gibfahn/up-rs"
+keywords = ["cli", "tool"]
+categories = ["command-line-utilities", "config"]
+readme = "README.md"
+authors = ["Gibson Fahnestock <gibfahn@gmail.com>"]
+
+# up-rs is the root package in this workspace.
 [package]
 name = "up-rs"
 version = "0.15.1"
-authors = ["Gibson Fahnestock <gibfahn@gmail.com>"]
-edition = '2021'
-license = "MIT OR Apache-2.0"
+authors.workspace = true
+categories.workspace = true
+edition.workspace = true
+keywords.workspace = true
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+
 description = """
 up-rs is a tool to help you keep your machine up to date.
 """
 documentation = "https://github.com/gibfahn/up-rs"
 homepage = "https://github.com/gibfahn/up-rs"
-repository = "https://github.com/gibfahn/up-rs"
-readme = "README.md"
-keywords = ["cli", "tool"]
-categories = ["command-line-utilities", "config"]
 exclude = ["tests/"]
-
-[[bin]]
-name = "up"
-path = "src/main.rs"
 
 [dependencies]
 camino = { version = "1.1.6", features = ["serde1"] }
