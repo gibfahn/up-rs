@@ -10,6 +10,9 @@ categories = ["command-line-utilities", "config"]
 readme = "README.md"
 authors = ["Gibson Fahnestock <gibfahn@gmail.com>"]
 
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
 # up-rs is the root package in this workspace.
 [package]
 name = "up-rs"

@@ -15,3 +15,6 @@ camino = { version = "1.1.6", features = ["serde1"] }
 color-eyre = "0.6.2"
 predicates = "3.0.4"
 walkdir = "2.4.0"
+
+[lints]
+workspace = true
