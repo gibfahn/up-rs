@@ -202,7 +202,7 @@ impl Task {
         }
 
         if let Some(lib) = &self.config.run_lib {
-            let maybe_data = self.config.data.as_ref().cloned();
+            let maybe_data = self.config.data.clone();
 
             let status = match lib.as_str() {
                 "link" => {
