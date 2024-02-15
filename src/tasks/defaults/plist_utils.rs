@@ -24,7 +24,7 @@ const ELLIPSIS: &str = "...";
 /**
 Get the path to the plist file given a domain.
 
-This function does not handle root-owned preferences, e.g. those at `/Library/Preferences/`.
+This function does not handle root-owned preferences, e.g. those at `/Library/Preferences/` or `/var/root/Library/Preferences/`.
 
 ## Preferences Locations
 

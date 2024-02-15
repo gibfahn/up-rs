@@ -206,16 +206,10 @@ impl Task {
             let maybe_data = self.config.data.clone();
 
             let status = match lib.as_str() {
-                "link" => {
-                    let data: LinkOptions =
+                "defaults" => {
+                    let data: DefaultsConfig =
                         parse_task_config(maybe_data, &self.name, false, env_fn)?;
-                    tasks::link::run(data, task_tempdir)
-                }
-
-                "git" => {
-                    let data: Vec<GitConfig> =
-                        parse_task_config(maybe_data, &self.name, false, env_fn)?;
-                    tasks::git::run(&data)
+                    tasks::defaults::run(data, task_tempdir)
                 }
 
                 "generate_git" => {
@@ -224,10 +218,16 @@ impl Task {
                     generate::git::run(&data)
                 }
 
-                "defaults" => {
-                    let data: DefaultsConfig =
+                "git" => {
+                    let data: Vec<GitConfig> =
                         parse_task_config(maybe_data, &self.name, false, env_fn)?;
-                    tasks::defaults::run(data, task_tempdir)
+                    tasks::git::run(&data)
+                }
+
+                "link" => {
+                    let data: LinkOptions =
+                        parse_task_config(maybe_data, &self.name, false, env_fn)?;
+                    tasks::link::run(data, task_tempdir)
                 }
 
                 "self" => {
