@@ -6,19 +6,15 @@ use camino::Utf8Path;
 use camino::Utf8PathBuf;
 use color_eyre::Result;
 use std::env;
+use std::fs;
 use std::process::Command;
 use std::process::Output;
-
-/// Check whether we're running in CI or not.
-fn in_ci() -> bool {
-    std::env::var("CI").is_ok()
-}
 
 /// Fail if rustfmt (cargo fmt) hasn't been run.
 #[test]
 fn test_rustfmt() -> Result<()> {
     let current_dir = Utf8PathBuf::try_from(env::current_dir()?)?;
-    let check_output = if in_ci() {
+    let check_output = if use_stable() {
         cargo_cmd(&current_dir, CargoCmdType::RustfmtStableCheck)?
     } else {
         let check_output = cargo_cmd(&current_dir, CargoCmdType::RustfmtCheck)?;
@@ -41,7 +37,7 @@ fn test_rustfmt() -> Result<()> {
 #[test]
 fn test_testutils_rustfmt() -> Result<()> {
     let current_dir = Utf8PathBuf::try_from(env::current_dir()?)?.join("tests/testutils");
-    let check_output = if in_ci() {
+    let check_output = if use_stable() {
         cargo_cmd(&current_dir, CargoCmdType::RustfmtStableCheck)?
     } else {
         let check_output = cargo_cmd(&current_dir, CargoCmdType::RustfmtCheck)?;
@@ -64,8 +60,8 @@ fn test_testutils_rustfmt() -> Result<()> {
 #[test]
 fn test_clippy() -> Result<()> {
     let current_dir = Utf8PathBuf::try_from(env::current_dir()?)?;
-    let clippy_output = if in_ci() {
-        cargo_cmd(&current_dir, CargoCmdType::ClippyCheck)?
+    let clippy_output = if use_stable() {
+        cargo_cmd(&current_dir, CargoCmdType::ClippyStableCheck)?
     } else {
         let clippy_output = cargo_cmd(&current_dir, CargoCmdType::ClippyCheck)?;
 
@@ -87,8 +83,8 @@ fn test_clippy() -> Result<()> {
 #[test]
 fn test_testutils_clippy() -> Result<()> {
     let current_dir = Utf8PathBuf::try_from(env::current_dir()?)?.join("tests/testutils");
-    let clippy_output = if in_ci() {
-        cargo_cmd(&current_dir, CargoCmdType::ClippyCheck)?
+    let clippy_output = if use_stable() {
+        cargo_cmd(&current_dir, CargoCmdType::ClippyStableCheck)?
     } else {
         let clippy_output = cargo_cmd(&current_dir, CargoCmdType::ClippyCheck)?;
 
@@ -129,7 +125,7 @@ fn test_no_todo() -> Result<()> {
         }
         // Find anything containing a todo.
         let path = Utf8PathBuf::try_from(file.path().to_path_buf())?;
-        let text = std::fs::read_to_string(&path)?;
+        let text = fs::read_to_string(&path)?;
 
         for disallowed_string in DISALLOWED_STRINGS {
             if text.contains(disallowed_string) {
@@ -147,6 +143,13 @@ fn test_no_todo() -> Result<()> {
     Ok(())
 }
 
+/// Check whether we can use nightly rust or whether we need to use stable rust.
+fn use_stable() -> bool {
+    // We assume in CI and in Linux you're not actually developing, just running a test, and
+    // thus you probably don't have nightly Rust installed.
+    std::env::var("CI").is_ok() || cfg!(target_os = "linux")
+}
+
 /// Whether to check for the formatter having been run, or to actually fix any
 /// formatting issues.
 #[derive(Debug, PartialEq, Eq)]
@@ -157,7 +160,9 @@ enum CargoCmdType {
     RustfmtCheck,
     /// Fix any formatting issues.
     RustfmtFix,
-    /// Run clippy.
+    /// Run clippy on stable.
+    ClippyStableCheck,
+    /// Run clippy on nightly.
     ClippyCheck,
     /// Fix clippy errors if possible.
     ClippyFix,
@@ -169,6 +174,16 @@ fn cargo_cmd(current_dir: &Utf8Path, fmt: CargoCmdType) -> Result<Output> {
         CargoCmdType::RustfmtStableCheck => ["fmt", "--", "--check"].iter(),
         CargoCmdType::RustfmtCheck => ["+nightly", "fmt", "--", "--check"].iter(),
         CargoCmdType::RustfmtFix => ["+nightly", "fmt"].iter(),
+        CargoCmdType::ClippyStableCheck => [
+            "clippy",
+            #[cfg(not(debug_assertions))]
+            "--release",
+            "--color=always",
+            "--",
+            "--deny=warnings",
+            "--allow=unknown_lints",
+        ]
+        .iter(),
         CargoCmdType::ClippyCheck => [
             "+nightly",
             "clippy",
@@ -177,6 +192,7 @@ fn cargo_cmd(current_dir: &Utf8Path, fmt: CargoCmdType) -> Result<Output> {
             "--color=always",
             "--",
             "--deny=warnings",
+            "--allow=unknown_lints",
         ]
         .iter(),
         CargoCmdType::ClippyFix => [
@@ -191,7 +207,7 @@ fn cargo_cmd(current_dir: &Utf8Path, fmt: CargoCmdType) -> Result<Output> {
         .iter(),
     });
     cmd.current_dir(current_dir);
-    println!("Running '{cmd:?}' in '{current_dir}'");
+    println!("Running '{cmd:?}'");
     let cmd_output = cmd.output()?;
     println!("  status: {}", cmd_output.status);
     if !cmd_output.stdout.is_empty() {
@@ -199,7 +215,7 @@ fn cargo_cmd(current_dir: &Utf8Path, fmt: CargoCmdType) -> Result<Output> {
     }
     if !cmd_output.stderr.is_empty() {
         println!(
-            "  stderr:\n\n{}",
+            "  stderr:\n<<<\n{}\n>>>",
             String::from_utf8_lossy(&cmd_output.stderr)
         );
     }
