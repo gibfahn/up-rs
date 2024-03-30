@@ -13,6 +13,7 @@ description = "Collection of functions used in multiple integration tests."
 assert_cmd = "2.0.13"
 camino = { version = "1.1.6", features = ["serde1"] }
 color-eyre = "0.6.2"
+miette = { version = "7.2.0", features = ["fancy"] }
 predicates = "3.1.0"
 walkdir = "2.4.0"
 
