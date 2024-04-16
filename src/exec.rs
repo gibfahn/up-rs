@@ -1,21 +1,23 @@
 //! Wrappers around executing commands.
 
-use log::Level;
+use crate::log;
+use duct::Expression;
 use std::ffi::OsString;
 use std::fmt::Write;
+use tracing::Level;
 
 /// Copy of the `duct::cmd` function that ensures we're info logging the command we're running.
-pub fn cmd<T, U>(program: T, args: U) -> duct::Expression
+pub fn cmd<T, U>(program: T, args: U) -> Expression
 where
     T: duct::IntoExecutablePath + Clone,
     U: IntoIterator + Clone,
     <U as IntoIterator>::Item: Into<OsString>,
 {
-    cmd_log(Level::Info, program, args)
+    cmd_log(Level::INFO, program, args)
 }
 
 /// Wrapper around `duct::cmd` function that lets us log the command we're running.
-pub fn cmd_log<T, U>(l: log::Level, program: T, args: U) -> duct::Expression
+pub fn cmd_log<T, U>(l: Level, program: T, args: U) -> Expression
 where
     T: duct::IntoExecutablePath + Clone,
     U: IntoIterator + Clone,
@@ -34,7 +36,8 @@ where
         .unwrap();
     }
 
-    log::log!(l, "{formatted_cmd}");
+    log!(l, "{formatted_cmd}");
+
     duct::cmd(program, args)
 }
 
@@ -46,7 +49,7 @@ macro_rules! cmd {
         {
             use std::ffi::OsString;
             let args: &[OsString] = &[$( Into::<OsString>::into($arg) ),*];
-            $crate::exec::cmd_log(log::Level::Info, $program, args)
+            $crate::exec::cmd_log(tracing::Level::INFO, $program, args)
         }
     };
 }
@@ -59,7 +62,7 @@ macro_rules! cmd_debug {
         {
             use std::ffi::OsString;
             let args: &[OsString] = &[$( Into::<OsString>::into($arg) ),*];
-            $crate::exec::cmd_log(log::Level::Debug, $program, args)
+            $crate::exec::cmd_log(tracing::Level::DEBUG, $program, args)
         }
     };
 }
@@ -78,7 +81,7 @@ macro_rules! cmd_if_wet {
             } else {
                 vec![$( Into::<OsString>::into($arg) ),*]
             };
-            $crate::exec::cmd_log(log::Level::Info, actual_program, &args)
+            $crate::exec::cmd_log(tracing::Level::INFO, actual_program, &args)
         }
     };
 }
@@ -93,11 +96,11 @@ macro_rules! cmd_debug_if_wet {
             let mut actual_program = $program;
             let args: Vec<OsString> = if $dry_run {
                 actual_program = "true";
-                vec![OsString::from("[Dry Run])"), Into::<OsString>::into($program), $( Into::<OsString>::into($arg) ),*]
+                vec![OsString::from("[Dry Run]"), Into::<OsString>::into($program), $( Into::<OsString>::into($arg) ),*]
             } else {
                 vec![$( Into::<OsString>::into($arg) ),*]
             };
-            $crate::exec::cmd_log(log::Level::Debug, actual_program, &args)
+            $crate::exec::cmd_log(tracing::Level::DEBUG, actual_program, &args)
         }
     };
 }

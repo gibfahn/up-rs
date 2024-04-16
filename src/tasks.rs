@@ -355,7 +355,7 @@ pub enum TaskError {
     },
     /// Env lookup error, please define '{var}' in your up.yaml:"
     EnvLookup {
-        /// THe env var we couldn't find.
+        /// The env var we couldn't find.
         var: String,
         /// Source error.
         source: color_eyre::eyre::Error,

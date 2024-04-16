@@ -1,6 +1,7 @@
 //! Up task execution.
 use crate::exec::cmd_log;
 use crate::generate;
+use crate::log;
 use crate::opts::GenerateGitConfig;
 use crate::opts::LinkOptions;
 use crate::opts::UpdateSelfOptions;
@@ -13,8 +14,6 @@ use camino::Utf8Path;
 use camino::Utf8PathBuf;
 use color_eyre::eyre::eyre;
 use color_eyre::eyre::Result;
-use log::log;
-use log::Level;
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
 use std::collections::HashMap;
@@ -28,6 +27,7 @@ use std::time::Instant;
 use tracing::debug;
 use tracing::info;
 use tracing::trace;
+use tracing::Level;
 
 /// Possible statuses an asynchronously running task can have.
 #[derive(Debug)]
@@ -277,7 +277,7 @@ impl Task {
         let task_output_file = task_tempdir.join("task_stdout_stderr.txt");
 
         let output = cmd_log(
-            Level::Debug,
+            Level::DEBUG,
             cmd.first().ok_or(E::EmptyCmd)?,
             cmd.get(1..).unwrap_or(&[]),
         )
@@ -337,9 +337,9 @@ impl Task {
     ) {
         let name = &self.name;
         let level = if command_success {
-            Level::Debug
+            Level::DEBUG
         } else {
-            Level::Error
+            Level::ERROR
         };
 
         // TODO(gib): How do we separate out the task output?

@@ -9,8 +9,19 @@ allow-expect-in-tests = true
 # https://rust-lang.github.io/rust-clippy/master/index.html#too_many_lines
 too-many-lines-threshold = 200
 
+# Macros that we shouldn't use in the codebase.
+# https://rust-lang.github.io/rust-clippy/master/index.html#/disallowed_macros
+disallowed-macros = [
+  # Disallow log:: crate things because they don't work with the test_log::test proc macro's tracing
+  # feature.
+  { path = "log::log", reason = "use tracing crate instead" },
+  { path = "log::error", reason = "use tracing::error!() instead" },
+  { path = "log::warn", reason = "use tracing::warn!() instead" },
+  { path = "log::info", reason = "use tracing::info!() instead" },
+  { path = "log::debug", reason = "use tracing::debug!() instead" },
+  { path = "log::trace", reason = "use tracing::trace!() instead" },
+]
+
 # Words that look like code but aren't, so shouldn't be surrounded by backticks in docstrings.
 # Refs: https://rust-lang.github.io/rust-clippy/master/index.html#doc_markdown
-doc-valid-idents = [
-  "..",
-]
+doc-valid-idents = [".."]
