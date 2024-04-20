@@ -26,8 +26,11 @@ use tracing::trace;
 use tracing::warn;
 use tracing::Level;
 use tracing_error::ErrorLayer;
+use tracing_indicatif::IndicatifLayer;
 use tracing_subscriber::filter::EnvFilter;
+use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::prelude::*;
+use tracing_subscriber::util::SubscriberInitExt;
 use up_rs::log;
 use up_rs::opts::Opts;
 
@@ -91,11 +94,13 @@ fn main() -> Result<()> {
 /// Set up logging to stderr and to a temp file path.
 /// Returns the log level filter chosen by the user if available, and the path to the log file.
 fn set_up_logging(opts: &Opts) -> (Utf8PathBuf, Option<LevelFilter>) {
+    let indicatif_layer = IndicatifLayer::new();
+
     let stderr_log = tracing_subscriber::fmt::layer()
         .compact()
         .with_target(false)
         .without_time()
-        .with_writer(std::io::stderr);
+        .with_writer(indicatif_layer.get_stderr_writer());
 
     let (log_path, log_file) = get_log_file_and_path(opts);
     let log_file_setup = log_file.is_some();
@@ -123,6 +128,7 @@ fn set_up_logging(opts: &Opts) -> (Utf8PathBuf, Option<LevelFilter>) {
     tracing_subscriber::registry()
         .with(file_log.with_filter(file_envfilter))
         .with(stderr_log.with_filter(stderr_envfilter))
+        .with(indicatif_layer)
         // Adds a color_eyre spantrace layer. This isn't used unless we start adding `#[instrument]`
         // to functions.
         .with(ErrorLayer::default())

@@ -184,21 +184,21 @@ impl Task {
         F: Fn(&str) -> Result<String, E>,
     {
         let name = &self.name;
-        info!("Running task '{name}'");
+        info!("Running");
 
         if let Some(mut cmd) = self.config.run_if_cmd.clone() {
-            debug!("Running '{name}' run_if command.");
+            debug!("Running run_if command.");
             for s in &mut cmd {
                 *s = env_fn(s)?;
             }
             // TODO(gib): Allow choosing how to validate run_if_cmd output (stdout, zero exit
             // code, non-zero exit code).
             if !self.run_command(CommandType::RunIf, &cmd, env, task_tempdir)? {
-                debug!("Skipping task '{name}' as run_if command failed.");
+                debug!("Skipping task as run_if command failed.");
                 return Ok(TaskStatus::Skipped);
             }
         } else {
-            debug!("You haven't specified a run_if command for '{name}', so it will always be run",);
+            debug!("You haven't specified a run_if command, so it will always be run",);
         }
 
         if let Some(lib) = &self.config.run_lib {

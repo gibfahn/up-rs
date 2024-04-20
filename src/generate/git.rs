@@ -53,10 +53,9 @@ pub fn run(configs: &[GenerateGitConfig]) -> Result<TaskStatus> {
 
 /// Run a single git config generation.
 pub fn run_single(generate_git_config: &GenerateGitConfig) -> Result<TaskStatus> {
-    debug!(
-        "Generating git config for: {path}",
-        path = generate_git_config.path
-    );
+    let _span =
+        tracing::info_span!("generate_git", repo = &generate_git_config.path.as_str()).entered();
+    debug!("Generating git config");
     let mut git_task = Task::from(&generate_git_config.path)?;
     debug!("Existing git config: {git_task:?}");
     let name = git_task.name.as_str();

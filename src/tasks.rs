@@ -231,7 +231,9 @@ fn run_tasks(
             .into_par_iter()
             .filter(|(_, task)| task.config.auto_run.unwrap_or(true))
             .map(|(_, task)| {
-                let task_tempdir = create_task_tempdir(temp_dir, task.name.as_str())?;
+                let task_name = task.name.as_str();
+                let _span = tracing::info_span!("task", task = task_name).entered();
+                let task_tempdir = create_task_tempdir(temp_dir, task_name)?;
                 Ok(run_task(task, env, &task_tempdir))
             })
             .collect::<Result<Vec<Task>>>()?,
@@ -315,7 +317,7 @@ fn run_task(mut task: Task, env: &HashMap<String, String>, task_tempdir: &Utf8Pa
     task.run(env_fn, env, task_tempdir);
     let elapsed_time = now.elapsed();
     if elapsed_time > Duration::from_secs(60) {
-        warn!("Task {} took {:?}", task.name, elapsed_time);
+        warn!("Task took {elapsed_time:?}");
     }
     task
 }

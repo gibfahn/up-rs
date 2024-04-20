@@ -38,6 +38,7 @@ use url::Url;
 /// Update a git repo.
 pub(crate) fn update(git_config: &GitConfig) -> Result<TaskStatus> {
     let now = Instant::now();
+    let _span = tracing::info_span!("git", repo = &git_config.path.as_str()).entered();
     let result = real_update(git_config)
         .map(|did_work| {
             if did_work {
@@ -52,10 +53,7 @@ pub(crate) fn update(git_config: &GitConfig) -> Result<TaskStatus> {
     let elapsed_time = now.elapsed();
     // TODO(gib): configurable logging for long actions.
     if elapsed_time > Duration::from_secs(60) {
-        warn!(
-            "Git update for {path} took {elapsed_time:?}",
-            path = git_config.path
-        );
+        warn!("Git update took {elapsed_time:?}",);
     }
     result
 }
@@ -213,7 +211,7 @@ pub(crate) fn real_update(git_config: &GitConfig) -> Result<bool> {
     };
     drop(default_remote); // Can't mutably use repo while this value is around.
     if !newly_created_repo {
-        warn_for_unpushed_changes(&mut repo, &user_git_config, &git_path)?;
+        warn_for_unpushed_changes(&mut repo, &user_git_config)?;
     }
     Ok(did_work)
 }
