@@ -8,20 +8,23 @@ use test_log::test;
 use tracing::debug;
 use tracing::info;
 
+/**
+Key that is in the global plist on a newly setup machine, and that has the same value as yaml and as returned by the `defaults read` command.
+*/
+const GLOBAL_KEY: &str = "com.apple.springing.delay";
+
 #[test]
 fn test_defaults_read_global() {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
 
-    let mut expected_value = cmd!("defaults", "read", "-g", "AppleLocale")
-        .read()
-        .unwrap();
+    let mut expected_value = cmd!("defaults", "read", "-g", GLOBAL_KEY).read().unwrap();
     expected_value.push('\n');
 
     // Reading a normal value should have the same output as the defaults command (but yaml not
     // defaults own format).
     {
         let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
-        cmd.args(["defaults", "read", "-g", "AppleLocale"]);
+        cmd.args(["defaults", "read", "-g", GLOBAL_KEY]);
         cmd.assert().success().stdout(expected_value.clone());
     }
 
@@ -35,7 +38,7 @@ fn test_defaults_read_global() {
                 "{}/Library/Preferences/.GlobalPreferences.plist",
                 dirs::home_dir().unwrap().display()
             ),
-            "AppleLocale",
+            GLOBAL_KEY,
         ]);
         cmd.assert().success().stdout(expected_value);
     }
@@ -44,7 +47,7 @@ fn test_defaults_read_global() {
     // a value to `defaults read`.
     {
         let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
-        cmd.args(["defaults", "read", "-g", "NSGlobalDomain", "AppleLocale"]);
+        cmd.args(["defaults", "read", "-g", "NSGlobalDomain", GLOBAL_KEY]);
         cmd.assert()
             .failure()
             .stderr(predicate::str::contains("both a domain and a key"));
