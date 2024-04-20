@@ -431,7 +431,9 @@ mod tests {
         }
 
         // Per-host sandboxed preference (`current_host` is true and the sandboxed plist exists).
-        {
+        // Skipped in github actions because Safari hasn't been run yet, so the ByHost preferences
+        // file doesn't yet exist.
+        if std::env::var("GITHUB_ACTIONS").is_err() {
             let domain_path = super::plist_path("com.apple.Safari", true).unwrap();
             let hardware_uuid = mac::get_hardware_uuid().unwrap();
             assert_eq!(
