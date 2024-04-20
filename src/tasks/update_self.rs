@@ -113,24 +113,24 @@ pub(crate) fn run(opts: &UpdateSelfOptions) -> Result<TaskStatus> {
 #[derive(Error, Debug, Display)]
 /// Errors thrown by this file.
 pub enum UpdateSelfError {
-    /// Failed to create directory '{path}'
+    /// Failed to create directory `{path}`
     CreateDir {
         /// Dir path we failed to create.
         path: Utf8PathBuf,
     },
-    /// Failed to create file '{path}'
+    /// Failed to create file `{path}`
     CreateFile {
         /// File path we failed to create.
         path: Utf8PathBuf,
     },
     /// Failed to copy to destination file.
     Copy,
-    /// Failed to set permissions for {path}.
+    /// Failed to set permissions for `{path}`.
     SetPermissions {
         /// Path we failed to set permissions for.
         path: Utf8PathBuf,
     },
-    /// Failed to rename {from} to {to}.
+    /// Failed to rename `{from}` to `{to}`.
     Rename {
         /// Old name (path).
         from: Utf8PathBuf,

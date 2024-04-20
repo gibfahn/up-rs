@@ -21,13 +21,14 @@ use std::sync::Arc;
 use std::time::Duration;
 use std::time::Instant;
 use tracing::debug;
-use tracing::info;
 use tracing::level_filters::LevelFilter;
 use tracing::trace;
 use tracing::warn;
+use tracing::Level;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::filter::EnvFilter;
 use tracing_subscriber::prelude::*;
+use up_rs::log;
 use up_rs::opts::Opts;
 
 /// Env vars to avoid printing when we log the current environment.
@@ -37,6 +38,7 @@ const IGNORED_ENV_VARS: [&str; 1] = [
 ];
 
 // TODO(gib): Return correct exit codes using https://docs.rs/exitcode/1.1.2/exitcode/.
+#[allow(clippy::cognitive_complexity)] // This function seems fairly simple to me.
 fn main() -> Result<()> {
     // Get starting time.
     let now = Instant::now();
@@ -76,11 +78,12 @@ fn main() -> Result<()> {
 
     // No need to log the time we took to run by default unless it actually took some time.
     let now_elapsed = now.elapsed();
-    if now_elapsed > Duration::from_secs(10) {
-        info!("Up-rs ran successfully in {now_elapsed:?}");
+    let level = if now_elapsed > Duration::from_secs(10) {
+        Level::INFO
     } else {
-        debug!("Up-rs ran successfully in {now_elapsed:?}");
-    }
+        Level::DEBUG
+    };
+    log!(level, "Up-rs ran successfully in {now_elapsed:?}");
     trace!("Finished up.");
     Ok(())
 }

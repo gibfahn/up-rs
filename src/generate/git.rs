@@ -218,7 +218,7 @@ fn parse_git_config(
 pub enum GenerateGitError {
     /// Invalid UTF-8.
     InvalidUtf8,
-    /// Invalid remote '{name}'.
+    /// Invalid remote `{name}`.
     InvalidRemote {
         /// Remote name.
         name: String,

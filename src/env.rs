@@ -152,7 +152,7 @@ fn add_builtin_env_vars(env: &mut HashMap<String, String>) -> Result<()> {
 #[derive(Error, Debug, Display)]
 /// Errors thrown by this file.
 pub enum EnvError {
-    /// Env lookup error, please define '{var:?}' in your up.yaml:"
+    /// Env lookup error, please define `{var:?}` in your up.yaml:"
     EnvLookup {
         /// Missing env var.
         var: String,

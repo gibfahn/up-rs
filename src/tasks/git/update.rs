@@ -261,11 +261,11 @@ fn set_up_remote(repo: &Repository, remote_config: &GitRemote) -> Result<bool> {
                     let mut host = "parse error".to_owned();
                     let mut path = "parse error".to_owned();
                     if let Ok(parsed) = parsed_result {
-                        protocol = parsed.scheme().to_owned();
+                        parsed.scheme().clone_into(&mut protocol);
                         if let Some(host_str) = parsed.host_str() {
-                            host = host_str.to_owned();
+                            host_str.clone_into(&mut host);
                         }
-                        path = parsed.path().trim_matches('/').to_owned();
+                        parsed.path().trim_matches('/').clone_into(&mut path);
                     }
 
                     let base = if cfg!(target_os = "macos") { format!("\n\n  - Check that this command returns 'osxkeychain':\n      \

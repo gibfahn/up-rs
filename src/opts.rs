@@ -147,7 +147,7 @@ pub(crate) struct RunOptions {
     #[clap(short = 'f', long, value_hint = ValueHint::Url)]
     pub(crate) fallback_url: Option<String>,
     /// Fallback path inside the git repo to get the config.
-    /// The default path assumes your fallback_url points to a dotfiles repo
+    /// The default path assumes your `fallback_url` points to a dotfiles repo
     /// that is linked into ~.
     #[clap(
         short = 'p',
@@ -343,9 +343,9 @@ pub struct DefaultsWriteOptions {
     If you want to append to an existing array or dictionary, use `...` as an array value, or `...:...` as a dictionary entry, to represent the existing items in the array.
     If there are duplicates, the first entry will be preserved.
 
-    So if the array contained ["a", "foo", "b", "bar", "c"], and you write ["foo", "...", "bar", "baz"], you would end up with ["foo", "a", "b", "bar", "c", "baz"]
+    So if the array contained `["a", "foo", "b", "bar", "c"]`, and you write `["foo", "...", "bar", "baz"]`, you would end up with `["foo", "a", "b", "bar", "c", "baz"]`
 
-    Similarly if the dict contained {"a": 1, "foo": 2, "b": 3, "bar": 4, "c": 5}, and you write {"foo": 6 "...":"...", "bar": 7, "baz": 8}, you would end up with {"a": 1, "foo": 6, "b": 3, "bar": 4, "c": 5, "baz": 8}
+    Similarly if the dict contained `{"a": 1, "foo": 2, "b": 3, "bar": 4, "c": 5}`, and you write `{"foo": 6 "...":"...", "bar": 7, "baz": 8}`, you would end up with `{"a": 1, "foo": 6, "b": 3, "bar": 4, "c": 5, "baz": 8}`
     */
     pub(crate) value: Option<String>,
 }

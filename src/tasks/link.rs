@@ -290,42 +290,42 @@ fn link_path(
 #[derive(Error, Debug, Display)]
 /// Errors thrown by this file.
 pub enum LinkError {
-    /// {name} directory '{path}' should exist and be a directory.
+    /// {name} directory `{path}` should exist and be a directory.
     MissingDir {
         /// Directory name.
         name: String,
         /// Directory path.
         path: Utf8PathBuf,
     },
-    /// Error canonicalizing {path}.
+    /// Error canonicalizing `{path}`.
     CanonicalizeError {
         /// Path we failed  to canonicalize.
         path: Utf8PathBuf,
         /// Source error.
         source: io::Error,
     },
-    /// Failed to create directory '{path}'
+    /// Failed to create directory `{path}`
     CreateDirError {
         /// Directory path we failed to create.
         path: Utf8PathBuf,
         /// Source error.
         source: io::Error,
     },
-    /// Failed to delete '{path}'.
+    /// Failed to delete `{path}`.
     DeleteError {
         /// Path we failed to delete.
         path: Utf8PathBuf,
         /// Source error.
         source: io::Error,
     },
-    /// Failure for path '{path}'.
+    /// Failure for path `{path}`.
     IoError {
         /// Path we got an IO error for.
         path: Utf8PathBuf,
         /// Source error.
         source: io::Error,
     },
-    /// Failed to rename from '{from_path}' to '{to_path}'.
+    /// Failed to rename from `{from_path}` to `{to_path}`.
     RenameError {
         /// Existing name.
         from_path: Utf8PathBuf,
@@ -334,7 +334,7 @@ pub enum LinkError {
         /// Source error.
         source: io::Error,
     },
-    /// Failed to symlink from '{from_path}' to '{to_path}'.
+    /// Failed to symlink from `{from_path}` to `{to_path}`.
     SymlinkError {
         /// Real file we were trying to symlink from.
         from_path: Utf8PathBuf,
@@ -343,7 +343,7 @@ pub enum LinkError {
         /// Source error.
         source: io::Error,
     },
-    /// Path '{path}' should have a parent directory.
+    /// Path `{path}` should have a parent directory.
     MissingParentDir {
         /// Path that doesn't have a parent dir.
         path: Utf8PathBuf,

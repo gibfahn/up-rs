@@ -7,14 +7,14 @@ use thiserror::Error;
 #[derive(Error, Debug, Display)]
 /// Errors thrown by the Up Crate.
 pub enum UpError {
-    /// Failed to delete '{path}'.
+    /// Failed to delete `{path}`.
     DeleteError {
         /// Path we tried to delete.
         path: Utf8PathBuf,
         /// Source error.
         source: io::Error,
     },
-    /// IO Failure for path '{path}'.
+    /// IO Failure for path `{path}`.
     IoError {
         /// Path we tried to write to.
         path: Utf8PathBuf,

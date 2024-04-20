@@ -155,6 +155,7 @@ pub(crate) fn run(config: DefaultsConfig, up_dir: &Utf8Path) -> Result<TaskStatu
     }
 }
 
+#[allow(clippy::doc_markdown)]
 #[derive(Error, Debug, Display)]
 /// Errors thrown by this file.
 pub enum DefaultsError {
@@ -190,7 +191,7 @@ pub enum DefaultsError {
         status: ExitStatus,
     },
 
-    /// Unable to create dir at: {path}.
+    /// Unable to create dir at: `{path}`.
     DirCreation {
         /// Dir we failed to create.
         path: Utf8PathBuf,
@@ -201,8 +202,8 @@ pub enum DefaultsError {
     /**
     Unable to copy file.
 
-    From: {from_path}
-    To: {to_path}
+    From: `{from_path}`
+    To: `{to_path}`
     */
     FileCopy {
         /// Path we tried to copy from.
@@ -213,7 +214,7 @@ pub enum DefaultsError {
         source: std::io::Error,
     },
 
-    /// Failed to read bytes from path {path}.
+    /// Failed to read bytes from path `{path}`.
     FileRead {
         /// File we tried to read.
         path: Utf8PathBuf,

@@ -224,7 +224,7 @@ fn test_defaults_write_local() {
     }
 )
 "#,
-            orig_up_check_value: r#"- replace: omw
+            orig_up_check_value: r"- replace: omw
   with: On my way!
   on: '1'
 - replace: zss
@@ -232,8 +232,8 @@ fn test_defaults_write_local() {
   on: '1'
 - replace: za
   with: https://apple.com/
-  on: '1'"#,
-            up_set_value: r#"
+  on: '1'",
+            up_set_value: r"
 - replace: omw
   with: Newer on my way
   on: '1'
@@ -244,7 +244,7 @@ fn test_defaults_write_local() {
 - replace: zss
   with: Use \U2318-\U21e7-Enter.
   on: '1'
-"#,
+",
 
             defaults_check_value: r#"(
         {
@@ -276,7 +276,7 @@ fn test_defaults_write_local() {
         },
     ];
 
-    for test_case in test_values.into_iter() {
+    for test_case in test_values {
         let TestCase {
             name,
             defaults_type,
@@ -299,7 +299,7 @@ fn test_defaults_write_local() {
                 "array" | "dict" => (),
                 _ => {
                     defaults_type_arg = format!("-{defaults_type}");
-                    args.push(&defaults_type_arg)
+                    args.push(&defaults_type_arg);
                 }
             };
             args.push(orig_defaults_set_value);

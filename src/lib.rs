@@ -49,6 +49,10 @@
     clippy::module_name_repetitions,
     // Not usually worth fixing.
     clippy::needless_pass_by_value,
+    // Don't error in stable about nightly-only lints.
+    unknown_lints,
+    // https://github.com/yaahc/displaydoc/issues/46
+    non_local_definitions,
 )]
 
 use crate::config::UpConfig;

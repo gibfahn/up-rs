@@ -1,4 +1,4 @@
-//! This module is called "z_style" rather than "style" so that it runs last
+//! This module is called "`z_style`" rather than "style" so that it runs last
 //! (for people who aren't aware of the `--no-fail-fast` flag for `cargo test`
 //! or would rather not type it).
 

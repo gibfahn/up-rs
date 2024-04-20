@@ -6,7 +6,7 @@ use std::fs::File;
 use std::os::unix;
 use testutils::assert;
 
-/// Set up a basic home_dir, run the link function against it, and make sure we
+/// Set up a basic `home_dir`, run the link function against it, and make sure we
 /// get the expected changes.
 #[test]
 fn test_new_link() {
@@ -28,7 +28,7 @@ fn test_new_link() {
     assert::nothing_at(&backup_dir);
 }
 
-/// Set up a basic home_dir, run the link function against it, and make sure we
+/// Set up a basic `home_dir`, run the link function against it, and make sure we
 /// get the expected changes.
 #[test]
 fn test_backup_files() {
@@ -166,7 +166,7 @@ fn test_hidden_and_nested() {
     assert::nothing_at(&backup_dir.join("badlink_to_dir"));
 }
 
-/// Pass a from_dir that doesn't exist and make sure we fail.
+/// Pass a `from_dir` that doesn't exist and make sure we fail.
 #[test]
 fn test_missing_from_dir() {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
@@ -186,7 +186,7 @@ fn test_missing_from_dir() {
     );
 }
 
-/// Pass a to_dir that doesn't exist and make sure we fail.
+/// Pass a `to_dir` that doesn't exist and make sure we fail.
 #[test]
 fn test_missing_to_dir() {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
@@ -233,7 +233,7 @@ fn test_uncreateable_backup_dir() {
 }
 
 /// Helper function to copy the test fixtures for a given test into the OS
-/// tempdir (and return the created home_dir and dotfile_dir paths.
+/// tempdir (and return the created `home_dir` and `dotfile_dir` paths.
 #[cfg(test)]
 fn get_home_dotfile_dirs(test_fn: &str) -> (Utf8PathBuf, Utf8PathBuf, Utf8PathBuf, Utf8PathBuf) {
     let temp_dir = testutils::temp_dir("up", test_fn).unwrap();
@@ -257,8 +257,8 @@ enum LinkResult {
 }
 
 impl LinkResult {
-    /// Convert LinkResult to a bool (LinkResult::Success -> true,
-    /// LinkResult::Failure -> false).
+    /// Convert [`LinkResult`] to a bool ([`LinkResult::Success`] -> true,
+    /// [`LinkResult::Failure`] -> false).
     fn to_bool(&self) -> bool {
         match &self {
             LinkResult::Success => true,
@@ -267,7 +267,7 @@ impl LinkResult {
     }
 }
 
-/// Helper function to run ./up link <home_dir> <dotfile_dir> <home_dir>/backup.
+/// Helper function to run ./up link <`home_dir`> <`dotfile_dir`> <`home_dir>/backup`.
 #[cfg(test)]
 fn run_link_cmd(
     dotfile_dir: &Utf8Path,

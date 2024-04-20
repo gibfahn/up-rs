@@ -327,10 +327,11 @@ fn create_task_tempdir(temp_dir: &Utf8Path, task_name: &str) -> Result<Utf8PathB
     Ok(task_tempdir)
 }
 
+#[allow(clippy::doc_markdown)]
 #[derive(Error, Debug, Display)]
 /// Errors thrown by this file.
 pub enum TaskError {
-    /// Task '{name}' {lib} failed.
+    /// Task `{name}` {lib} failed.
     TaskError {
         /// Source error.
         source: color_eyre::eyre::Error,
@@ -339,21 +340,21 @@ pub enum TaskError {
         /// The task name.
         name: String,
     },
-    /// Error walking directory '{path}':
+    /// Error walking directory `{path}`:
     ReadDir {
         /// The path we failed to walk.
         path: Utf8PathBuf,
         /// Source error.
         source: io::Error,
     },
-    /// Error reading file '{path}':
+    /// Error reading file `{path}`:
     ReadFile {
         /// The path we failed to read.
         path: Utf8PathBuf,
         /// Source error.
         source: io::Error,
     },
-    /// Env lookup error, please define '{var}' in your up.yaml:"
+    /// Env lookup error, please define `{var}` in your up.yaml:"
     EnvLookup {
         /// The env var we couldn't find.
         var: String,
@@ -362,13 +363,13 @@ pub enum TaskError {
     },
     /// Commmand was empty.
     EmptyCmd,
-    /// Task '{name}' had no run command.
+    /// Task `{name}` had no run command.
     MissingCmd {
         /// The task name.
         name: String,
     },
     /**
-    Task '{name}' {command_type} failed.Command: {cmd:?}.{suggestion}
+    Task `{name}` {command_type} failed.Command: {cmd:?}.{suggestion}
     */
     CmdFailed {
         /// The type of command that failed (check or run).
@@ -383,7 +384,7 @@ pub enum TaskError {
         suggestion: String,
     },
     /**
-    Task '{name}' {command_type} failed with exit code {code}. Command: {cmd:?}.
+    Task `{name}` {command_type} failed with exit code {code}. Command: {cmd:?}.
       Output: {output_file}
     */
     CmdNonZero {
@@ -399,7 +400,7 @@ pub enum TaskError {
         output_file: Utf8PathBuf,
     },
     /**
-    Task '{name}' {command_type} was terminated. Command: {cmd:?}, output: {output_file}.
+    Task `{name}` {command_type} was terminated. Command: {cmd:?}, output: {output_file}.
       Output: {output_file}
     */
     CmdTerminated {
@@ -414,7 +415,7 @@ pub enum TaskError {
     },
     /// Unexpectedly empty option found.
     UnexpectedNone,
-    /// Invalid yaml at '{path}':
+    /// Invalid yaml at `{path}`:
     InvalidYaml {
         /// Path that contained invalid yaml.
         path: Utf8PathBuf,
@@ -423,7 +424,7 @@ pub enum TaskError {
     },
     /// Unable to calculate the current user's home directory.
     MissingHomeDir,
-    /// Env lookup error, please define '{var}' in your up.yaml
+    /// Env lookup error, please define `{var}` in your up.yaml
     ResolveEnv {
         /// Env var we couldn't find.
         var: String,
