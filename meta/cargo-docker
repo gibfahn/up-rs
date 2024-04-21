@@ -1,33 +1,114 @@
 #!/usr/bin/env bash
 
-set -eu -o pipefail
+set -euo pipefail
 
-# Takes the same args you would pass to cargo.
-# Usage:
-#   `bin/build-in-docker build` builds in debug.
-#   `bin/build-in-docker test` tests in debug.
+usage() {
+  echo "$(
+    tput bold
+    tput setaf 74
+  )$0 [-h|--help] [-a|--arch arch] [-p|--platform platform] [docker_args --] [args...]$(tput sgr0)
 
-project_root="$(
-  cd "$(dirname "$0")"/..
-  pwd
-)"
+cargo-docker: run a shell in a docker image with cargo set up correctly.
 
-if [[ ${1:-} == -s || ${1:-} == --shell ]]; then
-  build_args=bash
-elif [[ -n "$*" ]]; then
-  build_args=(cargo "${@}")
-else
-  build_args=(/bin/bash -cx 'rustup component add clippy rustfmt && cargo test --release')
-fi
+Takes the same args you would pass to cargo.
 
-# Cross-compile this project into a static Linux binary.
+Without arguments runs an interactive shell.
 
-# Default target is set in Dockerfile ~/.cargo/config as x86_64-unknown-linux-musl
-set -x
-docker run --rm -it \
-  --pull=always \
-  -v "${XDG_CACHE_HOME:-$HOME/.cache}"/docker/cargo/registry:/root/.cargo/registry \
-  -v "${XDG_CACHE_HOME:-$HOME/.cache}"/docker/cargo/git:/root/.cargo/git \
-  -v "$project_root":/volume \
-  clux/muslrust \
-  "${build_args[@]}"
+OPTIONS:
+
+--arch: build for a different arch to the current one ($(uname -m)), e.g. amd64 or arm64
+--platform: build for a different platform to the current one (linux/$(uname -m)), e.g. linux/amd64 or linux/arm64
+
+EXAMPLES:
+
+\`meta/cargo-docker cargo build\` builds in debug.
+\`meta/cargo-docker cargo test --release\` tests in release mode.
+\`meta/cargo-docker --arch=amd64\` puts you in a shell in an Intel image.
+\`meta/cargo-docker --arch=arm64 -- cargo build\` runs cargo build in an arm64 image
+\`meta/cargo-docker --arch=arm64 -it -- cargo build\` runs cargo build in an interactive arm64 image
+"
+}
+
+main() {
+  parse_args "$@"
+
+  : "${arch:="$(uname -m)"}" # returns x86_64/arm64 on Darwin, x86_64/aarch64 on Linux.
+
+  # Convert user-specified arch to docker arch.
+  case $arch in
+    x86_64 | amd64 | intel | linux/amd64) docker_arch=amd64 rust_arch=x86_64 ;;
+    arm64 | aarch64 | arm | linux/arm64) docker_arch=arm64 rust_arch=aarch64 ;;
+    *) error "Unknown architecture '$arch'" ;;
+  esac
+  unset arch
+
+  # Interactive shell means interactive
+  if [[ "${#build_args[@]}" == 0 ]]; then
+    docker_args+=(-it)
+  fi
+
+  set -x
+  # shellcheck disable=SC2086 # We want tty_flag to expand to nothing if not set.
+  # https://docs.rs/cc/latest/cc/#external-configuration-via-environment-variables
+  docker run --rm "${docker_args[@]}" \
+    --platform="linux/$docker_arch" \
+    -e CC=musl-gcc \
+    -e AR=ar \
+    -e RANLIB=ranlib \
+    -e CARGO_BUILD_TARGET="${rust_arch}-unknown-linux-musl" \
+    -v "${CARGO_HOME:-$HOME/.cargo}"/registry:/root/.cargo/registry \
+    -v "$PWD":/code \
+    -v "$HOME"/.netrc:/root/.netrc \
+    -w /code \
+    clux/muslrust:stable \
+    "${build_args[@]}"
+}
+
+parse_args() {
+  docker_args=()
+  build_args=()
+
+  while [[ $# != 0 ]]; do
+    [[ ${1:-} =~ ^(--help|-h)$ ]] && {
+      usage
+      exit
+    }
+
+    [[ ${1:-} =~ ^(--arch|-a)$ ]] && {
+      arch=$2
+      shift 2
+      continue
+    }
+
+    [[ ${1:-} =~ ^(--platform|-p)$ ]] && {
+      arch=$2
+      shift 2
+      continue
+    }
+
+    [[ $1 == "--" ]] && {
+      shift
+      docker_args=("${build_args[@]}")
+      build_args=("${@}")
+      shift "$#"
+      return
+    }
+
+    [[ $# != 0 ]] && {
+      build_args+=("$1")
+      shift 1
+      continue
+    }
+  done
+}
+
+# Usage: exit message [rc]
+error() {
+  local RED='\033[0;31m' NC='\033[0m'
+  echo -e "${RED}Error:${NC} $1"
+  exit "${2:-1}"
+}
+
+main "$@"
+
+# vim: filetype=bash

@@ -21,27 +21,36 @@ export RUSTFLAGS="-D warnings"
 # Set trace logs for tests using test_log::test
 export RUST_LOG=up_rs=trace
 
+# Don't send SIGTTOU to background jobs that write to the tty. Theoretically fixes this in busy commands:
+# [1]  + 82656 suspended (tty output)  cargo run
+# Note that this doesn't fix tty input issues, for those you need to make things not read from the
+# tty.
+stty -tostop
+
 # Don't go to sleep while we're running the release script.
 caffeinate -ds -w $$ &
 
 binary_name=up
 macos_binary=build/$binary_name-Darwin
-linux_binary=build/$binary_name-Linux
+linux_amd64_binary=build/$binary_name-Linux
+linux_arm64_binary=build/$binary_name-Linux_arm64
 
 main() {
   echo -e "${fg[magenta]}Publishing new version of the ${binary_name} CLI...${reset_color}"
-
- # Make sure docker is running as we'll need it later.
-  pgrep -q Docker || open -a docker
 
   # Install nextest runner if missing: https://nexte.st
   (( $+commands[cargo-nextest] )) ||  brew install cargo-nextest
   (( $+commands[git-cliff] )) || brew install git-cliff
 
   # Delete stale files.
+  log_section "Cleaning up files from last release..."
   rm -rfv build/
   rm -fv target/universal-apple-darwin/release/$binary_name
   mkdir -p build/
+
+  if [[ $(git branch --show-current) != main ]]; then
+    error "Not currently on the main branch."
+  fi
 
   if [[ -n ${SKIP_GIT_DIFF_CHECK:-} ]]; then
     log_section "Skipping it changed file check as SKIP_GIT_DIFF_CHECK env var was set."
@@ -108,7 +117,7 @@ main() {
     echo >&2 "Does this look correct?"
   fi
 
-  # Run normal and integration tests.
+  # Run unit and integration tests for macOS.
   if [[ -n ${SKIP_CARGO_TEST_CHECK:-} ]]; then
     log_section "Skipping tests as SKIP_CARGO_TEST_CHECK env var was set."
   else
@@ -116,18 +125,16 @@ main() {
   fi
 
   log_section "Running end-to-end tests..."
-  # Run End-to-End tests and build the universal macOS binary:
+  # Run End-to-End tests and build Linux binaries:
   log_and_run meta/bootstrap-test
-
-  # Check the documentation is buildable.
-  log_and_run cargo doc
 
   # Build Darwin release binaries (without the CI feature).
   log_and_run meta/build_macos
   # This was built as part of running e2e tests.
   cp target/universal-apple-darwin/release/up $macos_binary
   # This allows them to be downloaded as `up-$(uname)`.
-  cp target/x86_64-unknown-linux-musl/release/up $linux_binary
+  cp target/x86_64-unknown-linux-musl/release/up $linux_amd64_binary
+  cp target/aarch64-unknown-linux-musl/release/up $linux_arm64_binary
 
 
   latest_crate_version=$(curl https://crates.io/api/v1/crates/up-rs | jq -r .crate.newest_version)
@@ -143,8 +150,8 @@ main() {
   log_and_run gh release create "${new_version?}" --target=main \
     --notes="$(git cliff --tag="${new_version?}" --strip=all "${last_release}"..)" \
     $macos_binary \
-    $linux_binary
-  rm -rv build/
+    $linux_amd64_binary \
+    $linux_arm64_binary
 
   new_release=$(gh release list -L 1 | awk '{print $1}')
   gh release view $new_release

@@ -9,20 +9,34 @@ cd $project_dir
 
 set -x
 
-meta/cargo-docker
+# Generates target/aarch64-unknown-linux-musl/release/liv
+meta/cargo-docker --arch arm64 -- bash -cex 'rustup component add clippy rustfmt && cargo test --release --no-fail-fast --color=always -- --include-ignored'
+# Generates target/x86_64-unknown-linux-musl/release/liv
+meta/cargo-docker --arch amd64 -- bash -cex 'rustup component add clippy rustfmt && cargo test --release --no-fail-fast --color=always -- --include-ignored'
 
-docker run -it --rm -w /root \
-  -v "$PWD"/target/x86_64-unknown-linux-musl/release/up:/usr/local/bin/up \
-  -v "$PWD"/tests/fixtures/bootstrap-test/git/git-credential-netrc:/usr/local/bin/git-credential-netrc \
-  -v "$HOME"/.netrc:/root/.netrc \
-  -v "$PWD"/tests/fixtures/bootstrap-test/git/git:/usr/local/bin/git \
-  -v "$PWD"/tests/fixtures/bootstrap-test/git/config:/root/.gitconfig \
-  alpine /bin/sh -c 'up run --bootstrap --fallback-url gibfahn/dot'
+for arch in arm64 amd64; do
+  case $arch in
+    x86_64 | amd64 | intel | linux/amd64) docker_arch=amd64 rust_arch=x86_64 ;;
+    arm64 | aarch64 | arm | linux/arm64) docker_arch=arm64 rust_arch=aarch64 ;;
+    *) error "Unknown architecture '$arch'" ;;
+  esac
 
-docker run -it --rm -w /root \
-  -v "$PWD"/target/x86_64-unknown-linux-musl/release/up:/usr/local/bin/up \
-  -v "$PWD"/tests/fixtures/bootstrap-test/git/git-credential-netrc:/usr/local/bin/git-credential-netrc \
-  -v "$HOME"/.netrc:/root/.netrc \
-  -v "$PWD"/tests/fixtures/bootstrap-test/git/git:/usr/local/bin/git \
-  -v "$PWD"/tests/fixtures/bootstrap-test/git/config:/root/.gitconfig \
-  ubuntu /bin/sh -c 'apt update && apt install -y ca-certificates && up run -bf gibfahn/dot'
+  docker run -it --rm -w /root \
+    --platform=linux/"$docker_arch" \
+    -v "$PWD/target/$rust_arch-unknown-linux-musl/release/up":/usr/local/bin/up \
+    -v "$PWD"/tests/fixtures/bootstrap-test/git/git-credential-netrc:/usr/local/bin/git-credential-netrc \
+    -v "$HOME"/.netrc:/root/.netrc \
+    -v "$PWD"/tests/fixtures/bootstrap-test/git/git:/usr/local/bin/git \
+    -v "$PWD"/tests/fixtures/bootstrap-test/git/config:/root/.gitconfig \
+    alpine /bin/sh -c 'up -l trace run --bootstrap --fallback-url gibfahn/dot'
+
+  docker run -it --rm -w /root \
+    --platform=linux/"$docker_arch" \
+    -v "$PWD/target/$rust_arch-unknown-linux-musl/release/up":/usr/local/bin/up \
+    -v "$PWD"/tests/fixtures/bootstrap-test/git/git-credential-netrc:/usr/local/bin/git-credential-netrc \
+    -v "$HOME"/.netrc:/root/.netrc \
+    -v "$PWD"/tests/fixtures/bootstrap-test/git/git:/usr/local/bin/git \
+    -v "$PWD"/tests/fixtures/bootstrap-test/git/config:/root/.gitconfig \
+    ubuntu /bin/sh -c 'apt update && apt install -y ca-certificates && up -l trace run -bf gibfahn/dot'
+
+done
