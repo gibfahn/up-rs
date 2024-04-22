@@ -2,11 +2,13 @@
 #![cfg(target_os = "macos")]
 
 use duct::cmd;
+use duct::Expression;
 use predicates::prelude::*;
 use pretty_assertions::assert_eq;
 use test_log::test;
 use tracing::debug;
 use tracing::info;
+use up_rs::exec::LivDuct;
 
 /**
 Key that is in the global plist on a newly setup machine, and that has the same value as yaml and as returned by the `defaults read` command.
@@ -305,7 +307,9 @@ fn test_defaults_write_local() {
             args.push(orig_defaults_set_value);
 
             // Write the original value to a test plist file.
-            cmd("defaults", &args).run().unwrap();
+            cmd("defaults", &args)
+                .run_with(Expression::stdout_to_stderr)
+                .unwrap();
         }
 
         {

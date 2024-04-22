@@ -1,10 +1,12 @@
 //! Utility functions for updating plist files.
 use crate::cmd;
+use crate::exec::LivDuct;
 use crate::tasks::defaults::DefaultsError as E;
 use crate::utils::files;
 use crate::utils::mac;
 use camino::Utf8Path;
 use camino::Utf8PathBuf;
+use duct::Expression;
 use itertools::Itertools;
 use plist::Dictionary;
 use std::collections::HashMap;
@@ -301,8 +303,7 @@ fn write_plist(
 
     cmd!("sudo", "tee", plist_path)
         .stdin_bytes(plist_bytes)
-        .stdout_null()
-        .run()
+        .run_with(Expression::stdout_null)
         .map_err(|e| E::PlistSudoWrite {
             path: plist_path.to_path_buf(),
             source: e,

@@ -22,6 +22,12 @@ disallowed-macros = [
   { path = "log::trace", reason = "use tracing::trace!() instead" },
 ]
 
+# Methods that we shouldn't use in the codebase.
+# https://rust-lang.github.io/rust-clippy/master/index.html#/disallowed_methods
+disallowed-methods = [
+  { path = "duct::Expression::run", reason = "See the `.run_with()` function in src/exec.rs for reasoning and replacement." },
+]
+
 # Words that look like code but aren't, so shouldn't be surrounded by backticks in docstrings.
 # Refs: https://rust-lang.github.io/rust-clippy/master/index.html#doc_markdown
 doc-valid-idents = [".."]

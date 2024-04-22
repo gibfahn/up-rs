@@ -1,7 +1,10 @@
 use assert_cmd::cargo::cargo_bin;
 use camino::Utf8PathBuf;
+use duct::Expression;
+use serde::de::Expected;
 use std::collections::HashMap;
 use testutils::assert;
+use up_rs::exec::LivDuct;
 
 #[cfg(target_os = "macos")]
 const EXPECTED_DEFAULTS_VALUE: &str = r#"{
@@ -42,7 +45,7 @@ fn test_up_run_passing() {
 
     #[cfg(target_os = "macos")]
     {
-        _ = up_rs::cmd!("defaults", "delete", test_plist).run();
+        _ = up_rs::cmd!("defaults", "delete", test_plist).run_with(Expression::stdout_to_stderr);
     }
 
     let mut cmd = testutils::test_binary_cmd("up", &temp_dir);

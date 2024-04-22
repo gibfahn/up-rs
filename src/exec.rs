@@ -1,9 +1,12 @@
 //! Wrappers around executing commands.
 
 use crate::log;
+use camino::Utf8Path;
 use duct::Expression;
 use std::ffi::OsString;
 use std::fmt::Write;
+use std::io;
+use std::process::Output;
 use tracing::Level;
 
 /// Copy of the `duct::cmd` function that ensures we're info logging the command we're running.
@@ -103,4 +106,41 @@ macro_rules! cmd_debug_if_wet {
             $crate::exec::cmd_log(tracing::Level::DEBUG, actual_program, &args)
         }
     };
+}
+
+/// Trait to allow retrying a command a number of times.
+pub trait LivDuct {
+    /**
+    Run with the stdout sent to wherever `stdout_fn` points to.
+
+    You should normally use this instead of the `.run()` function, to make sure you don't
+    accidentally write stdout to liv's stdout, as this pollutes stdout, and may cause
+    liv commands to fail for users.
+    */
+    fn run_with(&self, stdout_fn: fn(&Expression) -> Expression) -> io::Result<Output>;
+
+    /**
+    Run with the stdout sent to path `path`.
+
+    Alternative to the `.run_with()` function as this takes a path argument.
+    */
+    fn run_with_path(&self, path: &Utf8Path) -> io::Result<Output>;
+}
+
+impl LivDuct for Expression {
+    /// Run with the stdout sent to wherever `stdout_fn` points to.
+    fn run_with(&self, stdout_fn: fn(&Expression) -> Expression) -> io::Result<Output> {
+        // This method is blocked elsewhere to force people to use the `.run_with*()` functions.
+        // So we need to be able to use it here.
+        #[allow(clippy::disallowed_methods)]
+        stdout_fn(self).run()
+    }
+
+    /// Run with the stdout sent to wherever `stdout_fn` points to.
+    fn run_with_path(&self, path: &Utf8Path) -> io::Result<Output> {
+        // This method is blocked elsewhere to force people to use the `.run_with*()` functions.
+        // So we need to be able to use it here.
+        #[allow(clippy::disallowed_methods)]
+        self.stdout_path(path).run()
+    }
 }

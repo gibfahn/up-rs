@@ -1,5 +1,6 @@
 //! Up task execution.
 use crate::exec::cmd_log;
+use crate::exec::LivDuct;
 use crate::generate;
 use crate::log;
 use crate::opts::GenerateGitConfig;
@@ -283,10 +284,9 @@ impl Task {
         )
         .dir(task_tempdir)
         .full_env(env)
-        .stdout_path(&task_output_file)
         .stderr_path(&task_output_file)
         .unchecked()
-        .run();
+        .run_with_path(&task_output_file);
 
         let output = output.map_err(|e| {
             let suggestion = match e.kind() {
