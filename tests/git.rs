@@ -1,19 +1,24 @@
 use assert_cmd::Command;
 use camino::Utf8Path;
-use testutils::assert;
+use color_eyre::Result;
+use testutils::ensure_eq;
+use testutils::ensure_utils;
+use testutils::AssertCmdExt;
 
 /// Make sure we can't run this without required args.
 #[test]
-fn test_missing_args() {
+fn test_missing_args() -> Result<()> {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
-    let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
+    let mut cmd = testutils::crate_binary_cmd("up", &temp_dir)?;
     cmd.args(["git"].iter());
     cmd.assert().failure();
+
+    Ok(())
 }
 
 /// Actually try cloning a git repository and make sure we can update.
 #[test]
-fn test_real_clone() {
+fn test_real_clone() -> Result<()> {
     // Repo commit history:
     //
     // ❯ g la
@@ -31,36 +36,40 @@ fn test_real_clone() {
 
     // Clone to directory.
     {
-        up_git_cmd(&git_path, &temp_dir).assert().success();
-        assert::file(&git_path.join("README"), "Hello World!\n");
+        up_git_cmd(&git_path, &temp_dir)?
+            .assert()
+            .eprint_stdout_stderr()
+            .try_success()?;
+        ensure_utils::file(&git_path.join("README"), "Hello World!\n")?;
         check_repo(
             &git_path,
             "7fd1a60b01f91b314f59955a4e4d4e80d8edf11d",
             "master",
             "up/master",
-        );
-        assert_eq!(
-            run_git_cmd(&git_path, &["rev-parse", "up/HEAD"], true).trim(),
+        )?;
+        ensure_eq!(
+            run_git_cmd(&git_path, &["rev-parse", "up/HEAD"], true)?.trim(),
             "7fd1a60b01f91b314f59955a4e4d4e80d8edf11d",
         );
     }
 
     // Clone again to the same directory, different branch.
     {
-        up_git_cmd(&git_path, &temp_dir)
+        up_git_cmd(&git_path, &temp_dir)?
             .args(["--branch", "test"])
             .assert()
-            .success();
+            .eprint_stdout_stderr()
+            .try_success()?;
         check_repo(
             &git_path,
             "b3cbd5bbd7e81436d2eee04537ea2b4c0cad4cdf",
             "test",
             "up/test",
-        );
+        )?;
         // File from master still there.
-        assert::file(&git_path.join("README"), "Hello World!\n");
+        ensure_utils::file(&git_path.join("README"), "Hello World!\n")?;
         // File from test was added.
-        assert::file(&git_path.join("CONTRIBUTING.md"), "## Contributing\n");
+        ensure_utils::file(&git_path.join("CONTRIBUTING.md"), "## Contributing\n")?;
     }
 
     // Reset head backwards and check if fast-forwards
@@ -78,36 +87,36 @@ fn test_real_clone() {
                 "up/master",
             ],
             true,
-        );
+        )?;
         // Add a commit not on master.
-        run_git_cmd(&git_path, &["merge", "--ff", "up/test"], true);
+        run_git_cmd(&git_path, &["merge", "--ff", "up/test"], true)?;
         // TODO(gib): change `checkout -` to `switch -` once base docker image supports
         // it. Go back to master.
-        run_git_cmd(&git_path, &["checkout", "-"], true);
+        run_git_cmd(&git_path, &["checkout", "-"], true)?;
         // Reset master to previous commit.
-        run_git_cmd(&git_path, &["reset", "--hard", "@^"], true);
+        run_git_cmd(&git_path, &["reset", "--hard", "@^"], true)?;
         // Create a branch without an upstream (we shouldn't prune).
-        run_git_cmd(&git_path, &["branch", "no_prune_no_upstream", "@"], true);
+        run_git_cmd(&git_path, &["branch", "no_prune_no_upstream", "@"], true)?;
 
         // Create a branch with an upstream and no diff (we should prune).
         run_git_cmd(
             &git_path,
             &["branch", "--track", "should_be_pruned", "@"],
             true,
-        );
-        let mut cmd = up_git_cmd(&git_path, &temp_dir);
+        )?;
+        let mut cmd = up_git_cmd(&git_path, &temp_dir)?;
         cmd.args(["--branch", "test"]);
-        cmd.assert().success();
+        cmd.assert().eprint_stdout_stderr().try_success()?;
         check_repo(
             &git_path,
             "b3cbd5bbd7e81436d2eee04537ea2b4c0cad4cdf",
             "test",
             "up/test",
-        );
+        )?;
         // File from master still there.
-        assert::file(&git_path.join("README"), "Hello World!\n");
+        ensure_utils::file(&git_path.join("README"), "Hello World!\n")?;
         // File from test was added.
-        assert::file(&git_path.join("CONTRIBUTING.md"), "## Contributing\n");
+        ensure_utils::file(&git_path.join("CONTRIBUTING.md"), "## Contributing\n")?;
 
         // Branch shouldn't have been pruned as we didn't set the flag.
         run_git_cmd(
@@ -119,29 +128,29 @@ fn test_real_clone() {
                 "refs/heads/should_be_pruned",
             ],
             true,
-        );
+        )?;
 
-        let mut cmd = up_git_cmd(&git_path, &temp_dir);
+        let mut cmd = up_git_cmd(&git_path, &temp_dir)?;
         // This time try to prune.
         cmd.args(["--branch", "test", "--prune"]);
-        cmd.assert().success();
+        cmd.assert().eprint_stdout_stderr().try_success()?;
         check_repo(
             &git_path,
             "b3cbd5bbd7e81436d2eee04537ea2b4c0cad4cdf",
             "test",
             "up/test",
-        );
+        )?;
         // File from master still there.
-        assert::file(&git_path.join("README"), "Hello World!\n");
+        ensure_utils::file(&git_path.join("README"), "Hello World!\n")?;
         // File from test was added.
-        assert::file(&git_path.join("CONTRIBUTING.md"), "## Contributing\n");
+        ensure_utils::file(&git_path.join("CONTRIBUTING.md"), "## Contributing\n")?;
 
         // Branch has matching remote-tracking branch so should still be there.
         run_git_cmd(
             &git_path,
             &["show-ref", "--verify", "--quiet", "refs/heads/master"],
             true,
-        );
+        )?;
 
         // Branch has no upstream so should still be there.
         run_git_cmd(
@@ -153,7 +162,7 @@ fn test_real_clone() {
                 "refs/heads/no_prune_no_upstream",
             ],
             true,
-        );
+        )?;
 
         // Branch has uncommitted changes so should still be there.
         run_git_cmd(
@@ -165,7 +174,7 @@ fn test_real_clone() {
                 "refs/heads/no_prune_unmerged_changes",
             ],
             true,
-        );
+        )?;
 
         // We asked to prune so the branch should no longer be there.
         run_git_cmd(
@@ -177,12 +186,14 @@ fn test_real_clone() {
                 "refs/heads/should_be_pruned",
             ],
             false,
-        );
+        )?;
     }
+
+    Ok(())
 }
 
-fn up_git_cmd(git_path: &Utf8Path, temp_dir: &Utf8Path) -> Command {
-    let mut cmd = testutils::test_binary_cmd("up", temp_dir);
+fn up_git_cmd(git_path: &Utf8Path, temp_dir: &Utf8Path) -> Result<Command> {
+    let mut cmd = testutils::crate_binary_cmd("up", temp_dir)?;
     cmd.args(
         [
             "git",
@@ -195,38 +206,46 @@ fn up_git_cmd(git_path: &Utf8Path, temp_dir: &Utf8Path) -> Command {
         ]
         .iter(),
     );
-    cmd
+
+    Ok(cmd)
 }
 
 /// Run a `git` command to test the internal git setup works as expected.
-fn run_git_cmd(git_path: &Utf8Path, args: &[&str], success: bool) -> String {
+fn run_git_cmd(git_path: &Utf8Path, args: &[&str], success: bool) -> Result<String> {
     let assert = Command::new("git")
         .args(["-C", git_path.as_str()])
         .args(args)
         .assert();
     let assert = match success {
-        true => assert.success(),
-        false => assert.failure(),
+        true => assert.eprint_stdout_stderr().try_success()?,
+        false => assert.eprint_stdout_stderr().try_failure()?,
     };
-    String::from_utf8_lossy(&assert.get_output().stdout).to_string()
+    Ok(String::from_utf8_lossy(&assert.get_output().stdout).to_string())
 }
 
-fn check_repo(git_path: &Utf8Path, head_commit: &str, head_branch: &str, head_upstream: &str) {
-    assert_eq!(
-        run_git_cmd(git_path, &["rev-parse", "HEAD"], true).trim(),
+fn check_repo(
+    git_path: &Utf8Path,
+    head_commit: &str,
+    head_branch: &str,
+    head_upstream: &str,
+) -> Result<()> {
+    ensure_eq!(
+        run_git_cmd(git_path, &["rev-parse", "HEAD"], true)?.trim(),
         head_commit
     );
-    assert_eq!(
-        run_git_cmd(git_path, &["rev-parse", "--abbrev-ref", "HEAD"], true).trim(),
+    ensure_eq!(
+        run_git_cmd(git_path, &["rev-parse", "--abbrev-ref", "HEAD"], true)?.trim(),
         head_branch
     );
-    assert_eq!(
+    ensure_eq!(
         run_git_cmd(
             git_path,
             &["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"],
             true
-        )
+        )?
         .trim(),
         head_upstream
     );
+
+    Ok(())
 }

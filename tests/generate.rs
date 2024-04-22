@@ -1,15 +1,18 @@
+use color_eyre::Result;
 use std::collections::HashMap;
 use std::fs;
-use testutils::assert;
+use testutils::ensure_eq;
+use testutils::ensure_utils;
+use testutils::AssertCmdExt;
 use walkdir::WalkDir;
 
 /// Test that we can generate tasks from a sample workspace.
 #[test]
-fn test_generate_passing() {
+fn test_generate_passing() -> Result<()> {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
 
     testutils::copy_all(
-        &testutils::fixture_dir(testutils::function_path!()),
+        &testutils::fixtures_subdir(testutils::function_path!())?,
         &temp_dir,
     )
     .unwrap();
@@ -36,9 +39,9 @@ fn test_generate_passing() {
             it.skip_current_dir();
         }
     }
-    assert_eq!(expected_git_dirs_count, renamed_git_dirs);
+    ensure_eq!(expected_git_dirs_count, renamed_git_dirs);
 
-    let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
+    let mut cmd = testutils::crate_binary_cmd("up", &temp_dir)?;
 
     let mut envs = HashMap::new();
     envs.insert("root_dir", &temp_dir);
@@ -52,21 +55,23 @@ fn test_generate_passing() {
         ]
         .iter(),
     );
-    cmd.assert().success();
+    cmd.assert().eprint_stdout_stderr().try_success()?;
 
-    assert::file(
+    ensure_utils::file(
         &temp_dir.join("up_config_dir/tasks/git_1.yaml"),
         &format!(
             include_str!("fixtures/generate/test_generate_passing/expected_tasks/git_1.yaml"),
             root_dir = temp_dir,
         ),
-    );
+    )?;
 
-    assert::file(
+    ensure_utils::file(
         &temp_dir.join("up_config_dir/tasks/git_2.yaml"),
         &format!(
             include_str!("fixtures/generate/test_generate_passing/expected_tasks/git_2.yaml"),
             root_dir = temp_dir,
         ),
-    );
+    )?;
+
+    Ok(())
 }

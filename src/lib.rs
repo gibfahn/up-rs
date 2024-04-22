@@ -37,7 +37,7 @@
     clippy::missing_docs_in_private_items,
 )]
 #![allow(
-    // This is covered by other lints anyway, and we want to allow assert! for tests.
+    // This is covered by other lints anyway, and we want to allow ensure! for tests.
     clippy::panic_in_result_fn,
     // Done by downstream crates, not much that can be done for it.
     clippy::multiple_crate_versions,

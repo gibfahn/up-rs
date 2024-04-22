@@ -4,6 +4,7 @@
 
 use camino::Utf8Path;
 use camino::Utf8PathBuf;
+use color_eyre::eyre::ensure;
 use color_eyre::Result;
 use std::env;
 use std::fs;
@@ -26,7 +27,7 @@ fn test_rustfmt() -> Result<()> {
         check_output
     };
 
-    assert!(
+    ensure!(
         check_output.status.success(),
         "Rustfmt needs to be run, ran 'cargo fmt' to fix, please commit the changes."
     );
@@ -49,7 +50,7 @@ fn test_testutils_rustfmt() -> Result<()> {
         check_output
     };
 
-    assert!(
+    ensure!(
         check_output.status.success(),
         "Rustfmt needs to be run, ran 'cargo fmt' to fix, please commit the changes."
     );
@@ -72,7 +73,7 @@ fn test_clippy() -> Result<()> {
         clippy_output
     };
 
-    assert!(
+    ensure!(
         clippy_output.status.success(),
         "Clippy needs to be run, please run 'cargo clippy -- --deny=clippy::pedantic'."
     );
@@ -95,7 +96,7 @@ fn test_testutils_clippy() -> Result<()> {
         clippy_output
     };
 
-    assert!(
+    ensure!(
         clippy_output.status.success(),
         "Clippy needs to be run, please run 'cargo clippy'."
     );
@@ -135,7 +136,7 @@ fn test_no_todo() -> Result<()> {
         }
     }
 
-    assert!(
+    ensure!(
         files_with_todos.is_empty(),
         "\nFiles with blocking todos should not be committed to the main branch, use TODO: \
          instead\n{files_with_todos:#?}\n",

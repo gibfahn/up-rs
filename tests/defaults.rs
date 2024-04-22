@@ -1,11 +1,13 @@
 // Defaults tests are macOS only.
 #![cfg(target_os = "macos")]
 
+use color_eyre::Result;
 use duct::cmd;
 use duct::Expression;
 use predicates::prelude::*;
-use pretty_assertions::assert_eq;
 use test_log::test;
+use testutils::ensure_eq;
+use testutils::AssertCmdExt;
 use tracing::debug;
 use tracing::info;
 use up_rs::exec::LivDuct;
@@ -16,7 +18,7 @@ Key that is in the global plist on a newly setup machine, and that has the same 
 const GLOBAL_KEY: &str = "com.apple.springing.delay";
 
 #[test]
-fn test_defaults_read_global() {
+fn test_defaults_read_global() -> Result<()> {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
 
     let mut expected_value = cmd!("defaults", "read", "-g", GLOBAL_KEY).read().unwrap();
@@ -25,14 +27,17 @@ fn test_defaults_read_global() {
     // Reading a normal value should have the same output as the defaults command (but yaml not
     // defaults own format).
     {
-        let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
+        let mut cmd = testutils::crate_binary_cmd("up", &temp_dir)?;
         cmd.args(["defaults", "read", "-g", GLOBAL_KEY]);
-        cmd.assert().success().stdout(expected_value.clone());
+        cmd.assert()
+            .eprint_stdout_stderr()
+            .try_success()?
+            .try_stdout(expected_value.clone())?;
     }
 
     // Providing a full absolute path to a plist file should also work.
     {
-        let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
+        let mut cmd = testutils::crate_binary_cmd("up", &temp_dir)?;
         cmd.args([
             "defaults",
             "read",
@@ -42,22 +47,28 @@ fn test_defaults_read_global() {
             ),
             GLOBAL_KEY,
         ]);
-        cmd.assert().success().stdout(expected_value);
+        cmd.assert()
+            .eprint_stdout_stderr()
+            .try_success()?
+            .try_stdout(expected_value)?;
     }
 
     // Setting -g is the same as setting the domain NSGlobalDomain, so shouldn't pass both a key and
     // a value to `defaults read`.
     {
-        let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
+        let mut cmd = testutils::crate_binary_cmd("up", &temp_dir)?;
         cmd.args(["defaults", "read", "-g", "NSGlobalDomain", GLOBAL_KEY]);
         cmd.assert()
-            .failure()
-            .stderr(predicate::str::contains("both a domain and a key"));
+            .eprint_stdout_stderr()
+            .try_failure()?
+            .try_stderr(predicate::str::contains("both a domain and a key"))?;
     }
+
+    Ok(())
 }
 
 #[test]
-fn test_defaults_read_local() {
+fn test_defaults_read_local() -> Result<()> {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
 
     // Dock region, e.g. 'GB'
@@ -69,21 +80,27 @@ fn test_defaults_read_local() {
     // Reading a normal value should have the same output as the defaults command (but yaml not
     // defaults own format).
     {
-        let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
+        let mut cmd = testutils::crate_binary_cmd("up", &temp_dir)?;
         cmd.args(["defaults", "read", "com.apple.dock", "region"]);
-        cmd.assert().success().stdout(expected_value.clone());
+        cmd.assert()
+            .eprint_stdout_stderr()
+            .try_success()?
+            .try_stdout(expected_value.clone())?;
     }
 
     // A .plist extension should be allowed too.
     {
-        let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
+        let mut cmd = testutils::crate_binary_cmd("up", &temp_dir)?;
         cmd.args(["defaults", "read", "com.apple.dock.plist", "region"]);
-        cmd.assert().success().stdout(expected_value.clone());
+        cmd.assert()
+            .eprint_stdout_stderr()
+            .try_success()?
+            .try_stdout(expected_value.clone())?;
     }
 
     // Providing a full absolute path to a plist file should also work.
     {
-        let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
+        let mut cmd = testutils::crate_binary_cmd("up", &temp_dir)?;
         cmd.args([
             "defaults",
             "read",
@@ -93,8 +110,13 @@ fn test_defaults_read_local() {
             ),
             "region",
         ]);
-        cmd.assert().success().stdout(expected_value);
+        cmd.assert()
+            .eprint_stdout_stderr()
+            .try_success()?
+            .try_stdout(expected_value)?;
     }
+
+    Ok(())
 }
 
 #[derive(Debug, Clone)]
@@ -114,7 +136,7 @@ struct TestCase {
 }
 
 #[test]
-fn test_defaults_write_local() {
+fn test_defaults_write_local() -> Result<()> {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
 
     let domain = format!("co.fahn.up-rs.test-{}", testutils::function_path!());
@@ -314,7 +336,7 @@ fn test_defaults_write_local() {
 
         {
             debug!("Checking we agree with `defaults` about the original value.");
-            let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
+            let mut cmd = testutils::crate_binary_cmd("up", &temp_dir)?;
             cmd.args([
                 "defaults",
                 "read",
@@ -322,21 +344,23 @@ fn test_defaults_write_local() {
                 &format!("defaults_write_local_{name}"),
             ]);
             cmd.assert()
-                .success()
-                .stdout(predicate::str::diff(format!("{orig_up_check_value}\n")));
+                .eprint_stdout_stderr()
+                .try_success()?
+                .try_stdout(predicate::str::diff(format!("{orig_up_check_value}\n")))?;
         }
 
         {
             debug!("Setting the key to the new value ourselves:");
-            let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
+            let mut cmd = testutils::crate_binary_cmd("up", &temp_dir)?;
 
             let defaults_key = format!("defaults_write_local_{name}");
             cmd.args(["defaults", "write", &domain, &defaults_key, up_set_value]);
             cmd.assert()
-                .success()
-                .stderr(predicate::str::contains(format!(
+                .eprint_stdout_stderr()
+                .try_success()?
+                .try_stderr(predicate::str::contains(format!(
                     "Changing default {domain} {defaults_key}"
-                )));
+                )))?;
         }
 
         {
@@ -349,7 +373,9 @@ fn test_defaults_write_local() {
             )
             .read()
             .unwrap();
-            assert_eq!(*defaults_check_value, new_default);
+            ensure_eq!(*defaults_check_value, new_default);
         }
     }
+
+    Ok(())
 }

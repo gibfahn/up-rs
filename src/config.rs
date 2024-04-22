@@ -216,24 +216,26 @@ fn get_fallback_config_path(
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
-mod yaml_paths_tests {
+mod tests {
     use super::UpConfig;
+    use color_eyre::Result;
     use serial_test::serial;
     use std::env;
+    use testutils::ensure_eq;
 
     /// Test possible options for the up.yaml. All run in one file as they
     /// modify the shared test environment.
     #[test]
     #[serial(home_dir)] // Test relies on or changes the $HOME env var.
-    fn get_yaml_paths() {
+    fn test_get_yaml_paths() -> Result<()> {
         let orig_home = env::var("HOME").unwrap();
 
         // Set up paths.
         let default_path = "$XDG_CONFIG_HOME/up/up.yaml";
-        let fake_home_1 =
-            testutils::fixture_dir(testutils::function_path!()).join("fake_home_dir_with_upconfig");
+        let fake_home_1 = testutils::fixtures_subdir(testutils::function_path!())?
+            .join("fake_home_dir_with_upconfig");
         let config_yaml_1 = fake_home_1.join(".config/up/up.yaml");
-        let fake_home_2 = testutils::fixture_dir(testutils::function_path!())
+        let fake_home_2 = testutils::fixtures_subdir(testutils::function_path!())?
             .join("fake_home_dir_without_upconfig");
 
         // With all options set, we should pick the one passed as command-line arg.
@@ -241,28 +243,28 @@ mod yaml_paths_tests {
         env::set_var("HOME", fake_home_1.clone());
         env::set_var("XDG_CONFIG_HOME", fake_home_1.join(".config"));
         let config_path = UpConfig::get_up_yaml_path(args_config_path.to_str().unwrap());
-        assert_eq!(config_path.unwrap(), args_config_path);
+        ensure_eq!(config_path.unwrap(), args_config_path);
 
         // If nothing is passed as an arg but UP_CONFIG exists, we should use it.
         env::set_var("UP_CONFIG", args_config_path.clone());
         env::set_var("HOME", fake_home_1.clone());
         env::set_var("XDG_CONFIG_HOME", fake_home_1.join(".config"));
         let config_path = UpConfig::get_up_yaml_path(default_path);
-        assert_eq!(config_path.unwrap(), args_config_path);
+        ensure_eq!(config_path.unwrap(), args_config_path);
         env::remove_var("UP_CONFIG");
 
         // If nothing is passed as an arg, we should use the XDG_CONFIG_HOME/up/up.yaml.
         env::set_var("HOME", fake_home_1.clone());
         env::set_var("XDG_CONFIG_HOME", fake_home_1.join(".config"));
         let config_path = UpConfig::get_up_yaml_path(default_path);
-        assert_eq!(config_path.unwrap(), config_yaml_1);
+        ensure_eq!(config_path.unwrap(), config_yaml_1);
 
         // If XDG_CONFIG_HOME is set we should use it.
         env::set_var("HOME", fake_home_1.clone());
         // Set XDG_CONFIG_HOME to a non-existent path.
         env::set_var("XDG_CONFIG_HOME", fake_home_1.join(".badconfig"));
         let config_path = UpConfig::get_up_yaml_path(default_path);
-        assert_eq!(
+        ensure_eq!(
             config_path.unwrap(),
             fake_home_1.join(".badconfig/up/up.yaml")
         );
@@ -270,14 +272,14 @@ mod yaml_paths_tests {
         // If XDG_CONFIG_HOME is missing we should use ~/.config/up/up.yaml.
         env::remove_var("XDG_CONFIG_HOME");
         let config_path = UpConfig::get_up_yaml_path(default_path);
-        assert_eq!(config_path.unwrap(), config_yaml_1);
+        ensure_eq!(config_path.unwrap(), config_yaml_1);
 
         // If XDG_CONFIG_HOME is missing and ~/.config doesn't exist we should use
         // still use it.
         env::set_var("HOME", fake_home_2.clone());
         env::remove_var("XDG_CONFIG_HOME");
         let config_path = UpConfig::get_up_yaml_path(default_path);
-        assert_eq!(config_path.unwrap(), fake_home_2.join(".config/up/up.yaml"),);
+        ensure_eq!(config_path.unwrap(), fake_home_2.join(".config/up/up.yaml"),);
 
         // If none of the options are present and there is no ~ we should error.
         // TODO(gib): how do we test for this?
@@ -285,8 +287,10 @@ mod yaml_paths_tests {
         // env::remove_var("XDG_CONFIG_HOME");
         // // Default arg, i.e. not passed.
         // let config_path = UpConfig::get_up_yaml_path(default_path);
-        // assert!(config_path.is_err(), "UpConfig path: {config_path}");
+        // ensure!(config_path.is_err(), "UpConfig path: {config_path}");
 
         env::set_var("HOME", orig_home);
+
+        Ok(())
     }
 }

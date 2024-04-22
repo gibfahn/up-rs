@@ -392,16 +392,18 @@ fn replace_ellipsis_dict(new_value: &mut plist::Value, old_value: Option<&plist:
 mod tests {
     use crate::utils::mac;
     use camino::Utf8PathBuf;
+    use color_eyre::Result;
     use serial_test::serial;
+    use testutils::ensure_eq;
 
     #[test]
     #[serial(home_dir)] // Test relies on or changes the $HOME env var.
-    fn plist_path_tests() {
+    fn test_plist_path() -> Result<()> {
         let home_dir = Utf8PathBuf::try_from(dirs::home_dir().unwrap()).unwrap();
 
         {
             let domain_path = super::plist_path("NSGlobalDomain", false).unwrap();
-            assert_eq!(
+            ensure_eq!(
                 home_dir.join("Library/Preferences/.GlobalPreferences.plist"),
                 domain_path
             );
@@ -416,14 +418,14 @@ mod tests {
                 expected_plist_path = home_dir.join("Library/Preferences/com.apple.Safari.plist");
             }
             let domain_path = super::plist_path("com.apple.Safari", false).unwrap();
-            assert_eq!(expected_plist_path, domain_path);
+            ensure_eq!(expected_plist_path, domain_path);
         }
 
         // Per-host preference (`current_host` is true).
         {
             let domain_path = super::plist_path("NSGlobalDomain", true).unwrap();
             let hardware_uuid = mac::get_hardware_uuid().unwrap();
-            assert_eq!(
+            ensure_eq!(
                 home_dir.join(format!(
                     "Library/Preferences/ByHost/.GlobalPreferences.{hardware_uuid}.plist"
                 )),
@@ -437,7 +439,7 @@ mod tests {
         if std::env::var("GITHUB_ACTIONS").is_err() {
             let domain_path = super::plist_path("com.apple.Safari", true).unwrap();
             let hardware_uuid = mac::get_hardware_uuid().unwrap();
-            assert_eq!(
+            ensure_eq!(
                 home_dir.join(format!(
                     "Library/Containers/com.apple.Safari/Data/Library/Preferences/ByHost/com.\
                      apple.Safari.{hardware_uuid}.plist"
@@ -457,5 +459,7 @@ mod tests {
                 .collect::<Vec<_>>(),
             );
         }
+
+        Ok(())
     }
 }

@@ -40,6 +40,7 @@ struct IoRegistryEntryChildren {
 #[cfg(test)]
 mod tests {
     use color_eyre::Result;
+    use testutils::ensure_eq;
 
     #[test]
     fn test_get_hardware_uuid() -> Result<()> {
@@ -55,7 +56,7 @@ mod tests {
             })
             .unwrap();
         let actual_value = get_hardware_uuid()?;
-        assert_eq!(expected_value, actual_value);
+        ensure_eq!(expected_value, actual_value);
         Ok(())
     }
 }

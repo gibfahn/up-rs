@@ -1,17 +1,19 @@
 use assert_cmd::cargo::cargo_bin;
 use camino::Utf8Path;
 use camino::Utf8PathBuf;
+use color_eyre::Result;
 use itertools::Itertools;
 use std::collections::HashMap;
-use testutils::assert;
+use testutils::ensure_utils;
+use testutils::AssertCmdExt;
 
 /// Run a full up with a bunch of configuration and check things work.
 #[test]
-fn test_up_list_passing() {
+fn test_up_list_passing() -> Result<()> {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
 
     testutils::copy_all(
-        &testutils::fixture_dir(testutils::function_path!()),
+        &testutils::fixtures_subdir(testutils::function_path!())?,
         &temp_dir,
     )
     .unwrap();
@@ -27,7 +29,7 @@ fn test_up_list_passing() {
 
     itertools::assert_equal(
         ["link", "run_self_cmd", "skip_self_cmd"],
-        check_list(&[], &envs, &temp_dir)
+        check_list(&[], &envs, &temp_dir)?
             .split_whitespace()
             .sorted(),
     );
@@ -38,14 +40,20 @@ fn test_up_list_passing() {
             &["--tasks", "link", "--tasks", "skip_self_cmd"],
             &envs,
             &temp_dir,
-        )
+        )?
         .split_whitespace()
         .sorted(),
     );
+
+    Ok(())
 }
 
-fn check_list(args: &[&str], envs: &HashMap<&str, Utf8PathBuf>, temp_dir: &Utf8Path) -> String {
-    let mut cmd = testutils::test_binary_cmd("up", temp_dir);
+fn check_list(
+    args: &[&str],
+    envs: &HashMap<&str, Utf8PathBuf>,
+    temp_dir: &Utf8Path,
+) -> Result<String> {
+    let mut cmd = testutils::crate_binary_cmd("up", temp_dir)?;
     cmd.envs(envs);
     cmd.args([
         "--config",
@@ -54,9 +62,9 @@ fn check_list(args: &[&str], envs: &HashMap<&str, Utf8PathBuf>, temp_dir: &Utf8P
     ]);
     cmd.args(args);
 
-    let cmd_assert = cmd.assert().success();
+    let cmd_assert = cmd.assert().eprint_stdout_stderr().try_success()?;
 
-    assert::nothing_at(&temp_dir.join("link_dir/home_dir/file_to_link"));
+    ensure_utils::nothing_at(&temp_dir.join("link_dir/home_dir/file_to_link"))?;
 
-    return String::from_utf8_lossy(&cmd_assert.get_output().stdout).to_string();
+    return Ok(String::from_utf8_lossy(&cmd_assert.get_output().stdout).to_string());
 }

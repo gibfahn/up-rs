@@ -10,11 +10,13 @@ description = "Collection of functions used in multiple integration tests."
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-assert_cmd = "2.0.13"
+assert_cmd = "2.0.14"
 camino = { version = "1.1.6", features = ["serde1"] }
-color-eyre = "0.6.2"
+color-eyre = "0.6.3"
 predicates = "3.1.0"
-walkdir = "2.4.0"
+pretty_assertions = "1.4.0"
+pretty_assertions_sorted = "1.2.3"
+walkdir = "2.5.0"
 
 [lints]
 workspace = true

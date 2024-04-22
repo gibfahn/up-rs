@@ -20,12 +20,17 @@ disallowed-macros = [
   { path = "log::info", reason = "use tracing::info!() instead" },
   { path = "log::debug", reason = "use tracing::debug!() instead" },
   { path = "log::trace", reason = "use tracing::trace!() instead" },
+  { path = "core::assert_eq", reason = "See the `ensure_eq` function in tests/testutils/src/lib.rs for reasoning and replacement." },
+  { path = "core::assert", reason = "Use ensure to ensure we return a result and destructors run." },
 ]
 
 # Methods that we shouldn't use in the codebase.
 # https://rust-lang.github.io/rust-clippy/master/index.html#/disallowed_methods
 disallowed-methods = [
   { path = "duct::Expression::run", reason = "See the `.run_with()` function in src/exec.rs for reasoning and replacement." },
+  { path = "assert_cmd::assert::Assert::success", reason = "See the `.eprint_stdout_stderr()` function in tests/testutils/src/lib.rs for reasoning and replacement." },
+  { path = "assert_cmd::assert::Assert::stderr", reason = "See the `.eprint_stdout_stderr()` function in tests/testutils/src/lib.rs for reasoning and replacement." },
+  { path = "assert_cmd::assert::Assert::stdout", reason = "See the `.eprint_stdout_stderr()` function in tests/testutils/src/lib.rs for reasoning and replacement." },
 ]
 
 # Words that look like code but aren't, so shouldn't be surrounded by backticks in docstrings.

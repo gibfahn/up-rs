@@ -1,9 +1,11 @@
 use assert_cmd::cargo::cargo_bin;
 use camino::Utf8PathBuf;
+use color_eyre::Result;
 use duct::Expression;
-use serde::de::Expected;
 use std::collections::HashMap;
-use testutils::assert;
+use testutils::ensure_eq;
+use testutils::ensure_utils;
+use testutils::AssertCmdExt;
 use up_rs::exec::LivDuct;
 
 #[cfg(target_os = "macos")]
@@ -31,11 +33,11 @@ const EXPECTED_DEFAULTS_VALUE: &str = r#"{
 
 /// Run a full up with a bunch of configuration and check things work.
 #[test]
-fn test_up_run_passing() {
+fn test_up_run_passing() -> Result<()> {
     let temp_dir = testutils::temp_dir("up", testutils::function_path!()).unwrap();
 
     testutils::copy_all(
-        &testutils::fixture_dir(testutils::function_path!()),
+        &testutils::fixtures_subdir(testutils::function_path!())?,
         &temp_dir,
     )
     .unwrap();
@@ -48,7 +50,7 @@ fn test_up_run_passing() {
         _ = up_rs::cmd!("defaults", "delete", test_plist).run_with(Expression::stdout_to_stderr);
     }
 
-    let mut cmd = testutils::test_binary_cmd("up", &temp_dir);
+    let mut cmd = testutils::crate_binary_cmd("up", &temp_dir)?;
     let mut envs = HashMap::new();
     // Used in link task.
     envs.insert("link_from_dir", temp_dir.join("link_dir/dotfile_dir"));
@@ -60,13 +62,13 @@ fn test_up_run_passing() {
     cmd.envs(envs);
 
     cmd.args(["--config", temp_dir.join("up_config_dir/up.yaml").as_str()].iter());
-    cmd.assert().success();
+    cmd.assert().eprint_stdout_stderr().try_success()?;
 
     // Link Task: Check symlinks were created correctly.
-    assert::link(
+    ensure_utils::link(
         &temp_dir.join("link_dir/home_dir/file_to_link"),
         &temp_dir.join("link_dir/dotfile_dir/file_to_link"),
-    );
+    )?;
 
     #[cfg(target_os = "macos")]
     {
@@ -74,11 +76,11 @@ fn test_up_run_passing() {
 
         // Defaults Task: Check values were set correctly.
         let actual_value = cmd!("defaults", "read", test_plist).read().unwrap();
-        assert_eq!(actual_value, EXPECTED_DEFAULTS_VALUE);
+        ensure_eq!(actual_value, EXPECTED_DEFAULTS_VALUE);
 
         // Defaults Task: Check types were set correctly.
 
-        assert_eq!(
+        ensure_eq!(
             "Type is boolean",
             cmd!(
                 "defaults",
@@ -90,7 +92,7 @@ fn test_up_run_passing() {
             .unwrap()
         );
 
-        assert_eq!(
+        ensure_eq!(
             "Type is float",
             cmd!(
                 "defaults",
@@ -102,7 +104,7 @@ fn test_up_run_passing() {
             .unwrap()
         );
 
-        assert_eq!(
+        ensure_eq!(
             "Type is integer",
             cmd!(
                 "defaults",
@@ -114,7 +116,7 @@ fn test_up_run_passing() {
             .unwrap()
         );
 
-        assert_eq!(
+        ensure_eq!(
             "Type is array",
             cmd!(
                 "defaults",
@@ -126,7 +128,7 @@ fn test_up_run_passing() {
             .unwrap()
         );
 
-        assert_eq!(
+        ensure_eq!(
             "Type is dictionary",
             cmd!(
                 "defaults",
@@ -138,4 +140,6 @@ fn test_up_run_passing() {
             .unwrap()
         );
     }
+
+    Ok(())
 }

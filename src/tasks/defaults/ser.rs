@@ -31,10 +31,10 @@ pub(super) fn replace_data_in_plist(value: &mut Value) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-
     use crate::tasks::defaults::ser::replace_data_in_plist;
     use color_eyre::Result;
     use test_log::test;
+    use testutils::ensure_eq;
     use tracing::info;
 
     #[test]
@@ -52,7 +52,7 @@ mod tests {
         info!("Value after: {value:?}");
         let yaml_string = serde_yaml::to_string(&value)?;
         info!("Yaml value: {yaml_string}");
-        assert_eq!(expected_yaml, yaml_string);
+        ensure_eq!(expected_yaml, yaml_string);
         Ok(())
     }
 }
