@@ -25,7 +25,7 @@ You can also use a full path to a plist file (the `.plist` file extension is opt
 
 ## Current Host modifications
 
-To modify defaults for the current host, you will need to add a custom entry for the path, using the [`UP_HARDWARE_UUID`] environment variable to get the current host.
+To modify defaults for the current host, you will need to add a custom entry for the path, using the [`UP_HARDWARE_UUID`][crate::env::UP_HARDWARE_UUID] environment variable to get the current host.
 
 e.g. to set the preference returned by `defaults -currentHost read -globalDomain com.apple.mouse.tapBehavior` you would have:
 

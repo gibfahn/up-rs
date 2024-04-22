@@ -5,11 +5,40 @@
 use camino::Utf8Path;
 use camino::Utf8PathBuf;
 use color_eyre::eyre::ensure;
+use color_eyre::eyre::eyre;
+use color_eyre::eyre::Context;
 use color_eyre::Result;
 use std::env;
 use std::fs;
 use std::process::Command;
 use std::process::Output;
+/// Fail if rustdoc (cargo doc) hasn't been run on the public items in this crate.
+#[test]
+fn test_rustdoc_public() -> Result<()> {
+    let current_dir = Utf8PathBuf::try_from(env::current_dir()?)?;
+    let check_output = cargo_cmd(&current_dir, CargoCmdType::RustdocCheckPublic)?;
+
+    ensure!(
+        check_output.status.success(),
+        "Public documentation building failed. Run `RUSTDOCFLAGS=--deny=warnings cargo doc \
+         --no-deps --keep-going` and fix any errors."
+    );
+    Ok(())
+}
+
+/// Fail if rustdoc (cargo doc) hasn't been run on the private items in this crate.
+#[test]
+fn test_rustdoc_private() -> Result<()> {
+    let current_dir = Utf8PathBuf::try_from(env::current_dir()?)?;
+    let check_output = cargo_cmd(&current_dir, CargoCmdType::RustdocCheckPrivate)?;
+
+    ensure!(
+        check_output.status.success(),
+        "Private documentation building failed. Run `RUSTDOCFLAGS=--deny=warnings cargo doc \
+         --no-deps --keep-going --document-private-items` and fix any errors."
+    );
+    Ok(())
+}
 
 /// Fail if rustfmt (cargo fmt) hasn't been run.
 #[test]
@@ -75,7 +104,8 @@ fn test_clippy() -> Result<()> {
 
     ensure!(
         clippy_output.status.success(),
-        "Clippy needs to be run, please run 'cargo clippy -- --deny=clippy::pedantic'."
+        "Clippy needs to be run, please run 'cargo clippy -- --deny=clippy::pedantic \
+         --allow=unknown_lints'."
     );
     Ok(())
 }
@@ -126,7 +156,8 @@ fn test_no_todo() -> Result<()> {
         }
         // Find anything containing a todo.
         let path = Utf8PathBuf::try_from(file.path().to_path_buf())?;
-        let text = fs::read_to_string(&path)?;
+        let text = fs::read_to_string(&path)
+            .wrap_err_with(|| eyre!("Failed to read the contents of file {path}"))?;
 
         for disallowed_string in DISALLOWED_STRINGS {
             if text.contains(disallowed_string) {
@@ -155,6 +186,10 @@ fn use_stable() -> bool {
 /// formatting issues.
 #[derive(Debug, PartialEq, Eq)]
 enum CargoCmdType {
+    /// Run rustdoc on stable.
+    RustdocCheckPublic,
+    /// Run rustdoc on stable.
+    RustdocCheckPrivate,
     /// Check the format in CI.
     RustfmtStableCheck,
     /// Check the format.
@@ -172,9 +207,20 @@ enum CargoCmdType {
 fn cargo_cmd(current_dir: &Utf8Path, fmt: CargoCmdType) -> Result<Output> {
     let mut cmd = Command::new("cargo");
     cmd.args(match fmt {
-        CargoCmdType::RustfmtStableCheck => ["fmt", "--", "--check"].iter(),
-        CargoCmdType::RustfmtCheck => ["+nightly", "fmt", "--", "--check"].iter(),
-        CargoCmdType::RustfmtFix => ["+nightly", "fmt"].iter(),
+        CargoCmdType::RustdocCheckPublic => {
+            ["doc", "--no-deps", "--keep-going", "--color=always"].iter()
+        }
+        CargoCmdType::RustdocCheckPrivate => [
+            "doc",
+            "--no-deps",
+            "--keep-going",
+            "--color=always",
+            "--document-private-items",
+        ]
+        .iter(),
+        CargoCmdType::RustfmtStableCheck => ["fmt", "--", "--check", "--color=always"].iter(),
+        CargoCmdType::RustfmtCheck => ["+nightly", "fmt", "--", "--check", "--color=always"].iter(),
+        CargoCmdType::RustfmtFix => ["+nightly", "fmt", "--", "--color=always"].iter(),
         CargoCmdType::ClippyStableCheck => [
             "clippy",
             #[cfg(not(debug_assertions))]
@@ -204,9 +250,12 @@ fn cargo_cmd(current_dir: &Utf8Path, fmt: CargoCmdType) -> Result<Output> {
             "--color=always",
             "--fix",
             "--allow-staged",
+            "--allow=unknown_lints",
         ]
         .iter(),
     });
+    // Only used by `cargo doc`, but should be fine to have set everywhere.
+    cmd.env("RUSTDOCFLAGS", "--deny=warnings");
     cmd.current_dir(current_dir);
     println!("Running '{cmd:?}'");
     let cmd_output = cmd.output()?;

@@ -1,11 +1,14 @@
 use assert_cmd::cargo::cargo_bin;
 use camino::Utf8PathBuf;
 use color_eyre::Result;
+#[cfg(target_os = "macos")]
 use duct::Expression;
 use std::collections::HashMap;
+#[cfg(target_os = "macos")]
 use testutils::ensure_eq;
 use testutils::ensure_utils;
 use testutils::AssertCmdExt;
+#[cfg(target_os = "macos")]
 use up_rs::exec::LivDuct;
 
 #[cfg(target_os = "macos")]

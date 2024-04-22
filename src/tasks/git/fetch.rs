@@ -68,9 +68,9 @@ pub(super) fn remote_callbacks(count: &mut usize) -> RemoteCallbacks {
     remote_callbacks
 }
 
-/// Equivalent of: git remote set-head --auto <remote>
-/// Find remote HEAD, then set the symbolic-ref refs/remotes/<remote>/HEAD to
-/// refs/remotes/<remote>/<branch>
+/// Equivalent of: `git remote set-head --auto <remote>`
+/// Find remote HEAD, then set the symbolic-ref `refs/remotes/<remote>/HEAD` to
+/// `refs/remotes/<remote>/<branch>`
 pub(super) fn set_remote_head(
     repo: &Repository,
     remote: &Remote,

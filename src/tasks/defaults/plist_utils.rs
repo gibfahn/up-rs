@@ -312,11 +312,13 @@ fn write_plist(
     Ok(())
 }
 
-/// Replace `...` values in an input array.
-/// Does nothing if not an array.
-/// You end up with: [<new values before ...>, <old values>, <new values after ...>]
-/// But any duplicates between old and new values are removed, with the first value taking
-/// precedence.
+/**
+Replace `...` values in an input array.
+Does nothing if not an array.
+You end up with: [`<new values before ...>`, `<old values>`, `<new values after ...>`]
+But any duplicates between old and new values are removed, with the first value taking
+precedence.
+*/
 fn replace_ellipsis_array(new_value: &mut plist::Value, old_value: Option<&plist::Value>) {
     let Some(array) = new_value.as_array_mut() else {
         trace!("Value isn't an array, skipping ellipsis replacement...");
@@ -353,7 +355,7 @@ fn replace_ellipsis_array(new_value: &mut plist::Value, old_value: Option<&plist
 
 /// Replace `...` keys in an input dict.
 /// Does nothing if not a dictionary.
-/// You end up with: [<new contents before ...>, <old contents>, <new contents after ...>]
+/// You end up with: [`<new contents before ...>`, `<old contents>`, `<new contents after ...>`]
 /// But any duplicates between old and new values are removed, with the first value taking
 /// precedence.
 fn replace_ellipsis_dict(new_value: &mut plist::Value, old_value: Option<&plist::Value>) {
