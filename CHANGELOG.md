@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.2](https://github.com/gibfahn/up-rs/releases/tag/0.15.2) (2024-04-22)
+
+### Bug Fixes
+- task: don't write to stdout by default ([1fa7180](https://github.com/gibfahn/up-rs/commit/1fa7180eef1b923c99fac432a070c244316a6baf))
+
+### Documentation
+- defaults: document location of per-host defaults ([5745085](https://github.com/gibfahn/up-rs/commit/57450854d1e06784f1dc47b7135d53de1351f0c6))
+
+### Features
+- defaults: `up defaults read -` should read from stdin ([1e3ea9c](https://github.com/gibfahn/up-rs/commit/1e3ea9cde84c14871724e5ae82753b6c9c5fd99e))
+- task: add indicatif progress bars for task execution ([51ad144](https://github.com/gibfahn/up-rs/commit/51ad144422e163b64ff9cb5a70aa6bb8cc5a93e1))
+
+### Refactor
+- clippy: apply clippy-suggested fixes ([f1ba666](https://github.com/gibfahn/up-rs/commit/f1ba666cc53945b04f89129d11d0b2522a0f2c4f))
+- log: disallow log macros to enforce use of tracing ones ([59673d3](https://github.com/gibfahn/up-rs/commit/59673d3541245bae31841bbfbb6fa64d77c205e8))
+
 ## [0.15.1](https://github.com/gibfahn/up-rs/releases/tag/0.15.1) (2023-06-26)
 
 ### Bug Fixes
