@@ -131,6 +131,8 @@ pub(crate) enum SubCommand {
     Completions(CompletionsOptions),
     /// List available tasks.
     List(RunOptions),
+    /// Write the up yaml schema.
+    Schema(SchemaOptions),
 }
 
 /// CLI options passed to `up run`.
@@ -219,6 +221,13 @@ pub(crate) struct GenerateOptions {
     /// Lib to generate.
     #[clap(subcommand)]
     pub(crate) lib: Option<GenerateLib>,
+}
+
+/// Options passed to `up schema`.
+#[derive(Debug, Parser)]
+pub(crate) struct SchemaOptions {
+    /// Lib to generate. Defaults to writing to stdout.
+    pub(crate) path: Option<Utf8PathBuf>,
 }
 
 /// CLI options passed to `up self`.

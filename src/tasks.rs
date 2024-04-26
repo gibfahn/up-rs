@@ -31,6 +31,7 @@ pub mod completions;
 pub mod defaults;
 pub mod git;
 pub mod link;
+pub(crate) mod schema;
 pub mod task;
 pub mod update_self;
 

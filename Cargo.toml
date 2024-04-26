@@ -63,6 +63,7 @@ plist = "1.6.1"
 rayon = "1.10.0"
 reqwest = { version = "0.12.4", features = ["blocking", "json"] }
 ring = "0.17.8"
+schemars = "0.8.16"
 semver = "1.0.22"
 serde = "1.0.198"
 serde_derive = "1.0.198"

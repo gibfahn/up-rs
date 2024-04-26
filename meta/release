@@ -34,6 +34,7 @@ binary_name=up
 macos_binary=build/$binary_name-Darwin
 linux_amd64_binary=build/$binary_name-Linux
 linux_arm64_binary=build/$binary_name-Linux_arm64
+task_schema_json=build/$binary_name-task-schema.json
 
 main() {
   echo -e "${fg[magenta]}Publishing new version of the ${binary_name} CLI...${reset_color}"
@@ -110,6 +111,9 @@ main() {
     gsed -i -E "0,/^version = \"${last_release?}\"\$/s//version = \"${new_version?}\"/" Cargo.toml
     log_and_run cargo check --release # Bumps version in lockfile too.
 
+    # Generate the JSON schema for a task.
+    cargo run -- schema $task_schema_json
+
     log_section "Committing version updates..."
     git add Cargo.toml Cargo.lock CHANGELOG.md
     git commit -m "chore: bump version to ${new_version?}"
@@ -151,7 +155,8 @@ main() {
     --notes="$(git cliff --tag="${new_version?}" --strip=all "${last_release}"..)" \
     $macos_binary \
     $linux_amd64_binary \
-    $linux_arm64_binary
+    $linux_arm64_binary \
+    task_schema_json
 
   new_release=$(gh release list -L 1 | awk '{print $1}')
   gh release view $new_release

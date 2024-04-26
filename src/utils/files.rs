@@ -62,3 +62,10 @@ pub fn create_dir_all(path: impl AsRef<Utf8Path>) -> Result<()> {
     trace!("Ensuring that directory path exists: {path}");
     fs::create_dir_all(path).wrap_err_with(|| eyre!("Failed to create directory {path}"))
 }
+
+/// Same as [`std::fs::write()`] but with a better error message.
+pub(crate) fn write(path: impl AsRef<Utf8Path>, contents: impl AsRef<[u8]>) -> Result<()> {
+    let path = path.as_ref();
+    trace!("Writing data to {path}");
+    fs::write(path, contents).wrap_err_with(|| eyre!("Failed to write to file {path}"))
+}

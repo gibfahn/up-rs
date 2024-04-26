@@ -126,6 +126,9 @@ pub fn run(opts: Opts) -> Result<()> {
         Some(SubCommand::Completions(ref cmd_opts)) => {
             tasks::completions::run(cmd_opts);
         }
+        Some(SubCommand::Schema(ref cmd_opts)) => {
+            tasks::schema::run(cmd_opts)?;
+        }
         Some(SubCommand::List(ref _cmd_opts)) => {
             let config = UpConfig::from(opts)?;
             tasks::run(&config, TasksDir::Tasks, TasksAction::List)?;

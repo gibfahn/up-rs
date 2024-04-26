@@ -1,3 +1,5 @@
+#![allow(clippy::str_to_string)] // schemars conflicts with this lint.
+
 //! Up task execution.
 use crate::exec::cmd_log;
 use crate::exec::LivDuct;
@@ -15,6 +17,7 @@ use camino::Utf8Path;
 use camino::Utf8PathBuf;
 use color_eyre::eyre::eyre;
 use color_eyre::eyre::Result;
+use schemars::JsonSchema;
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
 use std::collections::HashMap;
@@ -60,7 +63,7 @@ pub struct Task {
 
 /// Configuration a task can have, a `~/.config/up/tasks/<name>.yaml` will deserialize to this
 /// struct.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct TaskConfig {
     /// Task name, defaults to file name (minus extension) if unset.
@@ -102,10 +105,13 @@ pub struct TaskConfig {
     /// This will allow all subtasks that up executes in this iteration.
     #[serde(default = "default_false")]
     pub needs_sudo: bool,
-    // This field must be the last one in order for the yaml serializer in the generate functions
+    // This field must be the last one in this struct in order for the yaml serializer in the generate functions
     // to be able to serialise it properly.
     /// Set of data provided to the Run library.
     #[serde(skip_serializing_if = "Option::is_none")]
+    // schemars doesn't have built-in support for YAML values, but it does have support for
+    // JSON values (https://github.com/GREsau/schemars/pull/153).
+    #[schemars(with = "Option<serde_json::Value>")]
     pub data: Option<serde_yaml::Value>,
 }
 
