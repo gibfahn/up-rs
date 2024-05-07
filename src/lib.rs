@@ -75,6 +75,9 @@ pub mod opts;
 pub mod tasks;
 pub mod utils;
 
+/// The unique identifier of the up application on the system.
+pub const UP_BUNDLE_ID: &str = "co.fahn.up";
+
 /// Run `up_rs` with provided [Opts][] struct.
 ///
 /// # Errors

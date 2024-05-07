@@ -14,9 +14,13 @@
 #![allow(clippy::implicit_return, clippy::missing_docs_in_private_items)]
 
 use camino::Utf8PathBuf;
+use chrono::SecondsFormat;
+use color_eyre::eyre::eyre;
+use color_eyre::eyre::Context;
 use color_eyre::eyre::Result;
+use color_eyre::Section;
+use color_eyre::SectionExt;
 use std::env;
-use std::fs::File;
 use std::sync::Arc;
 use std::time::Duration;
 use std::time::Instant;
@@ -33,6 +37,8 @@ use tracing_subscriber::prelude::*;
 use tracing_subscriber::util::SubscriberInitExt;
 use up_rs::log;
 use up_rs::opts::Opts;
+use up_rs::utils::errors::log_error;
+use up_rs::utils::files;
 
 /// Env vars to avoid printing when we log the current environment.
 const IGNORED_ENV_VARS: [&str; 1] = [
@@ -48,9 +54,7 @@ fn main() -> Result<()> {
 
     let mut opts = up_rs::opts::parse();
 
-    let (log_path, level_filter) = set_up_logging(&opts);
-
-    color_eyre::config::HookBuilder::default()
+    color_eyre::config::HookBuilder::new()
         // Avoids printing these lines when up fails:
         // ```
         // Backtrace omitted. Run with RUST_BACKTRACE=1 environment variable to display it.
@@ -59,15 +63,21 @@ fn main() -> Result<()> {
         .display_env_section(false)
         .install()?;
 
-    // If we set a log filter, save that filter back to the log option.
-    // This allows us to run `up -l up=trace`, and get back a `trace` variable we can use in
-    // `Opts::debug_logging_enabled()`.
-    if let Some(filter) = level_filter {
-        opts.log_level = filter.to_string();
-    }
+    let log_path = match set_up_logging(&opts) {
+        Ok((log_path, level_filter)) => {
+            // If we set a log filter, save that filter back to the log option.
+            // This allows us to run `up -l up=trace`, and get back a `trace` variable we can use
+            // to check log levels later in the application.
+            opts.log = level_filter.to_string();
+            Some(log_path)
+        }
+        Err(e) => {
+            eprintln!(" WARN Failed to set up logging.{err}", err = log_error(&e));
+            None
+        }
+    };
 
     trace!("Starting up.");
-    debug!("Writing full logs to {log_path}",);
 
     trace!("Received args: {opts:#?}");
     trace!(
@@ -77,7 +87,13 @@ fn main() -> Result<()> {
             .collect::<Vec<_>>()
     );
 
-    up_rs::run(opts)?;
+    let mut result = up_rs::run(opts);
+
+    if let Some(log_path) = log_path {
+        result = result.with_section(|| format!("{log_path}").header("Log file:"));
+    }
+
+    result?;
 
     // No need to log the time we took to run by default unless it actually took some time.
     let now_elapsed = now.elapsed();
@@ -93,7 +109,7 @@ fn main() -> Result<()> {
 
 /// Set up logging to stderr and to a temp file path.
 /// Returns the log level filter chosen by the user if available, and the path to the log file.
-fn set_up_logging(opts: &Opts) -> (Utf8PathBuf, Option<LevelFilter>) {
+fn set_up_logging(opts: &Opts) -> Result<(Utf8PathBuf, LevelFilter)> {
     let indicatif_layer = IndicatifLayer::new();
 
     let stderr_log = tracing_subscriber::fmt::layer()
@@ -102,27 +118,38 @@ fn set_up_logging(opts: &Opts) -> (Utf8PathBuf, Option<LevelFilter>) {
         .without_time()
         .with_writer(indicatif_layer.get_stderr_writer());
 
-    let (log_path, log_file) = get_log_file_and_path(opts);
-    let log_file_setup = log_file.is_some();
+    // Logs go to e.g. ~/Library/Logs/co.fahn.up/up_2024-04-26T11_22_24.834348Z.log
+    let log_path = files::log_dir()?.join(format!(
+        "up_{}.log",
+        opts.start_time
+            .to_rfc3339_opts(SecondsFormat::AutoSi, true)
+            // : is not an allowed filename character in Finder.
+            .replace(':', "_")
+    ));
+
+    let log_file = files::create(&log_path, None).wrap_err("Failed to create log file.")?;
 
     let stderr_envfilter = EnvFilter::builder()
         .with_default_directive(LevelFilter::INFO.into())
-        .parse_lossy(&opts.log_level);
-    let log_filter = stderr_envfilter.max_level_hint();
+        .parse_lossy(&opts.log);
+    let log_filter = stderr_envfilter.max_level_hint().ok_or_else(|| {
+        eyre!(
+            "Failed to work out the max level hint for {}",
+            &opts.log,
+        )
+    })?;
 
     let file_envfilter = EnvFilter::builder()
         .with_default_directive(LevelFilter::TRACE.into())
         .parse_lossy("up=trace");
 
-    let file_log = log_file.map(|log_file| {
-        tracing_subscriber::fmt::layer()
-            .with_writer(Arc::new(log_file))
-            .with_target(true)
-            .with_file(true)
-            .with_line_number(true)
-            .pretty()
-            .with_ansi(false)
-    });
+    let file_log = tracing_subscriber::fmt::layer()
+        .with_writer(Arc::new(log_file))
+        .with_target(true)
+        .with_file(true)
+        .with_line_number(true)
+        .pretty()
+        .with_ansi(false);
 
     // Always log to stderr, also log to a file if we can successfully set that up.
     tracing_subscriber::registry()
@@ -134,37 +161,7 @@ fn set_up_logging(opts: &Opts) -> (Utf8PathBuf, Option<LevelFilter>) {
         .with(ErrorLayer::default())
         .init();
 
-    if log_file_setup {
-        debug!("Writing trace logs to {log_path:?}");
-    } else {
-        warn!("Failed to set up logging to a file");
-    };
+    debug!("Writing trace logs to {log_path:?}");
 
-    (log_path, log_filter)
-}
-
-/// Get the path to the default log file, and create that file.
-fn get_log_file_and_path(opts: &Opts) -> (Utf8PathBuf, Option<File>) {
-    // TODO(gib): if this function tries to do any logging, or returns a Result, and file logging
-    // doesn't get set up properly, then it seems to break stderr logging as well. Test by running
-    // `cargo build && TMPDIR=/dev/null target/debug/up build`. We don't see the `warn!()`
-    // in `set_up_logging()`.
-    // Probably https://github.com/yaahc/color-eyre/issues/110
-
-    let log_dir = opts.temp_dir.join("logs");
-    let log_path = log_dir.join(format!("up-rs_{}.log", opts.start_time.to_rfc3339()));
-
-    // Can't use files::create_dir_all() wrapper as it uses logging.
-    if let Err(e) = std::fs::create_dir_all(&log_dir) {
-        eprintln!(" WARN Failed to create log directory {log_dir}.\n  Error: {e:?}");
-        return (log_path, None);
-    }
-    let log_file = match File::create(&log_path) {
-        Ok(log_file) => log_file,
-        Err(e) => {
-            eprintln!(" WARN failed to create log file {log_path}:\n  Error: {e}");
-            return (log_path, None);
-        }
-    };
-    (log_path, Some(log_file))
+    Ok((log_path, log_filter))
 }

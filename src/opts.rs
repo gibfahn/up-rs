@@ -64,9 +64,10 @@ pub struct Opts {
         long,
         short = 'l',
         default_value = "up=info,up_rs=info",
-        env = "RUST_LOG"
+        env = "RUST_LOG",
+        alias = "log_level"
     )]
-    pub log_level: String,
+    pub log: String,
 
     /**
     Temporary directory to use for logs, fifos, and other intermediate artifacts.

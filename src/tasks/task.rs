@@ -105,8 +105,8 @@ pub struct TaskConfig {
     /// This will allow all subtasks that up executes in this iteration.
     #[serde(default = "default_false")]
     pub needs_sudo: bool,
-    // This field must be the last one in this struct in order for the yaml serializer in the generate functions
-    // to be able to serialise it properly.
+    // This field must be the last one in this struct in order for the yaml serializer in the
+    // generate functions to be able to serialise it properly.
     /// Set of data provided to the Run library.
     #[serde(skip_serializing_if = "Option::is_none")]
     // schemars doesn't have built-in support for YAML values, but it does have support for
