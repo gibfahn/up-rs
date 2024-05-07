@@ -6,7 +6,7 @@ usage() {
   echo "$(
     tput bold
     tput setaf 74
-  )$0 [-h|--help] [-a|--arch arch] [-p|--platform platform] [docker_args --] [args...]$(tput sgr0)
+  )$0 [-h|--help] [-a|--arch arch] [-p|--platform platform] [--pull] [docker_args --] [args...]$(tput sgr0)
 
 cargo-docker: run a shell in a docker image with cargo set up correctly.
 
@@ -17,6 +17,7 @@ Without arguments runs an interactive shell.
 OPTIONS:
 
 --arch: build for a different arch to the current one ($(uname -m)), e.g. amd64 or arm64
+--pull: pull the image before running
 --platform: build for a different platform to the current one (linux/$(uname -m)), e.g. linux/amd64 or linux/arm64
 
 EXAMPLES:
@@ -47,6 +48,14 @@ main() {
     docker_args+=(-it)
   fi
 
+  image=clux/muslrust:stable
+
+  if [[ -n $pull_image ]]; then
+    set -x
+    vessel pull $image
+    { set +x; } 2>/dev/null
+  fi
+
   set -x
   # shellcheck disable=SC2086 # We want tty_flag to expand to nothing if not set.
   # https://docs.rs/cc/latest/cc/#external-configuration-via-environment-variables
@@ -60,13 +69,14 @@ main() {
     -v "$PWD":/code \
     -v "$HOME"/.netrc:/root/.netrc \
     -w /code \
-    clux/muslrust:stable \
+    "$image" \
     "${build_args[@]}"
 }
 
 parse_args() {
   docker_args=()
   build_args=()
+  pull_image=
 
   while [[ $# != 0 ]]; do
     [[ ${1:-} =~ ^(--help|-h)$ ]] && {
@@ -83,6 +93,12 @@ parse_args() {
     [[ ${1:-} =~ ^(--platform|-p)$ ]] && {
       arch=$2
       shift 2
+      continue
+    }
+
+    [[ ${1:-} =~ ^(--pull)$ ]] && {
+      pull_image=true
+      shift
       continue
     }
 
