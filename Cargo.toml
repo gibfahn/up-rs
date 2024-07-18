@@ -37,46 +37,46 @@ name = "up"
 path = "src/main.rs"
 
 [dependencies]
-camino = { version = "1.1.6", features = ["serde1"] }
+camino = { version = "1.1.7", features = ["serde1"] }
 chrono = "0.4.38"
-clap = { version = "4.5.4", features = [
+clap = { version = "4.5.9", features = [
   "derive",
   "env",
   "string",
   "wrap_help",
 ] }
-clap_complete = "4.5.2"
+clap_complete = "4.5.8"
 color-eyre = "0.6.3"
 dirs = "5.0.1"
-displaydoc = "0.2.4"
+displaydoc = "0.2.5"
 duct = "0.13.7"
 envy = "0.4.2"
-git2 = { version = "0.18.3", features = [
+git2 = { version = "0.19.0", features = [
   "vendored-openssl",
   "vendored-libgit2",
 ] }
 hex = "0.4.3"
-itertools = "0.12.1"
+itertools = "0.13.0"
 indicatif = { version = "0.17.8", features = ["rayon"] }
-log = "0.4.21"
-plist = "1.6.1"
+log = "0.4.22"
+plist = "1.7.0"
 rayon = "1.10.0"
-reqwest = { version = "0.12.4", features = ["blocking", "json"] }
+reqwest = { version = "0.12.5", features = ["blocking", "json"] }
 ring = "0.17.8"
-schemars = "0.8.16"
-semver = "1.0.22"
-serde = "1.0.198"
-serde_derive = "1.0.198"
-serde_json = "1.0.116"
+schemars = "0.8.21"
+semver = "1.0.23"
+serde = "1.0.204"
+serde_derive = "1.0.204"
+serde_json = "1.0.120"
 serde_yaml = "0.9.34"
 shell-escape = "0.1.5"
 shellexpand = "3.1.0"
-thiserror = "1.0.58"
-toml = "0.8.12"
+thiserror = "1.0.63"
+toml = "0.8.15"
 tracing = "0.1.40"
 tracing-error = "0.2.0"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-url = "2.5.0"
+url = "2.5.2"
 users = "0.11.0"
 walkdir = "2.5.0"
 tracing-indicatif = "0.3.6"
@@ -86,8 +86,8 @@ assert_cmd = "2.0.14"
 glob = "0.3.1"
 ignore = "0.4.22"
 predicates = "3.1.0"
-serial_test = "3.0.0"
-test-log = { version = "0.2.15", default-features = false, features = [
+serial_test = "3.1.1"
+test-log = { version = "0.2.16", default-features = false, features = [
   "trace",
 ] }
 testutils = { path = "./tests/testutils" }
