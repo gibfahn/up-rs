@@ -170,11 +170,16 @@ impl Task {
     }
 
     /// Run a task.
-    pub fn run<F>(&mut self, env_fn: F, env: &HashMap<String, String>, task_tempdir: &Utf8Path)
-    where
+    pub fn run<F>(
+        &mut self,
+        env_fn: F,
+        env: &HashMap<String, String>,
+        task_tempdir: &Utf8Path,
+        console: bool,
+    ) where
         F: Fn(&str) -> Result<String, E>,
     {
-        match self.try_run(env_fn, env, task_tempdir) {
+        match self.try_run(env_fn, env, task_tempdir, console) {
             Ok(status) => self.status = status,
             Err(e) => self.status = TaskStatus::Failed(e),
         }
@@ -186,6 +191,7 @@ impl Task {
         env_fn: F,
         env: &HashMap<String, String>,
         task_tempdir: &Utf8Path,
+        console: bool,
     ) -> Result<TaskStatus, E>
     where
         F: Fn(&str) -> Result<String, E>,
@@ -200,7 +206,7 @@ impl Task {
             }
             // TODO(gib): Allow choosing how to validate run_if_cmd output (stdout, zero exit
             // code, non-zero exit code).
-            if !self.run_command(CommandType::RunIf, &cmd, env, task_tempdir)? {
+            if !self.run_command(CommandType::RunIf, &cmd, env, task_tempdir, console)? {
                 debug!("Skipping task as run_if command failed.");
                 return Ok(TaskStatus::Skipped);
             }
@@ -257,7 +263,7 @@ impl Task {
             for s in &mut cmd {
                 *s = env_fn(s)?;
             }
-            if self.run_command(CommandType::Run, &cmd, env, task_tempdir)? {
+            if self.run_command(CommandType::Run, &cmd, env, task_tempdir, console)? {
                 return Ok(TaskStatus::Passed);
             }
             return Ok(TaskStatus::Skipped);
@@ -268,7 +274,6 @@ impl Task {
         })
     }
 
-    // TODO(gib): Error should include an easy way to see the task logs.
     /**
     Run a command.
     If the `command_type` is `RunIf`, then `Ok(false)` may be returned if the command was skipped.
@@ -279,20 +284,27 @@ impl Task {
         cmd: &[String],
         env: &HashMap<String, String>,
         task_tempdir: &Utf8Path,
+        console: bool,
     ) -> Result<bool, E> {
         let now = Instant::now();
         let task_output_file = task_tempdir.join("task_stdout_stderr.txt");
 
-        let output = cmd_log(
+        let command = cmd_log(
             Level::DEBUG,
             cmd.first().ok_or(E::EmptyCmd)?,
             cmd.get(1..).unwrap_or(&[]),
         )
         .dir(task_tempdir)
         .full_env(env)
-        .stderr_path(&task_output_file)
-        .unchecked()
-        .run_with_path(&task_output_file);
+        .unchecked();
+
+        let output = if console {
+            command.run_with_inherit()
+        } else {
+            command
+                .stderr_path(&task_output_file)
+                .run_with_path(&task_output_file)
+        };
 
         let output = output.map_err(|e| {
             let suggestion = match e.kind() {

@@ -36,6 +36,8 @@ pub struct UpConfig {
     pub tasks: Option<Vec<String>>,
     /// The list of tasks to not execute.
     pub exclude_tasks: Option<Vec<String>>,
+    /// Whether task stdout/stderr should inherit from up's stdout/stderr.
+    pub console: Option<bool>,
     /// Temporary directory to use for up command execution.
     pub temp_dir: Utf8PathBuf,
     /// Time we started this command execution.
@@ -122,6 +124,7 @@ impl UpConfig {
             tasks: run_options.tasks,
             exclude_tasks: run_options.exclude_tasks,
             start_time: opts.start_time,
+            console: run_options.console,
         })
     }
 

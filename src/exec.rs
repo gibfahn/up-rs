@@ -125,6 +125,9 @@ pub trait LivDuct {
     Alternative to the `.run_with()` function as this takes a path argument.
     */
     fn run_with_path(&self, path: &Utf8Path) -> io::Result<Output>;
+
+    /// Run with the stdout inherited from the parent process.
+    fn run_with_inherit(&self) -> io::Result<Output>;
 }
 
 impl LivDuct for Expression {
@@ -142,5 +145,13 @@ impl LivDuct for Expression {
         // So we need to be able to use it here.
         #[allow(clippy::disallowed_methods)]
         self.stdout_path(path).run()
+    }
+
+    /// Run with the stdout inherited from the parent process.
+    fn run_with_inherit(&self) -> io::Result<Output> {
+        // This method is blocked elsewhere to force people to use the `.run_with*()` functions.
+        // So we need to be able to use it here.
+        #[allow(clippy::disallowed_methods)]
+        self.run()
     }
 }

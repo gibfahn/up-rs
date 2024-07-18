@@ -167,8 +167,18 @@ pub(crate) struct RunOptions {
 
     ❯ up run --tasks=rust,apt --tasks=otherslowtask
     */
-    #[clap(short, long, value_delimiter = ',')]
+    #[clap(short = 't', long, value_delimiter = ',')]
     pub(crate) tasks: Option<Vec<String>>,
+
+    /**
+    Tasks stdout/stderr inherit from up's stdout/stderr.
+
+    By default this is true if only one task is executed, and false otherwise.
+    Piping multiple commands to the stdout/stderr of the process will cause task output to be interleaved, which is very confusing when many tasks are run.
+    */
+    #[clap(long)]
+    pub(crate) console: Option<bool>,
+
     /**
     Optionally pass one or more tasks to exclude. The default is to exclude no
     tasks. Excluded tasks are not run even if specified in `--tasks` (excluding takes

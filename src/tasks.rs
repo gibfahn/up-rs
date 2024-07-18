@@ -35,13 +35,6 @@ pub(crate) mod schema;
 pub mod task;
 pub mod update_self;
 
-// TODO(gib): If there's only one task left, stream output directly to the
-// console and run sync.
-
-// TODO(gib): Use https://lib.rs/crates/indicatif for progress bars.
-
-// TODO(gib): use tui Terminal UI lib (https://crates.io/keywords/tui) for better UI.
-
 /// Trait that tasks implement to specify how to replace environment variables in their
 /// configuration.
 pub trait ResolveEnv {
@@ -178,6 +171,11 @@ pub fn run(
     debug!("Task count: {:?}", tasks.len());
     trace!("Task list: {tasks:#?}");
 
+    let console = config
+        .console
+        .unwrap_or_else(|| bootstrap_tasks.len() + tasks.len() == 1);
+    trace!("Setting console option to: {console}");
+
     match tasks_action {
         TasksAction::List => println!("{}", tasks.keys().join("\n")),
         TasksAction::Run => {
@@ -192,6 +190,7 @@ pub fn run(
                 &env,
                 &run_tempdir,
                 config.keep_going,
+                console,
             )?;
         }
     }
@@ -205,6 +204,7 @@ fn run_tasks(
     env: &HashMap<String, String>,
     temp_dir: &Utf8Path,
     keep_going: bool,
+    console: bool,
 ) -> Result<()> {
     let mut completed_tasks = Vec::new();
     if !bootstrap_tasks.is_empty() {
@@ -217,6 +217,7 @@ fn run_tasks(
                     .ok_or_else(|| eyre!("Task '{task_name}' was missing."))?,
                 env,
                 &task_tempdir,
+                console,
             );
             if !keep_going {
                 if let TaskStatus::Failed(e) = task.status {
@@ -235,7 +236,7 @@ fn run_tasks(
                 let task_name = task.name.as_str();
                 let _span = tracing::info_span!("task", task = task_name).entered();
                 let task_tempdir = create_task_tempdir(temp_dir, task_name)?;
-                Ok(run_task(task, env, &task_tempdir))
+                Ok(run_task(task, env, &task_tempdir, console))
             })
             .collect::<Result<Vec<Task>>>()?,
     );
@@ -297,7 +298,12 @@ fn run_tasks(
 }
 
 /// Runs a specific task.
-fn run_task(mut task: Task, env: &HashMap<String, String>, task_tempdir: &Utf8Path) -> Task {
+fn run_task(
+    mut task: Task,
+    env: &HashMap<String, String>,
+    task_tempdir: &Utf8Path,
+    console: bool,
+) -> Task {
     let env_fn = &|s: &str| {
         let home_dir = files::home_dir().map_err(|e| E::EyreError { source: e })?;
         let out = shellexpand::full_with_context(
@@ -315,7 +321,7 @@ fn run_task(mut task: Task, env: &HashMap<String, String>, task_tempdir: &Utf8Pa
     };
 
     let now = Instant::now();
-    task.run(env_fn, env, task_tempdir);
+    task.run(env_fn, env, task_tempdir, console);
     let elapsed_time = now.elapsed();
     if elapsed_time > Duration::from_secs(60) {
         warn!("Task took {elapsed_time:?}");
@@ -364,7 +370,7 @@ pub enum TaskError {
         /// Source error.
         source: color_eyre::eyre::Error,
     },
-    /// Commmand was empty.
+    /// Command was empty.
     EmptyCmd,
     /// Task `{name}` had no run command.
     MissingCmd {
