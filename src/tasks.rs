@@ -13,6 +13,8 @@ use color_eyre::eyre::bail;
 use color_eyre::eyre::eyre;
 use color_eyre::eyre::Result;
 use displaydoc::Display;
+use indicatif::ProgressState;
+use indicatif::ProgressStyle;
 use itertools::Itertools;
 use rayon::prelude::*;
 use std::collections::HashMap;
@@ -26,6 +28,7 @@ use tracing::error;
 use tracing::info;
 use tracing::trace;
 use tracing::warn;
+use tracing_indicatif::span_ext::IndicatifSpanExt;
 
 pub mod completions;
 pub mod defaults;
@@ -207,6 +210,13 @@ fn run_tasks(
     console: bool,
 ) -> Result<()> {
     let mut completed_tasks = Vec::new();
+
+    // Has to be top-level so span continues for whole run.
+    let _header_span;
+    if !console {
+        _header_span = set_up_header(tasks.len() + bootstrap_tasks.len())?;
+    }
+
     if !bootstrap_tasks.is_empty() {
         for task_name in bootstrap_tasks {
             let task_tempdir = create_task_tempdir(temp_dir, &task_name)?;
@@ -234,7 +244,12 @@ fn run_tasks(
             .filter(|(_, task)| task.config.auto_run.unwrap_or(true))
             .map(|(_, task)| {
                 let task_name = task.name.as_str();
-                let _span = tracing::info_span!("task", task = task_name).entered();
+                let _span = if console {
+                    tracing::info_span!("task", task = task_name, indicatif.pb_hide = true)
+                        .entered()
+                } else {
+                    tracing::info_span!("task", task = task_name).entered()
+                };
                 let task_tempdir = create_task_tempdir(temp_dir, task_name)?;
                 Ok(run_task(task, env, &task_tempdir, console))
             })
@@ -334,6 +349,33 @@ fn create_task_tempdir(temp_dir: &Utf8Path, task_name: &str) -> Result<Utf8PathB
     let task_tempdir = temp_dir.join(task_name);
     files::create_dir_all(&task_tempdir)?;
     Ok(task_tempdir)
+}
+
+/**
+Set up a header span to show progress.
+
+If you don't want this to show, filter out Indicatif progress bars by default with
+[`tracing_indicatif::filter::IndicatifFilter::new`] as `IndicatifFilter::new(false)`.
+*/
+fn set_up_header(tasks_count: usize) -> Result<tracing::Span> {
+    let header_span = tracing::info_span!("header");
+    let command = std::env::args().join(" ");
+    header_span.pb_set_style(
+        &ProgressStyle::with_template(&format!(
+            "Running {tasks_count} tasks for command: `{command}`. {{wide_msg}} \
+             {{elapsed_sec}}\n{{wide_bar}}"
+        ))?
+        .with_key(
+            "elapsed_sec",
+            |state: &ProgressState, writer: &mut dyn std::fmt::Write| {
+                let seconds = state.elapsed().as_secs();
+                let _ = writer.write_str(&format!("{seconds}s"));
+            },
+        )
+        .progress_chars("---"),
+    );
+    header_span.pb_start();
+    Ok(header_span)
 }
 
 #[allow(clippy::doc_markdown)]

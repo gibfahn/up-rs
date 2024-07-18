@@ -20,6 +20,8 @@ use color_eyre::eyre::Context;
 use color_eyre::eyre::Result;
 use color_eyre::Section;
 use color_eyre::SectionExt;
+use indicatif::ProgressState;
+use indicatif::ProgressStyle;
 use std::env;
 use std::sync::Arc;
 use std::time::Duration;
@@ -30,8 +32,11 @@ use tracing::trace;
 use tracing::warn;
 use tracing::Level;
 use tracing_error::ErrorLayer;
+use tracing_indicatif::filter::hide_indicatif_span_fields;
+use tracing_indicatif::filter::IndicatifFilter;
 use tracing_indicatif::IndicatifLayer;
 use tracing_subscriber::filter::EnvFilter;
+use tracing_subscriber::fmt::format::DefaultFields;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -110,7 +115,54 @@ fn main() -> Result<()> {
 /// Set up logging to stderr and to a temp file path.
 /// Returns the log level filter chosen by the user if available, and the path to the log file.
 fn set_up_logging(opts: &Opts) -> Result<(Utf8PathBuf, LevelFilter)> {
-    let indicatif_layer = IndicatifLayer::new();
+    // Mostly copied from <https://github.com/emersonford/tracing-indicatif/blob/main/examples/build_console.rs>
+    let indicatif_layer = IndicatifLayer::new()
+        .with_progress_style(
+            ProgressStyle::with_template(
+                "{color_start}{span_child_prefix}{span_fields} -- {span_name} {wide_msg} \
+                 {elapsed_sec}{color_end}",
+            )
+            .unwrap()
+            .with_key(
+                "elapsed_sec",
+                |state: &ProgressState, writer: &mut dyn std::fmt::Write| {
+                    let seconds = state.elapsed().as_secs();
+                    let _ = writer.write_str(&format!("{seconds}s"));
+                },
+            )
+            .with_key(
+                "color_start",
+                |state: &ProgressState, writer: &mut dyn std::fmt::Write| {
+                    let elapsed = state.elapsed();
+
+                    if elapsed > Duration::from_secs(60) {
+                        // Red
+                        let _ = write!(writer, "\x1b[{}m", 1 + 30);
+                    } else if elapsed > Duration::from_secs(10) {
+                        // Yellow
+                        let _ = write!(writer, "\x1b[{}m", 3 + 30);
+                    }
+                },
+            )
+            .with_key(
+                "color_end",
+                |state: &ProgressState, writer: &mut dyn std::fmt::Write| {
+                    if state.elapsed() > Duration::from_secs(10) {
+                        let _ = write!(writer, "\x1b[0m");
+                    }
+                },
+            ),
+        )
+        .with_span_child_prefix_symbol("↳ ")
+        .with_span_child_prefix_indent(" ")
+        // Hide `indicatif.pb_hide` fields, as they're only there as a marker to be filtered or not.
+        .with_span_field_formatter(hide_indicatif_span_fields(DefaultFields::new()))
+        .with_max_progress_bars(
+            20,
+            Some(ProgressStyle::with_template(
+                "...and {pending_progress_bars} more not shown above.",
+            )?),
+        );
 
     let stderr_log = tracing_subscriber::fmt::layer()
         .compact()
@@ -152,7 +204,8 @@ fn set_up_logging(opts: &Opts) -> Result<(Utf8PathBuf, LevelFilter)> {
     tracing_subscriber::registry()
         .with(file_log.with_filter(file_envfilter))
         .with(stderr_log.with_filter(stderr_envfilter))
-        .with(indicatif_layer)
+        // Filter out anything with the tracing field `indicatif.pb_hide`.
+        .with(indicatif_layer.with_filter(IndicatifFilter::new(true)))
         // Adds a color_eyre spantrace layer. This isn't used unless we start adding `#[instrument]`
         // to functions.
         .with(ErrorLayer::default())

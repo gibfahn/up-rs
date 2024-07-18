@@ -360,7 +360,6 @@ impl Task {
             Level::ERROR
         };
 
-        // TODO(gib): How do we separate out the task output?
         // TODO(gib): Document error codes.
         log!(
             level,
