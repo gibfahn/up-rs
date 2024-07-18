@@ -132,12 +132,9 @@ fn set_up_logging(opts: &Opts) -> Result<(Utf8PathBuf, LevelFilter)> {
     let stderr_envfilter = EnvFilter::builder()
         .with_default_directive(LevelFilter::INFO.into())
         .parse_lossy(&opts.log);
-    let log_filter = stderr_envfilter.max_level_hint().ok_or_else(|| {
-        eyre!(
-            "Failed to work out the max level hint for {}",
-            &opts.log,
-        )
-    })?;
+    let log_filter = stderr_envfilter
+        .max_level_hint()
+        .ok_or_else(|| eyre!("Failed to work out the max level hint for {}", &opts.log))?;
 
     let file_envfilter = EnvFilter::builder()
         .with_default_directive(LevelFilter::TRACE.into())

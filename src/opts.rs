@@ -65,7 +65,7 @@ pub struct Opts {
         short = 'l',
         default_value = "up=info,up_rs=info",
         env = "RUST_LOG",
-        alias = "log_level"
+        alias = "log-level"
     )]
     pub log: String,
 
