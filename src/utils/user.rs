@@ -71,7 +71,7 @@ pub(crate) fn get_and_keep_sudo(yes: bool) -> Result<()> {
 
 /// Return whether we are running as root.
 pub(crate) fn current_user_is_root() -> bool {
-    let current_user_id = users::get_current_uid();
+    let current_user_id = uzers::get_current_uid();
     trace!("Found current user ID to be: {current_user_id}");
     current_user_id == 0
 }

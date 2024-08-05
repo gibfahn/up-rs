@@ -6,6 +6,7 @@ use crate::config;
 use crate::env::get_env;
 use crate::tasks::task::TaskStatus;
 use crate::utils::files;
+use crate::utils::user::current_user_is_root;
 use crate::utils::user::get_and_keep_sudo;
 use camino::Utf8Path;
 use camino::Utf8PathBuf;
@@ -166,7 +167,7 @@ pub fn run(
 
     if matches!(tasks_action, TasksAction::Run)
         && tasks.values().any(|t| t.config.needs_sudo)
-        && users::get_current_uid() != 0
+        && !current_user_is_root()
     {
         get_and_keep_sudo(false)?;
     }
