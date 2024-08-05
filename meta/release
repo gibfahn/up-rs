@@ -111,9 +111,6 @@ main() {
     gsed -i -E "0,/^version = \"${last_release?}\"\$/s//version = \"${new_version?}\"/" Cargo.toml
     log_and_run cargo check --release # Bumps version in lockfile too.
 
-    # Generate the JSON schema for a task.
-    cargo run -- schema $task_schema_json
-
     log_section "Committing version updates..."
     git add Cargo.toml Cargo.lock CHANGELOG.md
     git commit -m "chore: bump version to ${new_version?}"
@@ -127,6 +124,9 @@ main() {
   else
     log_and_run cargo nextest run --release --run-ignored=all --no-fail-fast
   fi
+
+  # Generate the JSON schema for a task.
+  cargo run -- schema $task_schema_json
 
   log_section "Running end-to-end tests..."
   # Run End-to-End tests and build Linux binaries:
