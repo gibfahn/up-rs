@@ -156,7 +156,7 @@ main() {
     $macos_binary \
     $linux_amd64_binary \
     $linux_arm64_binary \
-    task_schema_json
+    $task_schema_json
 
   new_release=$(gh release list -L 1 | awk '{print $1}')
   gh release view $new_release
