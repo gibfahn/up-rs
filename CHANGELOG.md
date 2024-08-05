@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0](https://github.com/gibfahn/up-rs/releases/tag/0.16.0) (2024-08-05)
+
+### Bug Fixes
+- opts: fix --log-level alias preserved for compatibility ([890423d](https://github.com/gibfahn/up-rs/commit/890423d9bacf3d8cc70449be87534ba60688b820))
+
+### Features
+- [**BREAKING**] run: stream single task stdout/err to console ([16682de](https://github.com/gibfahn/up-rs/commit/16682de96aedc99eca7276123e43c99ff8c02edc))
+- run: nicer multi-task output ([50daa14](https://github.com/gibfahn/up-rs/commit/50daa14c0bb0e358231df5051371e1b1e62f96e2))
+- schema: add subcommand to generate yaml schema ([558726f](https://github.com/gibfahn/up-rs/commit/558726fe4342f37258cfc425644834c6b41389dc))
+
+### Refactor
+- log: remove workaround for logging issue ([c3fd161](https://github.com/gibfahn/up-rs/commit/c3fd161638049661789d79f30c60afeb4d9c3847))
+- task: sort lib matching ([3e4c250](https://github.com/gibfahn/up-rs/commit/3e4c250cdfc2de71a931bb5405c9b661b134c267))
+
 ## [0.15.2](https://github.com/gibfahn/up-rs/releases/tag/0.15.2) (2024-04-22)
 
 ### Bug Fixes
