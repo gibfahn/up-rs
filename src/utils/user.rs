@@ -22,6 +22,10 @@ There are three common cases:
 | Normal Mac, cached sudo | ✅             | ❌              |
 | Passwordless sudo       | ✅             | ✅              |
 
+`sudo -n true` means "don't prompt for sudo", so `sudo -n true` will only pass if the user has passwordless sudo enabled, or has a cached sudo credential for this terminal.
+
+`sudo -kn true` means "don't use cached credentials", so will only pass if the user has passwordless sudo enabled. However it will not reset the credential cache.
+
 Example of a modified machine that has passwordless sudo enabled for the current user:
 
 ```console
