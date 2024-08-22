@@ -1,7 +1,7 @@
 //! Utilities for dealing with users.
 
 use crate::cmd_debug;
-use crate::exec::LivDuct;
+use crate::exec::UpDuct;
 use color_eyre::Result;
 use duct::Expression;
 use std::thread;

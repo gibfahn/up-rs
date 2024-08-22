@@ -2,7 +2,7 @@
 
 //! Up task execution.
 use crate::exec::cmd_log;
-use crate::exec::LivDuct;
+use crate::exec::UpDuct;
 use crate::generate;
 use crate::log;
 use crate::opts::GenerateGitConfig;

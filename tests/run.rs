@@ -9,7 +9,7 @@ use testutils::ensure_eq;
 use testutils::ensure_utils;
 use testutils::AssertCmdExt;
 #[cfg(target_os = "macos")]
-use up_rs::exec::LivDuct;
+use up_rs::exec::UpDuct;
 
 #[cfg(target_os = "macos")]
 const EXPECTED_DEFAULTS_VALUE: &str = r#"{

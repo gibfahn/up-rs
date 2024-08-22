@@ -1,6 +1,6 @@
 //! Utility functions for updating plist files.
 use crate::cmd;
-use crate::exec::LivDuct;
+use crate::exec::UpDuct;
 use crate::tasks::defaults::DefaultsError as E;
 use crate::utils::files;
 use crate::utils::mac;

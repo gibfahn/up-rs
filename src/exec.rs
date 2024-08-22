@@ -108,8 +108,8 @@ macro_rules! cmd_debug_if_wet {
     };
 }
 
-/// Trait to allow retrying a command a number of times.
-pub trait LivDuct {
+/// Trait to wrap running commands with Duct.
+pub trait UpDuct {
     /**
     Run with the stdout sent to wherever `stdout_fn` points to.
 
@@ -130,7 +130,7 @@ pub trait LivDuct {
     fn run_with_inherit(&self) -> io::Result<Output>;
 }
 
-impl LivDuct for Expression {
+impl UpDuct for Expression {
     /// Run with the stdout sent to wherever `stdout_fn` points to.
     fn run_with(&self, stdout_fn: fn(&Expression) -> Expression) -> io::Result<Output> {
         // This method is blocked elsewhere to force people to use the `.run_with*()` functions.
