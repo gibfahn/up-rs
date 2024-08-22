@@ -10,6 +10,7 @@ use crate::utils::user::current_user_is_root;
 use crate::utils::user::get_and_keep_sudo;
 use camino::Utf8Path;
 use camino::Utf8PathBuf;
+use chrono::SecondsFormat;
 use color_eyre::eyre::bail;
 use color_eyre::eyre::eyre;
 use color_eyre::eyre::Result;
@@ -185,7 +186,11 @@ pub fn run(
         TasksAction::Run => {
             let run_tempdir = config.temp_dir.join(format!(
                 "runs/{start_time}",
-                start_time = config.start_time.to_rfc3339()
+                start_time = config
+                    .start_time
+                    .to_rfc3339_opts(SecondsFormat::AutoSi, true)
+                    // : is not an allowed filename character in Finder.
+                    .replace(':', "_")
             ));
 
             run_tasks(
