@@ -33,6 +33,12 @@ User local may run the following commands on Mac-mini-5:
 
 */
 pub(crate) fn get_and_keep_sudo(yes: bool) -> Result<()> {
+    debug!(
+        "Current tty is: {}",
+        cmd_debug!("tty")
+            .read()
+            .unwrap_or_else(|e| format!("Failed with: {e}"))
+    );
     if current_user_is_root() {
         debug!("Not getting sudo as we're already running as root.");
         return Ok(());
