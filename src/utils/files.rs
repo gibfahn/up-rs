@@ -52,9 +52,13 @@ pub fn to_utf8_path(path: &std::path::Path) -> Result<&Utf8Path> {
     Utf8Path::from_path(path).ok_or_else(|| eyre!("Invalid UTF-8 in path {path:?}"))
 }
 
-/// Remove a broken symlink. You can normally check for a broken symlink with:
-/// `!path.exists() && path.symlink_metadata().is_ok()`
-/// This checks that the path pointed to doesn't exist, but that the symlink does exist.
+/**
+Remove a broken symlink.
+
+You can normally check for a broken symlink with:
+`!path.exists() && path.symlink_metadata().is_ok()`
+This checks that the path pointed to doesn't exist, but that the symlink does exist.
+*/
 pub fn remove_broken_symlink(path: &Utf8Path) -> Result<(), UpError> {
     warn!(
         "Removing existing broken symlink.\n  Path: {path}\n  Dest: {dest}",
