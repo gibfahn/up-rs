@@ -37,15 +37,15 @@ name = "up"
 path = "src/main.rs"
 
 [dependencies]
-camino = { version = "1.1.7", features = ["serde1"] }
+camino = { version = "1.1.9", features = ["serde1"] }
 chrono = "0.4.38"
-clap = { version = "4.5.9", features = [
+clap = { version = "4.5.17", features = [
   "derive",
   "env",
   "string",
   "wrap_help",
 ] }
-clap_complete = "4.5.8"
+clap_complete = "4.5.28"
 color-eyre = "0.6.3"
 dirs = "5.0.1"
 displaydoc = "0.2.5"
@@ -61,18 +61,18 @@ indicatif = { version = "0.17.8", features = ["rayon"] }
 log = "0.4.22"
 plist = "1.7.0"
 rayon = "1.10.0"
-reqwest = { version = "0.12.5", features = ["blocking", "json"] }
+reqwest = { version = "0.12.7", features = ["blocking", "json"] }
 ring = "0.17.8"
 schemars = "0.8.21"
 semver = "1.0.23"
-serde = "1.0.204"
-serde_derive = "1.0.204"
-serde_json = "1.0.120"
+serde = "1.0.210"
+serde_derive = "1.0.210"
+serde_json = "1.0.128"
 serde_yaml = "0.9.34"
 shell-escape = "0.1.5"
 shellexpand = "3.1.0"
 thiserror = "1.0.63"
-toml = "0.8.15"
+toml = "0.8.19"
 tracing = "0.1.40"
 tracing-error = "0.2.0"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
@@ -82,10 +82,10 @@ walkdir = "2.5.0"
 tracing-indicatif = "0.3.6"
 
 [dev-dependencies]
-assert_cmd = "2.0.14"
+assert_cmd = "2.0.16"
 glob = "0.3.1"
-ignore = "0.4.22"
-predicates = "3.1.0"
+ignore = "0.4.23"
+predicates = "3.1.2"
 serial_test = "3.1.1"
 test-log = { version = "0.2.16", default-features = false, features = [
   "trace",
